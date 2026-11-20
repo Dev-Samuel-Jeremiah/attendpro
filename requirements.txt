@@ -1,4 +1,10 @@
-Django>=5.0,<6.0
-qrcode[pil]>=7.4
-Pillow>=10.0
-openpyxl>=3.1
+# Exact versions AttendPro is tested with (Python 3.12–3.14).
+Django==5.2.18
+python-decouple==3.8
+qrcode[pil]==8.2
+Pillow==12.3.0
+openpyxl==3.1.5
+
+# Production: app server and PostgreSQL driver
+gunicorn==23.0.0
+psycopg[binary]==3.3.6

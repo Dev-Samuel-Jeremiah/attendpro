@@ -50,20 +50,25 @@ Set the address that gets encoded in the QR if needed:
 export ATTENDPRO_PUBLIC_URL=https://attend.yourdomain.com
 ```
 
-## Production settings
+## Production
+Settings are read from a `.env` file next to `manage.py`; copy [`.env.example`](.env.example) to start.
+Production uses PostgreSQL (`DB_ENGINE=postgresql`); without a `.env` the app runs on SQLite in debug mode for local development.
+
 | Variable | Purpose |
 |---|---|
-| `DJANGO_SECRET_KEY` | **Set a long random value** (it also signs the QR codes) |
-| `DJANGO_DEBUG=0` | Turn off debug |
-| `DJANGO_ALLOWED_HOSTS` | e.g. `attend.yourdomain.com` |
-| `DJANGO_CSRF_TRUSTED_ORIGINS` | e.g. `https://attend.yourdomain.com` |
-| `DJANGO_TIME_ZONE` | Default `Africa/Lagos` |
+| `DJANGO_SECRET_KEY` | **Required with debug off.** A long random value (it also signs the QR codes) |
+| `DJANGO_DEBUG` | `False` in production |
+| `DJANGO_ALLOWED_HOSTS` / `DJANGO_CSRF_TRUSTED_ORIGINS` | your domain, e.g. `attendpro.cloud` / `https://attendpro.cloud` |
+| `DJANGO_ADMIN_URL` | hard-to-guess path for the platform super-admin (default `django-admin/`) |
+| `DB_ENGINE`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT` | PostgreSQL connection |
+| `ATTENDPRO_PUBLIC_URL` | address encoded in the reception QR |
 
-Then run `python manage.py collectstatic` and serve with gunicorn plus nginx. Platform super-admin is at `/django-admin/` (`python manage.py createsuperuser`).
+The full server setup (Gunicorn, Nginx, HTTPS, daily backups) is in [`deploy/DEPLOY.md`](deploy/DEPLOY.md).
 
 ## Project layout
 ```
 attendpro/        settings, urls
+deploy/           Gunicorn, systemd, Nginx, backup and update scripts + DEPLOY.md
 core/models.py    Organisation, User (ID login), Department, AttendanceRecord, ScanLog, SavedReport
 core/services.py  rotating QR tokens, check-in/out logic, report calculations, Excel/CSV export
 core/views.py     auth, kiosk, scanning, member portal, admin pages

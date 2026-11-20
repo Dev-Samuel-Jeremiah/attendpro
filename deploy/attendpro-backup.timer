@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily backup of the AttendPro database
+
+[Timer]
+# 02:15, clear of the other site's 01:30 backup
+OnCalendar=*-*-* 02:15:00
+Persistent=true
+RandomizedDelaySec=10min
+
+[Install]
+WantedBy=timers.target

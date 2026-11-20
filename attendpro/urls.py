@@ -7,6 +7,6 @@ admin.site.site_header = "AttendPro Super Admin"
 admin.site.site_title = "AttendPro"
 
 urlpatterns = [
-    path("django-admin/", admin.site.urls),
+    path(settings.ADMIN_URL, admin.site.urls),
     path("", include("core.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
