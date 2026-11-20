@@ -37,6 +37,7 @@ Open http://localhost:8000
 | Staff accounts | 10 | 25 | Unlimited |
 | Clock-in button (only at your premises), dashboard, history | ✓ | ✓ | ✓ |
 | QR attendance, advanced reports, Excel/CSV export, self-service | | ✓ | ✓ |
+| Leave management, PDF export, in-app + email notifications | | ✓ | ✓ |
 | Custom branding (logo), audit trail, priority support | | | ✓ |
 
 Prices, limits and features are edited by the platform super admin under `/platform/`; the

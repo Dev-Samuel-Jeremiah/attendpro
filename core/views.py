@@ -588,11 +588,11 @@ def reports(request):
     report = services.build_report(org, start, end, members=members_qs)
 
     fmt = request.GET.get("export")
-    if fmt in ("xlsx", "csv") and not org.has_feature(catalog.EXPORTS):
+    if fmt in ("xlsx", "csv", "pdf") and not org.has_feature(catalog.EXPORTS):
         messages.warning(request, upgrade_message(catalog.EXPORTS))
         return redirect("billing")
-    if fmt in ("xlsx", "csv"):
-        data = services.export_xlsx(org, report) if fmt == "xlsx" else services.export_csv(org, report)
+    if fmt in ("xlsx", "csv", "pdf"):
+        data = {"xlsx": services.export_xlsx, "csv": services.export_csv, "pdf": services.export_pdf}[fmt](org, report)
         fname = f"{org.code}-attendance-{start}-to-{end}.{fmt}"
         if request.GET.get("save"):
             dept_name = org.departments.filter(pk=dept).first() if dept else None
@@ -602,8 +602,8 @@ def reports(request):
             rep.file.save(fname, ContentFile(data), save=True)
             messages.success(request, "Report saved to your report library.")
             return redirect("saved_reports")
-        ctype = ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" if fmt == "xlsx"
-                 else "text/csv")
+        ctype = {"xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                 "csv": "text/csv", "pdf": "application/pdf"}[fmt]
         resp = HttpResponse(data, content_type=ctype)
         resp["Content-Disposition"] = f'attachment; filename="{fname}"'
         return resp
@@ -646,7 +646,8 @@ def saved_report_delete(request, pk):
 def org_settings(request):
     org = request.user.organisation
     form = OrgSettingsForm(request.POST or None, request.FILES or None, instance=org,
-                           branding=org.has_feature(catalog.CUSTOM_BRANDING))
+                           branding=org.has_feature(catalog.CUSTOM_BRANDING),
+                           notifications=org.has_feature(catalog.NOTIFICATIONS))
     if request.method == "POST":
         if "rotate_key" in request.POST:
             org.rotate_kiosk_key()
@@ -657,4 +658,6 @@ def org_settings(request):
             messages.success(request, "Settings saved.")
             return redirect("org_settings")
     kiosk_url = request.build_absolute_uri(reverse("kiosk", args=[org.kiosk_key]))
-    return render(request, "manage/settings.html", {"form": form, "kiosk_url": kiosk_url})
+    from notifications.services import email_enabled
+    return render(request, "manage/settings.html", {"form": form, "kiosk_url": kiosk_url,
+                                                    "email_ready": email_enabled()})

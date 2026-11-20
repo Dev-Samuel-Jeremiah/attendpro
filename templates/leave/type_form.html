@@ -1,0 +1,14 @@
+{% extends "manage/_shell.html" %}{% load ui %}
+{% block title %}{% if obj %}Edit {{ obj.name }}{% else %}Add leave type{% endif %}{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>{% if obj %}{{ obj.name }}{% else %}Add leave type{% endif %}</h1><p>Days are working days per person per calendar year.</p></div>
+  <a class="btn btn-ghost" href="{% url 'leave_admin' %}">{% icon "chevron-left" %} Leave</a></div>
+<div class="card" style="max-width:560px">
+  <form method="post">{% csrf_token %}
+    {% include "partials/field.html" with f=form.name %}
+    {% include "partials/field.html" with f=form.days_per_year %}
+    <div class="form-grid">{% include "partials/field.html" with f=form.is_paid %}{% include "partials/field.html" with f=form.is_active %}</div>
+    <button class="btn btn-accent">{% icon "save" %} Save</button>
+  </form>
+</div>
+{% endblock %}

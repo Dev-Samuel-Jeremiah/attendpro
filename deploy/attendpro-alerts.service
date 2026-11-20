@@ -1,0 +1,14 @@
+# Absence, clock-out and plan-expiry alerts, run by attendpro-alerts.timer.
+# Install: sudo cp deploy/attendpro-alerts.* /etc/systemd/system/
+#          sudo systemctl daemon-reload && sudo systemctl enable --now attendpro-alerts.timer
+[Unit]
+Description=AttendPro scheduled alerts
+After=network-online.target postgresql.service
+
+[Service]
+Type=oneshot
+User=attendpro
+Group=www-data
+WorkingDirectory=/srv/attendpro/app
+ExecStart=/srv/attendpro/venv/bin/python manage.py send_alerts
+Nice=5

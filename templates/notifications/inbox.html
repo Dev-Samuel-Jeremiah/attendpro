@@ -1,0 +1,23 @@
+{% extends layout %}{% load ui %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<div style="max-width:760px">
+  <div class="topbar"><div><h1>Notifications</h1><p>Your latest 60. Read notifications are removed after 90 days.</p></div></div>
+  <div class="card">
+    {% if items %}
+    <ul class="notes">
+      {% for n in items %}
+      <li class="{% if not n.read_at %}unread{% endif %}">
+        <span class="note-icon k-{{ n.kind }}">{% if n.kind == 'leave' %}{% icon "leave" 18 %}{% elif n.kind == 'late' %}{% icon "clock" 18 %}{% elif n.kind == 'absent' %}{% icon "alert" 18 %}{% elif n.kind == 'plan' %}{% icon "card" 18 %}{% elif n.kind == 'checkout' %}{% icon "out" 18 %}{% else %}{% icon "bell" 18 %}{% endif %}</span>
+        <div>
+          {% if n.url %}<a href="{{ n.url }}"><b>{{ n.title }}</b></a>{% else %}<b>{{ n.title }}</b>{% endif %}
+          {% if n.body %}<p>{{ n.body }}</p>{% endif %}
+          <small class="muted">{{ n.created_at|timesince }} ago</small>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<div class="empty">No notifications yet.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "manage/_shell.html" %}{% load ui %}
+{% block title %}Leave{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Leave</h1><p>Approve requests and set how many days each type of leave allows.</p></div>
+  <a class="btn btn-ghost" href="{% url 'my_leave' %}">{% icon "leave" %} Request my own leave</a></div>
+
+<div class="grid grid-main">
+  <div class="card">
+    <div class="filters" style="margin-bottom:14px">
+      <a class="btn btn-sm {% if status == 'pending' %}btn-accent{% else %}btn-ghost{% endif %}" href="?status=pending">Pending{% if pending_count %} ({{ pending_count }}){% endif %}</a>
+      <a class="btn btn-sm {% if status == 'approved' %}btn-accent{% else %}btn-ghost{% endif %}" href="?status=approved">Approved</a>
+      <a class="btn btn-sm {% if status == 'rejected' %}btn-accent{% else %}btn-ghost{% endif %}" href="?status=rejected">Declined</a>
+      <a class="btn btn-sm {% if status == 'cancelled' %}btn-accent{% else %}btn-ghost{% endif %}" href="?status=cancelled">Cancelled</a>
+      <a class="btn btn-sm {% if status == 'all' %}btn-accent{% else %}btn-ghost{% endif %}" href="?status=all">All</a>
+    </div>
+    <div class="leave-list">
+    {% for r in requests %}
+      <div class="leave-item">
+        <div class="person">{% avatar r.user %}<div><b>{{ r.user.display_name }}</b><small class="muted">{{ r.user.username }}{% if r.user.department %} · {{ r.user.department }}{% endif %}</small></div></div>
+        <div class="leave-meta">
+          <b>{{ r.leave_type.name }}</b>
+          <div>{{ r.start_date|date:"D j M" }}{% if r.end_date != r.start_date %} – {{ r.end_date|date:"D j M Y" }}{% endif %} · {{ r.days }} working day{{ r.days|pluralize }}</div>
+          {% if r.reason %}<div class="muted">“{{ r.reason }}”</div>{% endif %}
+          <small class="muted">Requested {{ r.created_at|date:"j M, g:i A" }}{% if r.reviewed_by %} · {{ r.get_status_display }} by {{ r.reviewed_by.display_name }}{% if r.review_note %}: “{{ r.review_note }}”{% endif %}{% endif %}</small>
+        </div>
+        {% if r.status == 'pending' %}
+        <form method="post" action="{% url 'leave_decide' r.pk %}" class="leave-actions">{% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <input class="input" name="note" placeholder="Note to {{ r.user.first_name|default:'them' }} (optional)" maxlength="255">
+          <div class="btn-row"><button class="btn btn-accent btn-sm" name="action" value="approve">{% icon "check" %} Approve</button>
+            <button class="btn btn-danger btn-sm" name="action" value="reject">{% icon "x" %} Decline</button></div>
+        </form>
+        {% elif r.status == 'approved' %}
+        <form method="post" action="{% url 'leave_decide' r.pk %}" class="leave-actions" onsubmit="return confirm('Cancel this approved leave? The days go back to normal attendance.')">{% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}"><span class="badge b-present">Approved</span>
+          <button class="btn btn-ghost btn-sm" name="action" value="cancel">Cancel leave</button></form>
+        {% else %}<div class="leave-actions"><span class="badge {% if r.status == 'rejected' %}b-absent{% else %}b-muted{% endif %}">{{ r.get_status_display }}</span></div>{% endif %}
+      </div>
+    {% empty %}<div class="empty">{% if status == 'pending' %}No requests waiting for you.{% else %}Nothing here yet.{% endif %}</div>{% endfor %}
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="card">
+      <h2>On leave today</h2>
+      {% for r in on_leave %}<div class="person" style="margin-bottom:10px">{% avatar r.user %}<div><b>{{ r.user.display_name }}</b><small class="muted">{{ r.leave_type.name }} until {{ r.end_date|date:"j M" }}</small></div></div>
+      {% empty %}<p class="muted">Nobody.</p>{% endfor %}
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Leave types</h2><a class="btn btn-ghost btn-sm" href="{% url 'leave_type_add' %}">{% icon "plus" %} Add</a></div>
+      <table class="table">
+        <tbody>{% for t in types %}
+          <tr><td><b>{{ t.name }}</b><br><small class="muted">{% if t.days_per_year %}{{ t.days_per_year }} days/year{% else %}No limit{% endif %} · {% if t.is_paid %}paid{% else %}unpaid{% endif %}{% if not t.is_active %} · hidden{% endif %}</small></td>
+            <td style="text-align:right"><a class="btn btn-ghost btn-sm" href="{% url 'leave_type_edit' t.pk %}">{% icon "edit" %}</a></td></tr>
+        {% endfor %}</tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

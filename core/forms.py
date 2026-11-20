@@ -123,7 +123,8 @@ class OrgSettingsForm(StyledMixin, forms.ModelForm):
         model = Organisation
         fields = ["name", "org_type", "address", "email", "phone", "logo", "work_start", "work_end",
                   "grace_minutes", "checkout_gap_minutes", "qr_rotation_seconds",
-                  "latitude", "longitude", "location_radius_m"]
+                  "latitude", "longitude", "location_radius_m",
+                  "notify_late", "notify_absent", "notify_checkout", "email_notifications"]
         widgets = {
             "work_start": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
             "work_end": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
@@ -137,10 +138,13 @@ class OrgSettingsForm(StyledMixin, forms.ModelForm):
             "work_end": "Check-in closes at this time until the next day. Members already in can still check out.",
         }
 
-    def __init__(self, *a, branding=True, **kw):
+    def __init__(self, *a, branding=True, notifications=True, **kw):
         super().__init__(*a, **kw)
         if not branding:
             del self.fields["logo"]  # custom branding is a plan feature
+        if not notifications:
+            for f in ("notify_late", "notify_absent", "notify_checkout", "email_notifications"):
+                del self.fields[f]
         self.fields["working_days_choice"].initial = [str(d) for d in self.instance.working_day_list()]
         self.fields["qr_rotation_seconds"].min_value = 10
         self.fields["location_radius_m"].min_value = 20

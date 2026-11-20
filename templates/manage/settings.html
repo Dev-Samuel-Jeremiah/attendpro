@@ -24,6 +24,16 @@
         {% include "partials/field.html" with f=form.working_days_choice cls="full" %}
         {% include "partials/field.html" with f=form.qr_rotation_seconds %}
       </div>
+      {% if 'notify_late' in form.fields %}
+      <hr><h2 id="notifications">{% icon "bell" 18 %} Notifications</h2>
+      <p class="muted" style="margin-top:-4px">Alerts appear under the bell in AttendPro{% if email_ready %} and are emailed to people with an email address{% else %}. Email delivery isn't set up on this server yet, so they're in-app only for now{% endif %}.</p>
+      <div class="toggles">
+        {% include "partials/field.html" with f=form.notify_late %}
+        {% include "partials/field.html" with f=form.notify_absent %}
+        {% include "partials/field.html" with f=form.notify_checkout %}
+        {% include "partials/field.html" with f=form.email_notifications %}
+      </div>
+      {% endif %}
       <hr><h2 id="location">{% icon "pin" 18 %} Attendance location</h2>
       <p class="muted" style="margin-top:-4px">Members can only use the <b>Clock in</b> button when their phone is within the allowed distance of this point.
         Stand at your premises and tap <b>Use my current location</b>, or paste the coordinates from Google Maps.</p>

@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     "core",
     "billing",
+    "leave",
+    "notifications",
 ]
 
 MIDDLEWARE = [
@@ -63,6 +65,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.organisation",
                 "billing.context_processors.plan",
+                "notifications.context_processors.unread",
             ],
         },
     },
@@ -134,6 +137,16 @@ ATTENDPRO_PUBLIC_URL = config("ATTENDPRO_PUBLIC_URL", default="").rstrip("/")
 # Paystack (online plan payments). Leave blank to switch online payment off.
 PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY", default="")
 PAYSTACK_PUBLIC_KEY = config("PAYSTACK_PUBLIC_KEY", default="")
+
+# Email (automated notifications). Leave EMAIL_HOST blank to send in-app notifications only.
+EMAIL_HOST = config("EMAIL_HOST", default="")
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+EMAIL_USE_SSL = config("EMAIL_USE_SSL", default=False, cast=bool)
+EMAIL_TIMEOUT = 15
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="AttendPro <no-reply@attendpro.cloud>")
 
 # HTTPS hardening. Nginx terminates TLS and tells Django via X-Forwarded-Proto.
 if not DEBUG:

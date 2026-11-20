@@ -12,3 +12,5 @@ EXPORTS = "exports"                   # Excel / CSV downloads of reports
 SELF_SERVICE = "self_service"         # members download their own history
 CUSTOM_BRANDING = "custom_branding"   # organisation logo
 AUDIT_TRAIL = "audit_trail"           # scan log page
+LEAVE = "leave_management"            # leave requests, approvals and balances
+NOTIFICATIONS = "notifications"       # in-app + email alerts

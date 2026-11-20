@@ -1,0 +1,51 @@
+{% extends layout %}{% load ui %}
+{% block title %}My leave{% endblock %}
+{% block content %}
+<div style="max-width:860px">
+  <div class="topbar"><div><h1>My leave</h1><p>Your allowance for {{ year }}, and your requests.</p></div></div>
+
+  <div class="leave-balances">
+    {% for b in balances %}
+    <div class="card stat {% cycle 't-green' 't-blue' 't-amber' 't-red' %}">
+      <div class="label">{{ b.type.name }}</div>
+      <div class="value">{% if b.left is None %}{{ b.used }}<small> used</small>{% else %}{{ b.left }}<small> / {{ b.entitled }} left</small>{% endif %}</div>
+      <div class="sub">{% if b.pending %}{{ b.pending }} day{{ b.pending|pluralize }} awaiting approval{% elif not b.type.is_paid %}Unpaid{% else %}{{ b.used }} used this year{% endif %}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="grid grid-main" style="margin-top:18px">
+    <div class="card">
+      <div class="card-head"><h2>My requests</h2></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Dates</th><th>Type</th><th>Days</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        {% for r in requests %}
+          <tr>
+            <td style="white-space:nowrap">{{ r.start_date|date:"j M" }}{% if r.end_date != r.start_date %} – {{ r.end_date|date:"j M Y" }}{% else %} {{ r.start_date|date:"Y" }}{% endif %}</td>
+            <td>{{ r.leave_type.name }}</td><td>{{ r.days }}</td>
+            <td><span class="badge {% if r.status == 'approved' %}b-present{% elif r.status == 'pending' %}b-late{% elif r.status == 'rejected' %}b-absent{% else %}b-muted{% endif %}">{{ r.get_status_display }}</span>
+              {% if r.review_note %}<br><small class="muted">“{{ r.review_note }}”</small>{% endif %}</td>
+            <td style="text-align:right">{% if r.status == 'pending' %}<form method="post" action="{% url 'my_leave_cancel' r.pk %}" onsubmit="return confirm('Cancel this request?')">{% csrf_token %}<button class="btn btn-ghost btn-sm">Cancel</button></form>{% endif %}</td>
+          </tr>
+        {% empty %}<tr><td colspan="5" class="empty">No leave requested yet.</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+    <div class="card">
+      <h2>Request leave</h2>
+      <form method="post">{% csrf_token %}
+        {% for e in form.non_field_errors %}<div class="alert alert-error" style="margin-bottom:12px">{{ e }}</div>{% endfor %}
+        {% include "partials/field.html" with f=form.leave_type %}
+        <div class="form-grid">
+          {% include "partials/field.html" with f=form.start_date %}
+          {% include "partials/field.html" with f=form.end_date %}
+        </div>
+        {% include "partials/field.html" with f=form.reason %}
+        <p class="muted" style="font-size:.82rem">Only working days ({{ org.working_day_names|join:", " }}) count towards your allowance.</p>
+        <button class="btn btn-accent btn-block">{% icon "leave" %} Send request</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

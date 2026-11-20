@@ -4,6 +4,7 @@ python-decouple==3.8
 qrcode[pil]==8.2
 Pillow==12.3.0
 openpyxl==3.1.5
+reportlab==5.0.1          # PDF reports
 
 # Production: app server and PostgreSQL driver
 gunicorn==23.0.0

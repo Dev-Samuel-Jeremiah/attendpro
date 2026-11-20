@@ -3,7 +3,10 @@
 <div class="app">
   <header class="app-head">
     {% include "partials/brand.html" %}
-    <a href="{% url 'logout' %}" class="btn btn-ghost btn-sm">{% icon "logout" %} Sign out</a>
+    <div class="btn-row">
+      {% if 'notifications' in features %}<a href="{% url 'notifications' %}" class="bell" aria-label="Notifications">{% icon "bell" 20 %}{% if unread_count %}<span>{{ unread_count }}</span>{% endif %}</a>{% endif %}
+      <a href="{% url 'logout' %}" class="btn btn-ghost btn-sm">{% icon "logout" %} Sign out</a>
+    </div>
   </header>
   {% include "partials/messages.html" %}
   {% block content %}{% endblock %}
@@ -13,5 +16,6 @@
   {% if 'qr_attendance' in features %}<a href="{% url 'scanner' %}" class="scan-tab {% active 'scanner' 'scan' %}">{% icon "scan" %}Scan</a>
   {% else %}<a href="{% url 'portal' %}#clock" class="scan-tab">{% icon "pin" %}Clock</a>{% endif %}
   <a href="{% url 'my_history' %}" class="{% active 'my_history' %}">{% icon "calendar" %}History</a>
+  {% if 'leave_management' in features %}<a href="{% url 'my_leave' %}" class="{% active 'my_leave' %}">{% icon "leave" %}Leave</a>{% endif %}
 </nav>
 {% endblock %}

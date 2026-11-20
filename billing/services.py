@@ -132,6 +132,13 @@ def apply_paystack_result(payment, data):
         payment.paid_at = timezone.now()
         payment.period_start, payment.period_end = start, end
         payment.save()
+    from notifications.services import admins_of, notify
+    org = payment.organisation
+    org.forget_plan()
+    org.refresh_from_db()
+    notify(org, admins_of(org), f"Payment received: {payment.plan.name} plan",
+           f"₦{payment.amount:,} paid. Your {payment.plan.name} plan runs until "
+           f"{timezone.localtime(payment.period_end):%d %b %Y}.", url="/manage/billing/", kind="plan")
     return payment
 
 

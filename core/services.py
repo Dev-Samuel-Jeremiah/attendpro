@@ -13,6 +13,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from billing import catalog
+from notifications.services import admins_of, notify
 
 from .models import AttendanceRecord, Organisation, ScanLog, User
 
@@ -223,6 +224,10 @@ def record_attendance(user: User, org: Organisation, request, source: str,
             msg = (f"You arrived {rec.late_by_minutes} min after start time." if late
                    else "You're on time. Have a great day!")
             log("check_in", f"{msg} ({note})" if note else msg)
+            if late and org.notify_late:
+                notify(org, [a for a in admins_of(org) if a != user], f"{user.display_name} arrived late",
+                       f"Checked in at {local_now:%I:%M %p}, {rec.late_by_minutes} min after start time.",
+                       url=f"/manage/attendance/?date={today}", kind="late", email=False)
             return ScanResult(True, "check_in", f"Checked in at {local_now:%I:%M %p}", msg, rec)
 
         last = rec.check_out or rec.check_in
@@ -438,3 +443,79 @@ def export_xlsx(org, report) -> bytes:
     out = io.BytesIO()
     wb.save(out)
     return out.getvalue()
+
+
+def export_pdf(org, report) -> bytes:
+    """Print-ready report: summary table, then the daily register for periods up to 31 days."""
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4, landscape
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+    navy, muted, line = colors.HexColor("#1E2A4A"), colors.HexColor("#6B7280"), colors.HexColor("#D9DEE8")
+    zebra = colors.HexColor("#F6F8FC")
+    fills = {"P": "#D7F5E3", "L": "#FFF0C7", "A": "#FBD9D9", "E": "#DCE7FB"}
+    title = ParagraphStyle("t", fontName="Helvetica-Bold", fontSize=16, leading=20, textColor=navy, spaceAfter=2)
+    sub = ParagraphStyle("s", fontName="Helvetica", fontSize=9, leading=12, textColor=muted, spaceAfter=10)
+    cell = ParagraphStyle("c", fontName="Helvetica", fontSize=8, leading=10)
+    generated = f"Generated {timezone.localtime():%d %b %Y, %I:%M %p} · AttendPro by Techmiary"
+
+    def footer(canvas, doc):
+        canvas.saveState()
+        canvas.setFont("Helvetica", 7.5)
+        canvas.setFillColor(muted)
+        canvas.drawString(12 * mm, 8 * mm, f"{org.name} · {generated}")
+        canvas.drawRightString(doc.pagesize[0] - 12 * mm, 8 * mm, f"Page {doc.page}")
+        canvas.restoreState()
+
+    def base_style(n_rows):
+        style = [("BACKGROUND", (0, 0), (-1, 0), navy), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                 ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"), ("FONTSIZE", (0, 0), (-1, -1), 8),
+                 ("GRID", (0, 0), (-1, -1), 0.4, line), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                 ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]
+        style += [("BACKGROUND", (0, i), (-1, i), zebra) for i in range(2, n_rows, 2)]
+        return style
+
+    buf = io.BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=landscape(A4), leftMargin=12 * mm, rightMargin=12 * mm,
+                            topMargin=12 * mm, bottomMargin=14 * mm, title=f"{org.name} attendance report")
+    t = report["totals"]
+    story = [Paragraph(f"{org.name} — Attendance report", title),
+             Paragraph(f"{report['start']:%d %b %Y} – {report['end']:%d %b %Y} · {t['members']} members · "
+                       f"{t['working_days']} working days · average attendance {t['rate']}% · "
+                       f"{t['late']} late arrivals · {t['absent']} absences · {t['hours']} hours", sub)]
+
+    head = ["ID", "Name", "Department", "Expected", "On time", "Late", "Excused", "Absent", "Attendance",
+            "Hours", "Avg arrival"]
+    rows = [head] + [[r["user"].username, Paragraph(r["user"].display_name, cell),
+                      Paragraph(str(r["user"].department or "—"), cell), r["expected"], r["present"], r["late"],
+                      r["leave"], r["absent"], f"{r['rate']}%", r["hours"], r["avg_arrival"]]
+                     for r in report["rows"]]
+    summary = Table(rows, repeatRows=1, colWidths=[22 * mm, 55 * mm, 40 * mm] + [19 * mm] * 5 + [22 * mm, 17 * mm, 22 * mm])
+    style = base_style(len(rows)) + [("ALIGN", (3, 1), (-1, -1), "CENTER")]
+    for i, r in enumerate(report["rows"], 1):
+        if r["rate"] < 75 and r["expected"]:
+            style.append(("TEXTCOLOR", (8, i), (8, i), colors.HexColor("#C0392B")))
+    summary.setStyle(TableStyle(style))
+    story.append(summary)
+
+    days = report["days"]
+    if report["rows"] and len(days) <= 31:
+        story += [PageBreak(), Paragraph("Daily register", title),
+                  Paragraph("P on time · L late · A absent · E excused / leave · – non-working day", sub)]
+        head = ["Name"] + [f"{d:%d}\n{d:%a}"[:6] for d in days] + ["Total"]
+        reg = [head] + [[Paragraph(r["user"].display_name, cell)] + r["cells"] + [r["attended"]]
+                        for r in report["rows"]]
+        day_w = min(7.5 * mm, (273 * mm - 50 * mm - 12 * mm) / len(days))
+        table = Table(reg, repeatRows=1, colWidths=[50 * mm] + [day_w] * len(days) + [12 * mm])
+        style = base_style(len(reg)) + [("ALIGN", (1, 0), (-1, -1), "CENTER"), ("FONTSIZE", (1, 0), (-1, 0), 6.5)]
+        for i, r in enumerate(report["rows"], 1):
+            for j, code in enumerate(r["cells"], 1):
+                if code in fills:
+                    style.append(("BACKGROUND", (j, i), (j, i), colors.HexColor(fills[code])))
+        table.setStyle(TableStyle(style))
+        story.append(table)
+
+    doc.build(story, onFirstPage=footer, onLaterPages=footer)
+    return buf.getvalue()

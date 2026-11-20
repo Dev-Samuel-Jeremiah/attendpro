@@ -10,4 +10,6 @@ urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
     path("", include("core.urls")),
     path("", include("billing.urls")),
+    path("", include("leave.urls")),
+    path("", include("notifications.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

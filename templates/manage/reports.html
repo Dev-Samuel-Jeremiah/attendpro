@@ -7,8 +7,9 @@
     {% if 'exports' in features %}
     <a class="btn" href="?{{ query }}&export=xlsx">{% icon "download" %} Excel</a>
     <a class="btn btn-ghost" href="?{{ query }}&export=csv">{% icon "download" %} CSV</a>
+    <a class="btn btn-ghost" href="?{{ query }}&export=pdf">{% icon "file" %} PDF</a>
     <a class="btn btn-accent" href="?{{ query }}&export=xlsx&save=1">{% icon "save" %} Save to library</a>
-    {% else %}<a class="btn btn-ghost" href="{% url 'billing' %}">{% icon "lock" %} Excel &amp; CSV export</a>{% endif %}
+    {% else %}<a class="btn btn-ghost" href="{% url 'billing' %}">{% icon "lock" %} Excel, CSV &amp; PDF export</a>{% endif %}
     <button class="btn btn-ghost" onclick="window.print()">{% icon "print" %}</button>
   </div>
 </div>

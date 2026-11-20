@@ -50,6 +50,12 @@ class Organisation(models.Model):
     plan_expires_at = models.DateTimeField(null=True, blank=True,
                                            help_text="Blank = does not expire")
 
+    # Automated notifications (Professional and up)
+    notify_late = models.BooleanField("Tell admins about late arrivals", default=True)
+    notify_absent = models.BooleanField("Daily alert about people who haven't clocked in", default=True)
+    notify_checkout = models.BooleanField("Remind people who forget to clock out", default=True)
+    email_notifications = models.BooleanField("Also send notifications by email", default=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -191,7 +197,8 @@ class AttendanceRecord(models.Model):
         (STATUS_LEAVE, "On leave / excused"),
         (STATUS_ABSENT, "Absent"),
     ]
-    SOURCE_CHOICES = [("qr", "QR scan"), ("location", "Clock-in button"), ("manual", "Manual entry")]
+    SOURCE_CHOICES = [("qr", "QR scan"), ("location", "Clock-in button"), ("manual", "Manual entry"),
+                      ("leave", "Approved leave")]
 
     organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE, related_name="attendance")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="attendance")
@@ -203,6 +210,8 @@ class AttendanceRecord(models.Model):
     note = models.CharField(max_length=255, blank=True)
     check_in_ip = models.GenericIPAddressField(null=True, blank=True)
     check_out_ip = models.GenericIPAddressField(null=True, blank=True)
+    leave_request = models.ForeignKey("leave.LeaveRequest", on_delete=models.SET_NULL, null=True, blank=True,
+                                      related_name="records")
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

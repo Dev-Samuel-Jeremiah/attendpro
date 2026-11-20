@@ -15,6 +15,7 @@
       <a href="{% url 'saved_reports' %}" class="{% active 'saved_reports' %}">{% icon "folder" %} Saved reports{% if 'advanced_reports' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% endif %}</a>
       <div class="nav-label">People</div>
       <a href="{% url 'members' %}" class="{% active 'members' 'member_add' 'member_edit' 'member_import' 'credentials' %}">{% icon "users" %} Members</a>
+      <a href="{% url 'leave_admin' %}" class="{% active 'leave_admin' 'leave_type_add' 'leave_type_edit' %}">{% icon "leave" %} Leave{% if 'leave_management' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% elif leave_pending %}<span class="nav-count">{{ leave_pending }}</span>{% endif %}</a>
       <a href="{% url 'scan_logs' %}" class="{% active 'scan_logs' %}">{% icon "activity" %} Audit trail{% if 'audit_trail' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% endif %}</a>
       <div class="nav-label">Setup</div>
       {% if 'qr_attendance' in features %}<a href="{% url 'kiosk' org.kiosk_key %}" target="_blank">{% icon "monitor" %} Reception QR screen</a>
@@ -24,6 +25,8 @@
       <div class="nav-label">Me</div>
       {% if 'qr_attendance' in features %}<a href="{% url 'scanner' %}" class="{% active 'scanner' 'scan' %}">{% icon "scan" %} Scan my attendance</a>{% endif %}
       <a href="{% url 'portal' %}" class="{% active 'portal' 'my_history' %}">{% icon "clock" %} My attendance</a>
+      {% if 'leave_management' in features %}<a href="{% url 'my_leave' %}" class="{% active 'my_leave' %}">{% icon "leave" %} My leave</a>{% endif %}
+      {% if 'notifications' in features %}<a href="{% url 'notifications' %}" class="{% active 'notifications' %}">{% icon "bell" %} Notifications{% if unread_count %}<span class="nav-count">{{ unread_count }}</span>{% endif %}</a>{% endif %}
     </nav>
     <div class="sidebar-foot">
       {% avatar request.user %}

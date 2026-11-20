@@ -180,6 +180,19 @@ A plan activates when Paystack confirms the payment, either when the payer retur
 site or through the webhook, whichever comes first. When a paid period ends, the
 organisation drops to the free plan until it pays again; no data is removed.
 
+## 11. Notifications (alerts and email)
+
+The alerts timer sends the daily "not clocked in" list, clock-out reminders and plan-expiry
+reminders (checks every 10 minutes; each alert goes out once a day):
+
+```bash
+$ cp /srv/attendpro/app/deploy/attendpro-alerts.* /etc/systemd/system/
+$ systemctl daemon-reload && systemctl enable --now attendpro-alerts.timer
+```
+
+In-app notifications work straight away. For email too, fill in the `EMAIL_*` lines in `.env`
+(see `.env.example`) and `systemctl restart attendpro`.
+
 ---
 
 ## Updating after a code change
