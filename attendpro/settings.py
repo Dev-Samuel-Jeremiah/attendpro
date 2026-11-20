@@ -107,6 +107,14 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = config("DJANGO_STATIC_ROOT", default=str(BASE_DIR / "staticfiles"))
 
+# In production, collectstatic adds a content hash to each file name (app.3f9a1c.css), so
+# browsers fetch new CSS/JS right after a deploy despite nginx's long cache headers.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage." + (
+        "StaticFilesStorage" if DEBUG else "ManifestStaticFilesStorage")},
+}
+
 MEDIA_URL = "media/"
 MEDIA_ROOT = config("DJANGO_MEDIA_ROOT", default=str(BASE_DIR / "media"))
 
