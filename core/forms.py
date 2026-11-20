@@ -126,6 +126,9 @@ class OrgSettingsForm(StyledMixin, forms.ModelForm):
             "checkout_gap_minutes": "Minimum gap between scans (minutes)",
             "qr_rotation_seconds": "QR refresh interval (seconds)",
         }
+        help_texts = {
+            "work_end": "Check-in closes at this time until the next day. Members already in can still check out.",
+        }
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)

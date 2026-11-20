@@ -92,6 +92,11 @@ class ScanResult:
         }
 
 
+def check_in_closed(org: Organisation, local_now: datetime) -> bool:
+    """True from the work end time until midnight. Skipped for overnight shifts (end before start)."""
+    return org.work_end > org.work_start and local_now.time() >= org.work_end
+
+
 def mark_attendance(user: User, token: str, request, verified_org: Organisation | None = None) -> ScanResult:
     ip = client_ip(request)
     ua = request.META.get("HTTP_USER_AGENT", "")[:255]
@@ -110,6 +115,15 @@ def mark_attendance(user: User, token: str, request, verified_org: Organisation 
     today = local_now.date()
 
     with transaction.atomic():
+        rec = AttendanceRecord.objects.select_for_update().filter(user=user, date=today).first()
+        if (rec is None or rec.check_in is None) and check_in_closed(org, local_now):
+            # Check-in closes at work end until midnight; anyone already in can still check out.
+            ScanLog.objects.create(organisation=org, user=user, action="rejected",
+                                   message="Check-in closed for today", ip=ip, user_agent=ua)
+            return ScanResult(False, "rejected", "Check-in is closed for today",
+                              f"Check-in closed at {org.work_end:%I:%M %p}. "
+                              f"You can check in again tomorrow.")
+
         rec, created = AttendanceRecord.objects.select_for_update().get_or_create(
             user=user, date=today, defaults={"organisation": org})
 
