@@ -277,3 +277,51 @@ class PlatformTests(TestCase):
         self.assertContains(resp, "Everything in Basic, plus")
         self.assertContains(resp, "10,000")
         self.assertContains(resp, "Coming soon")
+
+
+class RegisterPlanTests(TestCase):
+    def data(self, plan_slug=None, code="NEWCO"):
+        d = {"org_name": "New Co", "org_type": "company", "code": code, "first_name": "Ada",
+             "last_name": "Obi", "email": "ada@newco.test", "password1": "Strong-pass-9", "password2": "Strong-pass-9"}
+        if plan_slug:
+            d["plan"] = Plan.objects.get(slug=plan_slug).pk
+        return d
+
+    def test_plan_is_required(self):
+        resp = self.client.post(reverse("register"), self.data())
+        self.assertContains(resp, "Choose a plan to continue.")
+        self.assertFalse(Organisation.objects.filter(code="NEWCO").exists())
+
+    def test_nothing_preselected_without_query(self):
+        self.assertNotContains(self.client.get(reverse("register")), "checked")
+
+    def test_pricing_link_preselects_plan(self):
+        pro = Plan.objects.get(slug="professional")
+        resp = self.client.get(reverse("register") + "?plan=professional")
+        self.assertContains(resp, f'value="{pro.pk}" required checked')
+        self.assertContains(self.client.get(reverse("pricing")), "?plan=professional")
+
+    def test_free_plan_goes_to_dashboard(self):
+        resp = self.client.post(reverse("register"), self.data("basic"))
+        self.assertRedirects(resp, reverse("dashboard"))
+        self.assertEqual(Organisation.objects.get(code="NEWCO").current_plan.slug, "basic")
+
+    @override_settings(PAYSTACK_SECRET_KEY=SECRET)
+    def test_paid_plan_goes_to_paystack(self):
+        with mock.patch.object(services, "_paystack", return_value={"authorization_url": "https://checkout.paystack.com/y"}) as api:
+            resp = self.client.post(reverse("register"), self.data("enterprise"))
+        self.assertRedirects(resp, "https://checkout.paystack.com/y", fetch_redirect_response=False)
+        self.assertEqual(api.call_args.args[2]["amount"], 3_000_000)
+        org = Organisation.objects.get(code="NEWCO")
+        self.assertEqual(org.current_plan.slug, "basic")  # until Paystack confirms
+        self.assertEqual(org.payments.get().plan.slug, "enterprise")
+
+    @override_settings(PAYSTACK_SECRET_KEY="")
+    def test_paid_plan_without_paystack_lands_on_billing(self):
+        resp = self.client.post(reverse("register"), self.data("professional"))
+        self.assertRedirects(resp, reverse("billing"))
+
+    def test_hidden_plan_cannot_be_chosen(self):
+        Plan.objects.filter(slug="enterprise").update(is_public=False)
+        resp = self.client.post(reverse("register"), self.data("enterprise"))
+        self.assertContains(resp, "Choose one of the plans shown.")

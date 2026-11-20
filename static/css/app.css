@@ -380,3 +380,22 @@ table.table { width: 100%; border-collapse: collapse; font-size: .9rem; }
   padding: 12px 14px; font-size: .9rem; color: #dfe5f5; }
 .clock-note a { color: #9ff0d3; }
 .btn[disabled] { opacity: .7; cursor: progress; }
+
+/* Plan choice on the register page */
+.plan-pick { border: 0; padding: 0; margin: 0 0 18px; display: grid; gap: 8px; }
+.plan-pick legend, .plan-step { font-weight: 700; font-size: .95rem; margin-bottom: 8px; padding: 0; }
+.plan-step { margin-top: 4px; }
+.plan-opt { display: block; cursor: pointer; }
+.plan-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.plan-opt-body { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center;
+  border: 1.5px solid var(--line); border-radius: 12px; padding: 11px 14px; transition: border-color .15s, background .15s; }
+.plan-opt-body small { grid-column: 1 / -1; color: var(--muted); }
+.plan-opt-top { display: flex; align-items: center; gap: 6px; }
+.plan-opt-price { font-weight: 700; }
+.plan-opt-price small { font-weight: 500; color: var(--muted); }
+.plan-opt:hover .plan-opt-body { border-color: #b9c3d8; }
+.plan-opt input:checked + .plan-opt-body { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
+.plan-opt input:focus-visible + .plan-opt-body { outline: 3px solid rgba(18,184,134,.35); outline-offset: 2px; }
+.plan-pick.has-error .plan-opt-body { border-color: #f5c2c5; }
+.plan-pick .err { color: var(--absent); font-size: .82rem; }
+.plan-pick .help { font-size: .8rem; color: var(--muted); }

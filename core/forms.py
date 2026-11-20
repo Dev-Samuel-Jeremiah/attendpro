@@ -2,6 +2,8 @@ from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 
+from billing.models import Plan
+
 from .models import AttendanceRecord, Department, Organisation, User
 
 
@@ -41,6 +43,9 @@ class LoginForm(StyledMixin, forms.Form):
 
 
 class OrgRegisterForm(StyledMixin, forms.Form):
+    plan = forms.ModelChoiceField(queryset=Plan.objects.none(), widget=forms.RadioSelect, empty_label=None,
+                                  error_messages={"required": "Choose a plan to continue.",
+                                                  "invalid_choice": "Choose one of the plans shown."})
     org_name = forms.CharField(label="Organisation name", max_length=160)
     org_type = forms.ChoiceField(label="Type", choices=Organisation.TYPE_CHOICES)
     code = forms.CharField(label="Short code", max_length=6, min_length=2,
@@ -53,6 +58,7 @@ class OrgRegisterForm(StyledMixin, forms.Form):
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
+        self.fields["plan"].queryset = Plan.objects.filter(is_public=True).order_by("sort_order", "price")
         self._style()
 
     def clean_code(self):

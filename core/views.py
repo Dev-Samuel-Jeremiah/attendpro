@@ -19,7 +19,9 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from billing import catalog
-from billing.services import feature_required, staff_limit_message, upgrade_message
+from billing.models import Plan
+from billing.services import (PaystackError, feature_required, paystack_enabled, staff_limit_message,
+                              start_checkout, upgrade_message)
 
 from . import services
 from .decorators import member_required, org_admin_required
@@ -65,20 +67,35 @@ def logout_view(request):
 
 
 def register_org(request):
-    form = OrgRegisterForm(request.POST or None)
+    """Sign-up. A plan must be chosen; paid plans go straight on to Paystack and the
+    organisation stays on the free plan until the payment is confirmed."""
+    chosen = Plan.objects.filter(slug=request.GET.get("plan", ""), is_public=True).first()
+    form = OrgRegisterForm(request.POST or None, initial={"plan": chosen.pk if chosen else None})
     if request.method == "POST" and form.is_valid():
         cd = form.cleaned_data
+        plan = cd["plan"]
         with transaction.atomic():
             org = Organisation.objects.create(name=cd["org_name"], code=cd["code"], org_type=cd["org_type"],
-                                              email=cd["email"])
+                                              email=cd["email"], plan=plan if plan.is_free else None)
             admin = User.objects.create_user(
                 username=org.next_member_id(), password=cd["password1"], first_name=cd["first_name"],
                 last_name=cd["last_name"], email=cd["email"], organisation=org, role=User.ROLE_ADMIN,
                 designation="Administrator")
         login(request, admin)
         messages.success(request, f"Welcome! Your admin ID is {admin.username} — use it to sign in next time.")
-        return redirect("dashboard")
-    return render(request, "auth/register.html", {"form": form})
+        if plan.is_free:
+            return redirect("dashboard")
+        if not paystack_enabled():
+            messages.info(request, f"Online payment is being set up. You can use the free plan until then "
+                                   f"and upgrade to {plan.name} from this page.")
+            return redirect("billing")
+        try:
+            return redirect(start_checkout(org, plan, admin, request.build_absolute_uri(reverse("paystack_callback"))))
+        except PaystackError as e:
+            messages.warning(request, f"Your account is ready, but the payment couldn't start ({e}). "
+                                      f"Use the {plan.name} button below to try again.")
+            return redirect("billing")
+    return render(request, "auth/register.html", {"form": form, "plans": form.fields["plan"].queryset})
 
 
 def home(request):

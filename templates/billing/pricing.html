@@ -7,7 +7,7 @@
     <div class="btn-row">
       {% if request.user.is_authenticated %}<a class="btn btn-ghost btn-sm" href="{% url 'home' %}">Back to the app</a>
       {% else %}<a class="btn btn-ghost btn-sm" href="{% url 'login' %}">Sign in</a>
-      <a class="btn btn-accent btn-sm" href="{% url 'register' %}">Get started free</a>{% endif %}
+      <a class="btn btn-accent btn-sm" href="{% url 'register' %}">Get started</a>{% endif %}
     </div>
   </header>
   <div class="public-hero">

@@ -17,8 +17,7 @@
     <div class="muted" style="font-size:.8rem;text-align:center;margin-top:6px">{{ c.orgs|default:0 }} organisation{{ c.orgs|default:0|pluralize }} on this plan</div>
   {% elif request.user.is_authenticated and request.user.is_org_admin %}
     <a class="btn btn-accent btn-block" href="{% url 'billing' %}">Manage plan</a>
-  {% elif c.plan.is_free %}<a class="btn btn-ghost btn-block" href="{% url 'register' %}">Start free</a>
-  {% else %}<a class="btn btn-accent btn-block" href="{% url 'register' %}">Start free, upgrade any time</a>{% endif %}
+  {% else %}<a class="btn {% if c.plan.highlight %}btn-accent{% else %}btn-ghost{% endif %} btn-block" href="{% url 'register' %}?plan={{ c.plan.slug }}">{% if c.plan.is_free %}Start free{% else %}Choose {{ c.plan.name }}{% endif %}</a>{% endif %}
   </div>
   <ul class="plan-feats">
     {% if c.base %}<li class="plan-base">Everything in {{ c.base.name }}, plus:</li>{% endif %}

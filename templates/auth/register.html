@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load humanize %}
 {% block title %}Create organisation{% endblock %}
 {% block body %}
 <div class="auth">
@@ -9,6 +9,23 @@
       <p class="muted" style="margin-top:0">You'll be the administrator. Next you'll register your staff or students.</p>
       <form method="post" novalidate>
         {% csrf_token %}
+        <fieldset class="plan-pick{% if form.plan.errors %} has-error{% endif %}">
+          <legend>1. Choose your plan</legend>
+          {% for p in plans %}
+          <label class="plan-opt">
+            <input type="radio" name="plan" value="{{ p.pk }}" required {% if form.plan.value|stringformat:"s" == p.pk|stringformat:"s" %}checked{% endif %}>
+            <span class="plan-opt-body">
+              <span class="plan-opt-top"><b>{{ p.name }}</b>{% if p.highlight %}<span class="soon">Popular</span>{% endif %}</span>
+              <span class="plan-opt-price">{% if p.is_free %}Free{% else %}₦{{ p.price|intcomma }}<small>/{{ p.period_label }}</small>{% endif %}</span>
+              <small>{% if p.staff_limit %}Up to {{ p.staff_limit }} staff{% else %}Unlimited staff{% endif %}</small>
+            </span>
+          </label>
+          {% endfor %}
+          {% for e in form.plan.errors %}<div class="err">{{ e }}</div>{% endfor %}
+          <div class="help">Paid plans: you'll pay securely with Paystack straight after this step.
+            <a href="{% url 'pricing' %}" target="_blank">Compare what each plan includes</a></div>
+        </fieldset>
+        <div class="plan-step">2. Your organisation and admin account</div>
         <div class="form-grid">
           {% include "partials/field.html" with f=form.org_name cls="full" %}
           {% include "partials/field.html" with f=form.org_type %}
@@ -22,7 +39,7 @@
         <button class="btn btn-accent btn-lg btn-block" type="submit">Create organisation</button>
       </form>
       <hr>
-      <p class="muted" style="font-size:.9rem">Already registered? <a href="{% url 'login' %}">Sign in</a> · You start on the free Basic plan. <a href="{% url 'pricing' %}">See all plans</a></p>
+      <p class="muted" style="font-size:.9rem">Already registered? <a href="{% url 'login' %}">Sign in</a></p>
     </div>
   </section>
 </div>
