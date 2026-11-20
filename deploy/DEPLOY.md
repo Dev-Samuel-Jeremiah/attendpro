@@ -30,15 +30,14 @@ reload. `nginx -t` checks every site first, and a reload never drops live connec
 
 ## 1. Point the domain at the server
 
-In Hostinger (Domains → attendpro.cloud → DNS), set these records, replacing any existing
-`@`/`www` A records or CNAMEs:
+In Hostinger (Domains → attendpro.cloud → DNS), both records must point to the server:
 
 | Type | Name | Value |
 |------|------|-------|
-| A | `@` | `72.61.202.82` |
-| A | `www` | `72.61.202.82` |
+| A | `@` | `72.61.93.201` |
+| A | `www` | `72.61.93.201` |
 
-Check from your computer: `getent hosts attendpro.cloud` must show `72.61.202.82`
+Check from your computer: `getent hosts attendpro.cloud` must show `72.61.93.201`
 before step 8 (HTTPS) will work.
 
 ## 2. The database
