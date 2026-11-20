@@ -1,0 +1,72 @@
+# AttendPro — QR Attendance System
+*by Techmiary Technology Concepts*
+
+Organisations and schools register their staff/students. Each person signs in to their portal with an **ID + password**, scans the **live QR code at reception**, and their attendance is recorded instantly with the time. Admins see it live, correct entries, and download or save reports (Excel / CSV).
+
+## Quick start
+
+```bash
+git clone https://github.com/Dev-Samuel-Jeremiah/attendpro.git
+cd attendpro
+python -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed_demo        # optional: demo school with 30 days of data
+python manage.py runserver 0.0.0.0:8000
+```
+
+Open http://localhost:8000
+- Demo admin: **DEMO-0001 / admin123**
+- Demo staff: **DEMO-0002 / staff123**
+- Or click **Create an organisation account** to start fresh.
+
+## How it works
+
+1. **Admin registers the organisation.** They get the first ID, e.g. `TMY-0001`.
+2. **Admin registers members** one at a time or by CSV import. IDs (`TMY-0002`, `TMY-0003`, ...) and passwords are generated automatically and shown on printable login slips.
+3. **Reception screen:** open *Settings → Reception QR screen* on the computer or TV at the entrance and leave it full-screen. The QR changes every 30 seconds (you can change this), so a photo of it stops working quickly.
+4. **Member scans:**
+   - in the portal, tap **Scan** and point the camera at the code; or
+   - point the phone's normal camera at the code and tap the link. If they're not signed in yet, the scan is held for 3 minutes while they sign in.
+5. **First scan of the day is check-in**; it's marked *On time* or *Late* using the start time and grace period. **The next scan is check-out**, and hours worked are calculated. Scans within 5 minutes of the last one are ignored as duplicates.
+
+## Features
+- Admin dashboard: present / late / not in / on site today, a 14-day chart, departments, live scan feed
+- Daily attendance view, with manual entries for leave, corrections, or anyone who couldn't scan
+- Reports for any date range, with presets and a department filter: attendance %, late count, absences, total hours, average arrival time, and a colour-coded daily register
+- **Downloads:** Excel (3 sheets: Summary, Daily register, Time log) and CSV
+- **Saved reports library:** save a report and download it again later
+- Scan log with IP addresses (an audit trail of every attempt, including rejected ones)
+- Member portal: today's status, monthly attendance ring, history with CSV export, password change
+- Several organisations on one server, each kept fully separate
+- Works offline on a local network: no CDN; the QR scanner library is bundled
+
+## Phone camera & HTTPS (important)
+Browsers only allow the **in-page camera scanner** on `https://` or `localhost`. On a local Wi-Fi setup over plain `http://192.168.x.x`, members can still use their **phone's built-in camera app**, which opens the link in the QR and records attendance. For the in-page scanner, serve over HTTPS (e.g. Caddy or nginx with a certificate, or a domain in production).
+
+Set the address that gets encoded in the QR if needed:
+```bash
+export ATTENDPRO_PUBLIC_URL=https://attend.yourdomain.com
+```
+
+## Production settings
+| Variable | Purpose |
+|---|---|
+| `DJANGO_SECRET_KEY` | **Set a long random value** (it also signs the QR codes) |
+| `DJANGO_DEBUG=0` | Turn off debug |
+| `DJANGO_ALLOWED_HOSTS` | e.g. `attend.yourdomain.com` |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | e.g. `https://attend.yourdomain.com` |
+| `DJANGO_TIME_ZONE` | Default `Africa/Lagos` |
+
+Then run `python manage.py collectstatic` and serve with gunicorn plus nginx. Platform super-admin is at `/django-admin/` (`python manage.py createsuperuser`).
+
+## Project layout
+```
+attendpro/        settings, urls
+core/models.py    Organisation, User (ID login), Department, AttendanceRecord, ScanLog, SavedReport
+core/services.py  rotating QR tokens, check-in/out logic, report calculations, Excel/CSV export
+core/views.py     auth, kiosk, scanning, member portal, admin pages
+templates/        manage/ (admin), staff/ (member portal), kiosk/, auth/
+static/           css/app.css, vendor/html5-qrcode.min.js
+```

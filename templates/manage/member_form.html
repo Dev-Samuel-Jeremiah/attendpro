@@ -1,0 +1,47 @@
+{% extends "manage/_shell.html" %}{% load ui %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div><h1>{{ title }}</h1><p>{% if member %}ID <span class="mono">{{ member.username }}</span> · joined {{ member.date_joined|date:"j M Y" }}{% else %}An ID like <span class="mono">{{ org.code }}-0012</span> is assigned automatically.{% endif %}</p></div>
+  <a href="{% url 'members' %}" class="btn btn-ghost">Back</a>
+</div>
+<div class="grid grid-main">
+  <div class="card">
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+      {% for e in form.non_field_errors %}<div class="alert alert-error">{{ e }}</div>{% endfor %}
+      <div class="form-grid">
+        {% include "partials/field.html" with f=form.first_name %}
+        {% include "partials/field.html" with f=form.last_name %}
+        {% include "partials/field.html" with f=form.category %}
+        {% include "partials/field.html" with f=form.department %}
+        {% include "partials/field.html" with f=form.designation %}
+        {% include "partials/field.html" with f=form.phone %}
+        {% include "partials/field.html" with f=form.email %}
+        {% include "partials/field.html" with f=form.photo %}
+        {% include "partials/field.html" with f=form.role %}
+        {% include "partials/field.html" with f=form.password %}
+        <div class="field full"><label style="display:flex;gap:8px;align-items:center;font-weight:500">{{ form.is_active }} Active (can sign in and scan)</label></div>
+      </div>
+      <button class="btn btn-accent" type="submit">{% icon "save" %} Save</button>
+    </form>
+  </div>
+  {% if member %}
+  <div class="stack">
+    <div class="card">
+      <h2>Sign-in access</h2>
+      <p class="muted">Forgot their password? Generate a new one and hand them the printed slip.</p>
+      <form method="post" action="{% url 'member_reset_password' member.pk %}" onsubmit="return confirm('Generate a new password for {{ member.display_name|escapejs }}?')">{% csrf_token %}
+        <button class="btn btn-ghost">{% icon "key" %} Reset password</button></form>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Recent attendance</h2><a href="{% url 'record_add' %}?user={{ member.pk }}">+ Add</a></div>
+      <ul class="feed">
+        {% for r in recent %}<li><div><b style="font-size:.9rem">{{ r.date|date:"D j M" }}</b><br><small class="muted">{{ r.check_in|localtime_fmt }} → {{ r.check_out|localtime_fmt }}</small></div>
+          <span class="time"><a href="{% url 'record_edit' r.pk %}"><span class="badge b-{{ r.status }}">{{ r.get_status_display }}</span></a></span></li>
+        {% empty %}<li class="muted">No records yet.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

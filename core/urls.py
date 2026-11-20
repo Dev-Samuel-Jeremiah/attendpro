@@ -1,0 +1,46 @@
+from django.urls import path
+
+from . import views
+
+urlpatterns = [
+    path("", views.home, name="home"),
+    path("login/", views.login_view, name="login"),
+    path("logout/", views.logout_view, name="logout"),
+    path("register/", views.register_org, name="register"),
+
+    # Scanning
+    path("scan/", views.scan, name="scan"),
+    path("scanner/", views.scanner, name="scanner"),
+    path("api/scan/", views.api_scan, name="api_scan"),
+
+    # Reception display
+    path("kiosk/<str:key>/", views.kiosk, name="kiosk"),
+    path("kiosk/<str:key>/token/", views.kiosk_token, name="kiosk_token"),
+
+    # Member portal
+    path("me/", views.portal, name="portal"),
+    path("me/history/", views.my_history, name="my_history"),
+    path("me/password/", views.change_password, name="change_password"),
+
+    # Organisation admin
+    path("manage/", views.dashboard, name="dashboard"),
+    path("manage/live/", views.live_feed, name="live_feed"),
+    path("manage/members/", views.members, name="members"),
+    path("manage/members/add/", views.member_add, name="member_add"),
+    path("manage/members/import/", views.member_import, name="member_import"),
+    path("manage/members/import/template.csv", views.import_template, name="import_template"),
+    path("manage/members/credentials/", views.credentials, name="credentials"),
+    path("manage/members/<int:pk>/", views.member_edit, name="member_edit"),
+    path("manage/members/<int:pk>/reset-password/", views.member_reset_password, name="member_reset_password"),
+    path("manage/departments/add/", views.department_add, name="department_add"),
+    path("manage/departments/<int:pk>/delete/", views.department_delete, name="department_delete"),
+    path("manage/attendance/", views.attendance, name="attendance"),
+    path("manage/attendance/add/", views.record_add, name="record_add"),
+    path("manage/attendance/<int:pk>/", views.record_edit, name="record_edit"),
+    path("manage/logs/", views.scan_logs, name="scan_logs"),
+    path("manage/reports/", views.reports, name="reports"),
+    path("manage/reports/saved/", views.saved_reports, name="saved_reports"),
+    path("manage/reports/saved/<int:pk>/download/", views.saved_report_download, name="saved_report_download"),
+    path("manage/reports/saved/<int:pk>/delete/", views.saved_report_delete, name="saved_report_delete"),
+    path("manage/settings/", views.org_settings, name="org_settings"),
+]

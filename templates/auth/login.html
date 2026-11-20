@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block body %}
+<div class="auth">
+  {% include "auth/_art.html" %}
+  <section class="auth-form">
+    <div class="inner">
+      <h2>Sign in</h2>
+      <p class="muted" style="margin-top:0">Use the ID and password given to you by your administrator.</p>
+      {% include "partials/messages.html" %}
+      {% if scan_pending %}<div class="alert alert-info" style="margin-bottom:16px">Your scan is waiting — sign in and it will be recorded.</div>{% endif %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+        {% for e in form.non_field_errors %}<div class="alert alert-error" style="margin-bottom:14px">{{ e }}</div>{% endfor %}
+        {% include "partials/field.html" with f=form.username %}
+        {% include "partials/field.html" with f=form.password %}
+        <button class="btn btn-accent btn-lg btn-block" type="submit">Sign in</button>
+      </form>
+      <hr>
+      <p class="muted" style="font-size:.9rem">Setting up for your organisation or school? <a href="{% url 'register' %}">Create an organisation account</a></p>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Create organisation{% endblock %}
+{% block body %}
+<div class="auth">
+  {% include "auth/_art.html" %}
+  <section class="auth-form">
+    <div class="inner" style="max-width:460px">
+      <h2>Create your organisation</h2>
+      <p class="muted" style="margin-top:0">You'll be the administrator. Next you'll register your staff or students.</p>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-grid">
+          {% include "partials/field.html" with f=form.org_name cls="full" %}
+          {% include "partials/field.html" with f=form.org_type %}
+          {% include "partials/field.html" with f=form.code %}
+          {% include "partials/field.html" with f=form.first_name %}
+          {% include "partials/field.html" with f=form.last_name %}
+          {% include "partials/field.html" with f=form.email cls="full" %}
+          {% include "partials/field.html" with f=form.password1 %}
+          {% include "partials/field.html" with f=form.password2 %}
+        </div>
+        <button class="btn btn-accent btn-lg btn-block" type="submit">Create organisation</button>
+      </form>
+      <hr>
+      <p class="muted" style="font-size:.9rem">Already registered? <a href="{% url 'login' %}">Sign in</a></p>
+    </div>
+  </section>
+</div>
+{% endblock %}

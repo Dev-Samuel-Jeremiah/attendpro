@@ -1,0 +1,63 @@
+{% extends "manage/_shell.html" %}{% load ui %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div><h1>Attendance report</h1><p>{{ start|date:"j M Y" }} – {{ end|date:"j M Y" }} · {{ report.totals.working_days }} working day{{ report.totals.working_days|pluralize }} so far</p></div>
+  <div class="btn-row">
+    <a class="btn" href="?{{ query }}&export=xlsx">{% icon "download" %} Excel</a>
+    <a class="btn btn-ghost" href="?{{ query }}&export=csv">{% icon "download" %} CSV</a>
+    <a class="btn btn-accent" href="?{{ query }}&export=xlsx&save=1">{% icon "save" %} Save to library</a>
+    <button class="btn btn-ghost" onclick="window.print()">{% icon "print" %}</button>
+  </div>
+</div>
+<div class="card no-print">
+  <form class="filters" method="get">
+    <div><label class="muted" style="font-size:.8rem">From</label><input class="input" type="date" name="start" value="{{ start|date:'Y-m-d' }}"></div>
+    <div><label class="muted" style="font-size:.8rem">To</label><input class="input" type="date" name="end" value="{{ end|date:'Y-m-d' }}"></div>
+    <div><label class="muted" style="font-size:.8rem">Department</label><select class="input" name="dept"><option value="">All</option>{% for d in departments %}<option value="{{ d.pk }}" {% if dept == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></div>
+    <button class="btn btn-sm">Run report</button>
+    <span class="muted" style="font-size:.85rem">Quick:</span>
+    <a href="?preset=week" class="btn btn-ghost btn-sm">This week</a>
+    <a href="?" class="btn btn-ghost btn-sm">This month</a>
+    <a href="?preset=last_month" class="btn btn-ghost btn-sm">Last month</a>
+  </form>
+</div>
+
+<div class="grid grid-4" style="margin:18px 0">
+  <div class="card stat t-green"><div class="label">Average attendance</div><div class="value">{{ report.totals.rate }}%</div><div class="sub">{{ report.totals.members }} members</div></div>
+  <div class="card stat t-blue"><div class="label">Days attended</div><div class="value">{{ report.totals.attended }}</div><div class="sub">across everyone</div></div>
+  <div class="card stat t-amber"><div class="label">Late arrivals</div><div class="value">{{ report.totals.late }}</div></div>
+  <div class="card stat t-red"><div class="label">Absences</div><div class="value">{{ report.totals.absent }}</div><div class="sub">{{ report.totals.hours }} hrs logged</div></div>
+</div>
+
+<div class="card">
+  <div class="card-head"><h2>Summary by member</h2></div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Member</th><th class="num">Expected</th><th class="num">On time</th><th class="num">Late</th><th class="num">Excused</th><th class="num">Absent</th><th class="num">Hours</th><th class="num">Avg arrival</th><th style="min-width:140px">Attendance</th></tr></thead>
+    <tbody>
+    {% for r in report.rows %}
+      <tr><td><div class="person">{% avatar r.user %}<div><b>{{ r.user.display_name }}</b><small class="muted">{{ r.user.username }} · {{ r.user.department|default:"—" }}</small></div></div></td>
+        <td class="num">{{ r.expected }}</td><td class="num">{{ r.present }}</td><td class="num">{{ r.late }}</td><td class="num">{{ r.leave }}</td>
+        <td class="num">{{ r.absent }}</td><td class="num">{{ r.hours|floatformat:1 }}</td><td class="num">{{ r.avg_arrival }}</td>
+        <td><div style="display:flex;align-items:center;gap:8px"><div class="progress" style="flex:1"><span style="width:{{ r.rate }}%;{% if r.rate < 75 %}background:var(--absent){% elif r.rate < 90 %}background:var(--late){% endif %}"></span></div><b style="font-size:.85rem;width:42px;text-align:right">{{ r.rate|floatformat:0 }}%</b></div></td></tr>
+    {% empty %}<tr><td colspan="9" class="empty">No members in this selection.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+{% if report.days|length <= 31 %}
+<div class="card">
+  <div class="card-head"><h2>Daily register</h2>
+    <div class="legend"><span><i class="c-P" style="background:#bfeedd"></i>P on time</span><span><i style="background:#ffe3a3"></i>L late</span><span><i style="background:#f8c4c8"></i>A absent</span><span><i style="background:#c9d6ff"></i>E excused</span></div></div>
+  <div class="table-wrap"><table class="table register">
+    <thead><tr><th>Member</th>{% for d in report.days %}<th class="c">{{ d|date:"D"|slice:":2" }}<br>{{ d|date:"j" }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for r in report.rows %}
+      <tr><td style="white-space:nowrap"><b style="font-size:.85rem">{{ r.user.display_name }}</b></td>
+        {% for c in r.cells %}<td class="c {% if c == '–' or not c %}c-x{% else %}c-{{ c }}{% endif %}">{{ c }}</td>{% endfor %}</tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% else %}<p class="muted">The day-by-day register is shown for ranges up to 31 days; it is always included in the Excel download.</p>{% endif %}
+{% endblock %}

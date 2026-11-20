@@ -1,0 +1,102 @@
+{% extends "manage/_shell.html" %}{% load ui %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div><h1>Good {% now "A" as ampm %}{% if ampm == "AM" %}morning{% else %}day{% endif %}, {{ request.user.first_name|default:"Admin" }}</h1>
+    <p>{{ today|date:"l, j F Y" }}{% if not is_working_day %} · <b>Non-working day</b>{% endif %}</p></div>
+  <div class="btn-row">
+    <a href="{% url 'kiosk' org.kiosk_key %}" target="_blank" class="btn btn-ghost">{% icon "monitor" %} Open reception QR</a>
+    <a href="{% url 'reports' %}?export=xlsx" class="btn">{% icon "download" %} This month (Excel)</a>
+  </div>
+</div>
+
+<div class="grid grid-4">
+  <div class="card stat t-green"><div class="label">Present today</div><div class="value"><span id="present-count">{{ present }}</span><small class="muted" style="font-size:1rem"> / {{ total }}</small></div><div class="sub">{{ rate }}% attendance</div></div>
+  <div class="card stat t-amber"><div class="label">Late arrivals</div><div class="value">{{ late }}</div><div class="sub">after {{ org.work_start|time:"g:i A" }} + {{ org.grace_minutes }}m</div></div>
+  <div class="card stat t-red"><div class="label">Not in yet</div><div class="value">{{ absent }}</div><div class="sub">{{ leave }} excused / on leave</div></div>
+  <div class="card stat t-blue"><div class="label">On site now</div><div class="value">{{ on_site }}</div><div class="sub">checked in, not out</div></div>
+</div>
+
+<div class="grid grid-main" style="margin-top:18px">
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2>Last 14 days</h2>
+        <div class="legend"><span><i style="background:var(--accent)"></i>On time</span><span><i style="background:var(--late)"></i>Late</span></div></div>
+      <div class="bars">
+        {% for t in trend %}
+        <div class="bar-col {% if not t.working %}off{% endif %}" title="{{ t.date|date:'D j M' }}: {{ t.on_time }} on time, {{ t.late }} late">
+          <div class="bar"><div class="seg-on" style="height:{{ t.on_time_pct }}%"></div><div class="seg-late" style="height:{{ t.late_pct }}%"></div></div>
+          <small>{{ t.date|date:"j" }}</small>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Today's check-ins</h2><a href="{% url 'attendance' %}">View all →</a></div>
+      <div class="table-wrap"><table class="table">
+        <thead><tr><th>Member</th><th>Status</th><th>In</th><th>Out</th><th class="hide-sm">Hours</th></tr></thead>
+        <tbody>
+        {% for r in recs %}
+          <tr><td><div class="person">{% avatar r.user %}<div><b>{{ r.user.display_name }}</b><small class="muted">{{ r.user.username }} · {{ r.user.department|default:"—" }}</small></div></div></td>
+            <td><span class="badge b-{{ r.status }}">{{ r.get_status_display }}</span></td>
+            <td>{{ r.check_in|localtime_fmt }}</td><td>{{ r.check_out|localtime_fmt }}</td><td class="hide-sm">{{ r.worked_display }}</td></tr>
+        {% empty %}<tr><td colspan="5" class="empty">No one has checked in yet today.</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="stack">
+    <div class="card">
+      <div class="card-head"><h2><span class="pulse"></span>Live scans</h2><a href="{% url 'scan_logs' %}">Log →</a></div>
+      <ul class="feed" id="feed"><li class="muted">Loading…</li></ul>
+    </div>
+    {% if depts %}
+    <div class="card">
+      <div class="card-head"><h2>By department</h2></div>
+      {% for d in depts %}
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:.88rem"><b>{{ d.name }}</b><span class="muted">{{ d.present }}/{{ d.total }}</span></div>
+        <div class="progress"><span style="width:{{ d.pct }}%"></span></div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div class="card">
+      <div class="card-head"><h2>Not checked in</h2></div>
+      <ul class="feed">
+        {% for m in absent_members|slice:":8" %}
+          <li>{% avatar m %}<div><b style="font-size:.9rem">{{ m.display_name }}</b><br><small class="muted">{{ m.department|default:m.username }}</small></div>
+            <a class="time" href="{% url 'record_add' %}?user={{ m.pk }}&date={{ today|date:'Y-m-d' }}">Mark</a></li>
+        {% empty %}<li class="muted">Everyone is accounted for 🎉</li>{% endfor %}
+      </ul>
+      {% if absent_members|length > 8 %}<a href="{% url 'attendance' %}">+ {{ absent_members|length|add:"-8" }} more</a>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const feed = document.getElementById("feed");
+  const labels = {check_in: ["In", "b-present"], check_out: ["Out", "b-leave"], duplicate: ["Repeat", "b-muted"], rejected: ["Rejected", "b-absent"]};
+  let seen = null;
+  function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+  async function load() {
+    try {
+      const d = await (await fetch("{% url 'live_feed' %}", {cache: "no-store"})).json();
+      document.getElementById("present-count").textContent = d.present;
+      const first = d.logs[0] ? d.logs[0].time + d.logs[0].id : "";
+      feed.innerHTML = d.logs.slice(0, 8).map((l, i) => {
+        const [t, c] = labels[l.action] || [l.action, "b-muted"];
+        return `<li class="${seen !== null && i === 0 && first !== seen ? "new" : ""}"><span class="avatar">${esc(l.initials)}</span>
+          <div><b style="font-size:.9rem">${esc(l.name)}</b><br><span class="badge ${c}">${t}</span></div><span class="time">${l.time}</span></li>`;
+      }).join("") || '<li class="muted">No scans yet today.</li>';
+      seen = first;
+    } catch (e) {}
+  }
+  load(); setInterval(load, 6000);
+})();
+</script>
+{% endblock %}

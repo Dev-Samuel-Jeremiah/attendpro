@@ -1,0 +1,40 @@
+{% extends "manage/_shell.html" %}{% load ui %}
+{% block title %}Daily attendance{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div><h1>Daily attendance</h1><p>{{ d|date:"l, j F Y" }}{% if not is_working_day %} · non-working day{% endif %}</p></div>
+  <div class="btn-row">
+    <a class="btn btn-ghost btn-sm" href="?date={{ prev|date:'Y-m-d' }}&dept={{ dept }}">{% icon "chevron-left" %}</a>
+    <form method="get" class="btn-row"><input type="date" class="input" name="date" value="{{ d|date:'Y-m-d' }}" onchange="this.form.submit()" style="width:auto"><input type="hidden" name="dept" value="{{ dept }}"></form>
+    <a class="btn btn-ghost btn-sm" href="?date={{ next|date:'Y-m-d' }}&dept={{ dept }}">{% icon "chevron-right" %}</a>
+    {% if not is_today %}<a class="btn btn-ghost btn-sm" href="?dept={{ dept }}">Today</a>{% endif %}
+    <a class="btn btn-accent" href="{% url 'record_add' %}?date={{ d|date:'Y-m-d' }}">{% icon "plus" %} Add entry</a>
+  </div>
+</div>
+<div class="btn-row" style="margin-bottom:16px">
+  <span class="badge b-present">On time {{ counts.present }}</span>
+  <span class="badge b-late">Late {{ counts.late }}</span>
+  <span class="badge b-leave">Excused {{ counts.leave }}</span>
+  <span class="badge b-absent">Absent {{ counts.absent }}</span>
+  <form method="get" style="margin-left:auto"><input type="hidden" name="date" value="{{ d|date:'Y-m-d' }}">
+    <select class="input" name="dept" onchange="this.form.submit()" style="width:auto"><option value="">All departments</option>{% for x in departments %}<option value="{{ x.pk }}" {% if dept == x.pk|stringformat:"s" %}selected{% endif %}>{{ x.name }}</option>{% endfor %}</select></form>
+</div>
+<div class="card">
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Member</th><th>Status</th><th>Check in</th><th>Check out</th><th class="hide-sm">Hours</th><th class="hide-sm">Source</th><th></th></tr></thead>
+    <tbody>
+    {% for x in rows %}
+      <tr>
+        <td><div class="person">{% avatar x.m %}<div><b>{{ x.m.display_name }}</b><small class="muted">{{ x.m.username }} · {{ x.m.department|default:"—" }}</small></div></div></td>
+        <td>{% if x.r %}<span class="badge b-{{ x.r.status }}">{{ x.r.get_status_display }}{% if x.r.late_by_minutes %} · {{ x.r.late_by_minutes }}m{% endif %}</span>{% elif x.state == 'absent' %}<span class="badge b-absent">Absent</span>{% else %}<span class="badge b-none">—</span>{% endif %}</td>
+        <td>{{ x.r.check_in|localtime_fmt }}</td>
+        <td>{{ x.r.check_out|localtime_fmt }}</td>
+        <td class="hide-sm">{% if x.r %}{{ x.r.worked_display }}{% else %}—{% endif %}</td>
+        <td class="hide-sm">{% if x.r %}<small class="muted">{{ x.r.get_source_display }}</small>{% endif %}</td>
+        <td style="text-align:right">{% if x.r %}<a class="btn btn-ghost btn-sm" href="{% url 'record_edit' x.r.pk %}">Edit</a>{% else %}<a class="btn btn-ghost btn-sm" href="{% url 'record_add' %}?user={{ x.m.pk }}&date={{ d|date:'Y-m-d' }}">Mark</a>{% endif %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="7" class="empty">No members yet.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "manage/_shell.html" %}{% load ui %}
+{% block title %}Saved reports{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Saved reports</h1><p>Reports you've saved stay here for download any time.</p></div><a href="{% url 'reports' %}" class="btn btn-accent">{% icon "plus" %} New report</a></div>
+<div class="card"><div class="table-wrap"><table class="table">
+  <thead><tr><th>Report</th><th class="hide-sm">Period</th><th class="hide-sm">Saved by</th><th>Saved</th><th></th></tr></thead>
+  <tbody>
+  {% for r in reps %}
+    <tr><td><b>{{ r.title }}</b> <span class="badge b-muted">{{ r.file_format|upper }}</span></td>
+      <td class="hide-sm">{{ r.start_date|date:"j M Y" }} – {{ r.end_date|date:"j M Y" }}</td>
+      <td class="hide-sm">{{ r.created_by.display_name|default:"—" }}</td>
+      <td>{{ r.created_at|date:"j M Y, g:i A" }}</td>
+      <td style="text-align:right;white-space:nowrap"><a class="btn btn-ghost btn-sm" href="{% url 'saved_report_download' r.pk %}">{% icon "download" %} Download</a>
+        <form method="post" action="{% url 'saved_report_delete' r.pk %}" style="display:inline" onsubmit="return confirm('Delete this saved report?')">{% csrf_token %}<button class="btn btn-danger btn-sm">Delete</button></form></td></tr>
+  {% empty %}<tr><td colspan="5" class="empty">No saved reports yet. Run a report and choose <b>Save to library</b>.</td></tr>{% endfor %}
+  </tbody>
+</table></div></div>
+{% endblock %}

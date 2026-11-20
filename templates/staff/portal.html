@@ -1,0 +1,53 @@
+{% extends layout %}{% load ui %}
+{% block title %}My attendance{% endblock %}
+{% block content %}
+<div class="stack" style="max-width:640px">
+  <div class="card today-card">
+    <div style="display:flex;align-items:center;gap:14px">
+      {% avatar request.user "lg" %}
+      <div>
+        <small>{{ today|date:"l, j F Y" }}</small>
+        <h2 style="margin:2px 0 0;font-size:1.3rem">Hello, {{ request.user.first_name|default:request.user.username }}</h2>
+        <small class="mono">{{ request.user.username }}{% if request.user.department %} · {{ request.user.department }}{% endif %}</small>
+      </div>
+    </div>
+    <div class="times">
+      <div><small>Check in</small><b>{{ rec.check_in|localtime_fmt }}</b></div>
+      <div><small>Check out</small><b>{{ rec.check_out|localtime_fmt }}</b></div>
+      <div><small>Status</small><b>{% if rec %}{{ rec.get_status_display }}{% elif is_working_day %}Not in{% else %}Off day{% endif %}</b></div>
+    </div>
+    <a href="{% url 'scanner' %}" class="btn btn-accent btn-lg btn-block">{% icon "scan" %}
+      {% if not rec or not rec.check_in %}Scan to check in{% else %}Scan to check out{% endif %}</a>
+    <p style="margin:12px 0 0;text-align:center;font-size:.82rem;color:#aeb8d6">Start time {{ org.work_start|time:"g:i A" }} · {{ org.grace_minutes }} min grace</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>This month</h2><a href="{% url 'my_history' %}">Full history →</a></div>
+    <div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap">
+      <div class="ring" style="--p:{{ summary.rate }}"><div><div><b>{{ summary.rate|floatformat:0 }}%</b><small class="muted">attendance</small></div></div></div>
+      <div class="mini-stats">
+        <div><small class="muted">On time</small><div style="font-size:1.4rem;font-weight:700;color:var(--accent-ink)">{{ summary.present }}</div></div>
+        <div><small class="muted">Late</small><div style="font-size:1.4rem;font-weight:700;color:#b06d00">{{ summary.late }}</div></div>
+        <div><small class="muted">Absent</small><div style="font-size:1.4rem;font-weight:700;color:var(--absent)">{{ summary.absent }}</div></div>
+        <div><small class="muted">Hours</small><div style="font-size:1.4rem;font-weight:700">{{ summary.hours|floatformat:1 }}</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Recent days</h2></div>
+    {% if recent %}
+    <ul class="feed">
+      {% for r in recent %}
+      <li>
+        <div style="width:44px;text-align:center"><b style="font-size:1.1rem;display:block;line-height:1">{{ r.date|date:"j" }}</b><small class="muted">{{ r.date|date:"D" }}</small></div>
+        <div><span class="badge b-{{ r.status }}">{{ r.get_status_display }}</span><div><small class="muted">{{ r.check_in|localtime_fmt }} → {{ r.check_out|localtime_fmt }}</small></div></div>
+        <span class="time">{{ r.worked_display }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<div class="empty">No attendance yet. Scan the QR code at reception to get started.</div>{% endif %}
+  </div>
+  <p style="text-align:center"><a href="{% url 'change_password' %}" class="muted">{% icon "key" 14 %} Change password</a></p>
+</div>
+{% endblock %}

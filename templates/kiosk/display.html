@@ -1,0 +1,94 @@
+{% extends "base.html" %}{% load ui %}
+{% block title %}Reception · {{ kiosk_org.name }}{% endblock %}
+{% block body %}
+<div class="kiosk">
+  <section>
+    <div class="brand" style="padding:0 0 30px">
+      <span class="brand-mark">{% if kiosk_org.logo %}<img src="{{ kiosk_org.logo.url }}" alt="">{% else %}<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{% endif %}</span>
+      <div><b>{{ kiosk_org.name }}</b><small>Attendance check-in</small></div>
+    </div>
+    <div class="kiosk-clock" id="clock">--:--</div>
+    <div id="date" style="color:#b9c2dd;font-size:1.2rem;margin-top:6px"></div>
+
+    <div class="kiosk-steps">
+      <div><span>1</span> Open your AttendPro portal on your phone</div>
+      <div><span>2</span> Tap <b>Scan</b> — or point your camera at the code</div>
+      <div><span>3</span> Done! Scan again when you leave to check out</div>
+    </div>
+
+    <div class="kiosk-stat">
+      <div><b id="present">0</b><small>checked in today</small></div>
+      <div><b id="total">0</b><small>registered</small></div>
+    </div>
+    <div style="margin-top:28px">
+      <div style="color:#9aa4c4;font-size:.85rem;margin-bottom:10px"><span class="pulse"></span>Live arrivals</div>
+      <div class="kiosk-feed" id="feed"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="kiosk-qr">
+      <div id="qr" class="qr-fade" style="aspect-ratio:1/1;display:grid;place-items:center;color:#999">Loading…</div>
+      <div class="countdown"><span id="bar" style="width:100%"></span></div>
+      <div class="cap">Code refreshes in <b id="secs">–</b>s · <span id="net">online</span></div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const url = "{% url 'kiosk_token' key %}";
+  const $ = id => document.getElementById(id);
+  let remaining = 0, rotation = 30, timer;
+
+  function tickClock() {
+    const now = new Date();
+    $("clock").textContent = now.toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
+    $("date").textContent = now.toLocaleDateString([], {weekday: "long", day: "numeric", month: "long", year: "numeric"});
+  }
+  function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+  async function refresh() {
+    try {
+      const r = await fetch(url, {cache: "no-store"});
+      if (!r.ok) throw new Error(r.status);
+      const d = await r.json();
+      const qr = $("qr");
+      qr.style.opacity = .2;
+      setTimeout(() => { qr.innerHTML = d.svg; qr.style.opacity = 1; }, 150);
+      remaining = d.remaining; rotation = d.rotation;
+      $("present").textContent = d.present; $("total").textContent = d.total;
+      $("feed").innerHTML = d.recent.map(x =>
+        `<div><span class="avatar">${esc(x.initials)}</span>${esc(x.name)} · ${x.action} ${x.time}</div>`).join("") ||
+        '<div style="padding:6px 14px;color:#9aa4c4">Waiting for the first scan…</div>';
+      $("net").textContent = "online";
+    } catch (e) {
+      $("net").textContent = "reconnecting…";
+      remaining = 3;
+    }
+  }
+  function tick() {
+    remaining -= 1;
+    if (remaining <= 0) { refresh(); return; }
+    $("secs").textContent = remaining;
+    $("bar").style.width = (remaining / rotation * 100) + "%";
+  }
+  tickClock(); setInterval(tickClock, 1000);
+  refresh(); setInterval(tick, 1000);
+  // Light poll so live arrivals update between rotations
+  setInterval(() => { if (remaining > 6) refreshStats(); }, 5000);
+  async function refreshStats() {
+    try {
+      const d = await (await fetch(url, {cache: "no-store"})).json();
+      $("present").textContent = d.present;
+      $("feed").innerHTML = d.recent.map(x =>
+        `<div><span class="avatar">${esc(x.initials)}</span>${esc(x.name)} · ${x.action} ${x.time}</div>`).join("") ||
+        '<div style="padding:6px 14px;color:#9aa4c4">Waiting for the first scan…</div>';
+    } catch (e) {}
+  }
+  // Keep the screen awake where supported
+  if ("wakeLock" in navigator) { navigator.wakeLock.request("screen").catch(() => {}); }
+})();
+</script>
+{% endblock %}

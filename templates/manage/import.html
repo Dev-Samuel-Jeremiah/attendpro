@@ -1,0 +1,22 @@
+{% extends "manage/_shell.html" %}{% load ui %}
+{% block title %}Import members{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Import members</h1><p>Register many staff or students at once from a spreadsheet saved as CSV.</p></div><a href="{% url 'members' %}" class="btn btn-ghost">Back</a></div>
+<div class="grid grid-2">
+  <div class="card">
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+      <div class="field"><label>CSV file</label>{{ form.file }}<div class="help">{{ form.file.help_text }}</div>{% for e in form.file.errors %}<div class="err">{{ e }}</div>{% endfor %}</div>
+      <button class="btn btn-accent">{% icon "upload" %} Import</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>How it works</h2>
+    <ol class="muted" style="padding-left:18px">
+      <li>Download the template and fill one row per person.</li>
+      <li>Departments that don't exist yet are created automatically.</li>
+      <li>Each person gets an ID and a password, shown on printable slips after import.</li>
+    </ol>
+    <a class="btn btn-ghost" href="{% url 'import_template' %}">{% icon "download" %} Download template</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends layout %}{% load ui %}
+{% block title %}Attendance{% endblock %}
+{% block content %}
+<div class="card" style="max-width:480px;margin:0 auto">
+  {% if result %}
+  <div class="result {% if not result.ok %}bad{% elif result.action == 'check_out' %}out{% elif result.action == 'duplicate' %}warn{% else %}ok{% endif %}">
+    <div class="result-icon">{% if not result.ok %}{% icon "x" %}{% elif result.action == 'check_out' %}{% icon "out" %}{% elif result.action == 'duplicate' %}{% icon "clock" %}{% else %}{% icon "check" %}{% endif %}</div>
+    <h1>{{ result.title }}</h1>
+    <p class="muted">{{ result.message }}</p>
+    {% if result.record %}
+    <div class="times">
+      <div><small class="muted">Check in</small><b>{{ result.record.check_in|localtime_fmt }}</b></div>
+      <div><small class="muted">Check out</small><b>{{ result.record.check_out|localtime_fmt }}</b></div>
+      <div><small class="muted">Hours</small><b>{{ result.record.worked_display }}</b></div>
+    </div>
+    {% endif %}
+    <div class="btn-row" style="justify-content:center">
+      <a href="{% url 'portal' %}" class="btn btn-accent">Done</a>
+      {% if not result.ok %}<a href="{% url 'scanner' %}" class="btn btn-ghost">Open scanner</a>{% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="result warn">
+    <div class="result-icon">{% icon "qr" %}</div>
+    <h1>Scan the QR code</h1>
+    <p class="muted">Scan the live code at reception to record your attendance.</p>
+    <a href="{% url 'scanner' %}" class="btn btn-accent">Open scanner</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

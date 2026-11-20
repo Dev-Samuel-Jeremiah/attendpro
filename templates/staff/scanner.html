@@ -1,0 +1,106 @@
+{% extends layout %}{% load ui static %}
+{% block title %}Scan{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:0 auto">
+  <div id="scan-view">
+    <h1 style="text-align:center">Scan the reception QR</h1>
+    <p class="muted" style="text-align:center;margin-top:0">Point your camera at the code on the screen at the entrance.</p>
+    <div class="scanner-box">
+      <div id="reader"></div>
+      <div class="scanner-frame"></div><div class="scan-line"></div>
+    </div>
+    <div id="cam-msg" class="alert alert-warning" style="display:none;margin-top:14px"></div>
+    <div class="btn-row" style="justify-content:center;margin-top:14px">
+      <button class="btn btn-ghost btn-sm" id="flip" type="button">Switch camera</button>
+    </div>
+    <p class="muted" style="text-align:center;font-size:.85rem;margin-top:16px">Camera not working? Open your phone's own camera app and point it at the code — tap the link it shows and your attendance is recorded the same way.</p>
+  </div>
+
+  <div id="result-view" class="card" style="display:none">
+    <div class="result" id="result">
+      <div class="result-icon" id="r-icon"></div>
+      <h1 id="r-title"></h1>
+      <p class="muted" id="r-msg"></p>
+      <div class="times" id="r-times">
+        <div><small class="muted">Check in</small><b id="r-in">—</b></div>
+        <div><small class="muted">Check out</small><b id="r-out">—</b></div>
+        <div><small class="muted">Hours</small><b id="r-hours">—</b></div>
+      </div>
+      <div class="btn-row" style="justify-content:center">
+        <a href="{% url 'portal' %}" class="btn btn-accent">Done</a>
+        <button class="btn btn-ghost" id="again" type="button">Scan again</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% csrf_token %}
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'vendor/html5-qrcode.min.js' %}"></script>
+<script>
+(function () {
+  const api = "{% url 'api_scan' %}";
+  const csrf = document.querySelector("[name=csrfmiddlewaretoken]").value;
+  const icons = {
+    ok: '{% icon "check" %}', out: '{% icon "out" %}', warn: '{% icon "clock" %}', bad: '{% icon "x" %}'
+  };
+  const $ = id => document.getElementById(id);
+  let scanner, busy = false, facing = "environment";
+
+  function camMsg(t) { const m = $("cam-msg"); m.textContent = t; m.style.display = "block"; }
+
+  async function start() {
+    if (!window.isSecureContext) {
+      camMsg("Your browser only allows the camera on secure (https) connections. Use your phone's camera app to scan the code instead — it works the same way.");
+      return;
+    }
+    try {
+      scanner = scanner || new Html5Qrcode("reader", {verbose: false});
+      await scanner.start({facingMode: facing}, {fps: 12, qrbox: (w, h) => {
+        const s = Math.floor(Math.min(w, h) * 0.72); return {width: s, height: s};
+      }}, onScan, () => {});
+    } catch (e) {
+      camMsg("Couldn't open the camera. Allow camera access for this site, or use your phone's camera app to scan the code.");
+    }
+  }
+
+  async function onScan(text) {
+    if (busy) return;
+    busy = true;
+    if (navigator.vibrate) navigator.vibrate(60);
+    try { await scanner.stop(); } catch (e) {}
+    try {
+      const r = await fetch(api, {method: "POST", headers: {"Content-Type": "application/json", "X-CSRFToken": csrf},
+                                  body: JSON.stringify({token: text})});
+      show(await r.json());
+    } catch (e) {
+      show({ok: false, action: "rejected", title: "No connection", message: "Couldn't reach the server. Check your Wi-Fi or data and try again."});
+    }
+  }
+
+  function show(d) {
+    const kind = !d.ok ? "bad" : d.action === "check_out" ? "out" : d.action === "duplicate" ? "warn" : "ok";
+    $("result").className = "result " + kind;
+    $("r-icon").innerHTML = icons[kind];
+    $("r-title").textContent = d.title;
+    $("r-msg").textContent = d.message;
+    $("r-times").style.display = d.ok ? "" : "none";
+    $("r-in").textContent = d.check_in || "—";
+    $("r-out").textContent = d.check_out || "—";
+    $("r-hours").textContent = d.worked || "—";
+    $("scan-view").style.display = "none";
+    $("result-view").style.display = "block";
+  }
+
+  $("again").onclick = () => {
+    $("result-view").style.display = "none"; $("scan-view").style.display = "block"; busy = false; start();
+  };
+  $("flip").onclick = async () => {
+    facing = facing === "environment" ? "user" : "environment";
+    try { await scanner.stop(); } catch (e) {}
+    start();
+  };
+  start();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "manage/_shell.html" %}{% load ui %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Settings</h1><p>Organisation details, working hours and the reception QR screen.</p></div></div>
+<div class="grid grid-main">
+  <div class="card">
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+      <h2>Organisation</h2>
+      <div class="form-grid">
+        {% include "partials/field.html" with f=form.name cls="full" %}
+        {% include "partials/field.html" with f=form.org_type %}
+        {% include "partials/field.html" with f=form.phone %}
+        {% include "partials/field.html" with f=form.email %}
+        {% include "partials/field.html" with f=form.logo %}
+        {% include "partials/field.html" with f=form.address cls="full" %}
+      </div>
+      <hr><h2>Attendance rules</h2>
+      <div class="form-grid">
+        {% include "partials/field.html" with f=form.work_start %}
+        {% include "partials/field.html" with f=form.work_end %}
+        {% include "partials/field.html" with f=form.grace_minutes %}
+        {% include "partials/field.html" with f=form.checkout_gap_minutes %}
+        {% include "partials/field.html" with f=form.working_days_choice cls="full" %}
+        {% include "partials/field.html" with f=form.qr_rotation_seconds %}
+      </div>
+      <button class="btn btn-accent">{% icon "save" %} Save settings</button>
+    </form>
+  </div>
+  <div class="stack">
+    <div class="card">
+      <h2>{% icon "monitor" 18 %} Reception QR screen</h2>
+      <p class="muted">Open this link on the computer or TV at the entrance and leave it full-screen. The code changes every {{ org.qr_rotation_seconds }} seconds, so a photo of it stops working quickly.</p>
+      <input class="input mono" value="{{ kiosk_url }}" readonly onclick="this.select()" style="font-size:.8rem">
+      <div class="btn-row" style="margin-top:12px">
+        <a class="btn" href="{{ kiosk_url }}" target="_blank">Open screen</a>
+        <form method="post" onsubmit="return confirm('Change the link? The old reception link will stop working.')">{% csrf_token %}<button class="btn btn-ghost" name="rotate_key" value="1">New link</button></form>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Your organisation code</h2>
+      <p class="muted">Member IDs start with <b class="mono">{{ org.code }}-</b>. Staff sign in at:</p>
+      <input class="input mono" value="{{ request.scheme }}://{{ request.get_host }}{% url 'login' %}" readonly onclick="this.select()" style="font-size:.8rem">
+    </div>
+  </div>
+</div>
+{% endblock %}

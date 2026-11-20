@@ -1,0 +1,16 @@
+{% extends "manage/_shell.html" %}{% load ui %}
+{% block title %}Scan log{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Scan log</h1><p>Every scan attempt, including repeats and rejected codes — the latest 300.</p></div></div>
+<div class="card"><div class="table-wrap"><table class="table">
+  <thead><tr><th>Time</th><th>Member</th><th>Result</th><th class="hide-sm">Detail</th><th class="hide-sm">IP address</th></tr></thead>
+  <tbody>
+  {% for l in logs %}
+    <tr><td style="white-space:nowrap">{{ l.timestamp|localtime_fmt:"%d %b, %I:%M:%S %p" }}</td>
+      <td><div class="person">{% avatar l.user %}<div><b>{{ l.user.display_name }}</b><small class="muted">{{ l.user.username }}</small></div></div></td>
+      <td>{% if l.action == 'check_in' %}<span class="badge b-present">Check in</span>{% elif l.action == 'check_out' %}<span class="badge b-leave">Check out</span>{% elif l.action == 'duplicate' %}<span class="badge b-muted">Repeat</span>{% else %}<span class="badge b-absent">Rejected</span>{% endif %}</td>
+      <td class="hide-sm"><small class="muted">{{ l.message }}</small></td><td class="hide-sm mono" style="font-size:.8rem">{{ l.ip|default:"—" }}</td></tr>
+  {% empty %}<tr><td colspan="5" class="empty">No scans yet.</td></tr>{% endfor %}
+  </tbody>
+</table></div></div>
+{% endblock %}

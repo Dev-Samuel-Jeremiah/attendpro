@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% load ui %}
+{% block body %}
+<div class="mobile-head">
+  <button onclick="document.body.classList.toggle('nav-open')" aria-label="Menu">{% icon "menu" 24 %}</button>
+  <b>{{ org.name }}</b>
+</div>
+<div class="shell">
+  <aside class="sidebar" onclick="if(event.target.closest('a'))document.body.classList.remove('nav-open')">
+    {% include "partials/brand.html" %}
+    <nav class="nav">
+      <div class="nav-label">Overview</div>
+      <a href="{% url 'dashboard' %}" class="{% active 'dashboard' %}">{% icon "grid" %} Dashboard</a>
+      <a href="{% url 'attendance' %}" class="{% active 'attendance' 'record_add' 'record_edit' %}">{% icon "calendar" %} Daily attendance</a>
+      <a href="{% url 'reports' %}" class="{% active 'reports' %}">{% icon "chart" %} Reports</a>
+      <a href="{% url 'saved_reports' %}" class="{% active 'saved_reports' %}">{% icon "folder" %} Saved reports</a>
+      <div class="nav-label">People</div>
+      <a href="{% url 'members' %}" class="{% active 'members' 'member_add' 'member_edit' 'member_import' 'credentials' %}">{% icon "users" %} Members</a>
+      <a href="{% url 'scan_logs' %}" class="{% active 'scan_logs' %}">{% icon "activity" %} Scan log</a>
+      <div class="nav-label">Setup</div>
+      <a href="{% url 'kiosk' org.kiosk_key %}" target="_blank">{% icon "monitor" %} Reception QR screen</a>
+      <a href="{% url 'org_settings' %}" class="{% active 'org_settings' %}">{% icon "settings" %} Settings</a>
+      <div class="nav-label">Me</div>
+      <a href="{% url 'scanner' %}" class="{% active 'scanner' 'scan' %}">{% icon "scan" %} Scan my attendance</a>
+      <a href="{% url 'portal' %}" class="{% active 'portal' 'my_history' %}">{% icon "clock" %} My attendance</a>
+    </nav>
+    <div class="sidebar-foot">
+      {% avatar request.user %}
+      <div class="who"><b>{{ request.user.display_name }}</b><small>{{ request.user.username }}</small></div>
+      <a href="{% url 'logout' %}" title="Sign out" style="color:#8a93b2">{% icon "logout" 20 %}</a>
+    </div>
+  </aside>
+  <main class="main">
+    {% include "partials/messages.html" %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

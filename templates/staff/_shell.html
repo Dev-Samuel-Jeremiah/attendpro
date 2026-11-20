@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% load ui %}
+{% block body %}
+<div class="app">
+  <header class="app-head">
+    {% include "partials/brand.html" %}
+    <a href="{% url 'logout' %}" class="btn btn-ghost btn-sm">{% icon "logout" %} Sign out</a>
+  </header>
+  {% include "partials/messages.html" %}
+  {% block content %}{% endblock %}
+</div>
+<nav class="tabbar">
+  <a href="{% url 'portal' %}" class="{% active 'portal' %}">{% icon "home" %}Home</a>
+  <a href="{% url 'scanner' %}" class="scan-tab {% active 'scanner' 'scan' %}">{% icon "scan" %}Scan</a>
+  <a href="{% url 'my_history' %}" class="{% active 'my_history' %}">{% icon "calendar" %}History</a>
+</nav>
+{% endblock %}
