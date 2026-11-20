@@ -1,0 +1,19 @@
+{% extends "platform/_shell.html" %}{% load ui %}
+{% block title %}Features{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Features</h1><p>The feature list on the pricing page. Built-in features unlock parts of the app; features you add are shown on the pricing page.</p></div>
+  <a class="btn btn-accent" href="{% url 'platform_feature_add' %}">{% icon "plus" %} Add feature</a></div>
+<div class="card"><div class="table-wrap"><table class="table">
+  <thead><tr><th>Feature</th><th>Status</th>{% for p in plans %}<th style="text-align:center">{{ p.name }}</th>{% endfor %}<th></th></tr></thead>
+  <tbody>
+  {% for f in features %}
+    <tr>
+      <td><b>{{ f.name }}</b>{% if not f.is_builtin %} <span class="badge b-muted" title="Added by you; shown on the pricing page only">Custom</span>{% endif %}<br><small class="muted">{{ f.description }}</small></td>
+      <td>{% if f.coming_soon %}<span class="badge b-late">Coming soon</span>{% else %}<span class="badge b-present">Available</span>{% endif %}</td>
+      {% for p in plans %}<td style="text-align:center">{% if p in f.plans.all %}<span style="color:var(--accent-ink)">{% icon "check" 18 %}</span>{% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}
+      <td style="text-align:right"><a class="btn btn-ghost btn-sm" href="{% url 'platform_feature_edit' f.pk %}">{% icon "edit" %} Edit</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div></div>
+{% endblock %}

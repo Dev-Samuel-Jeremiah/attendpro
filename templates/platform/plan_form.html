@@ -1,0 +1,27 @@
+{% extends "platform/_shell.html" %}{% load ui %}
+{% block title %}{% if plan %}Edit {{ plan.name }}{% else %}Add plan{% endif %}{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>{% if plan %}Edit {{ plan.name }}{% else %}Add plan{% endif %}</h1>
+  <p>{% if plan.is_default %}This is the free plan every organisation falls back to, so it always stays free.{% else %}Price is in naira, charged once per billing period.{% endif %}</p></div>
+  <a class="btn btn-ghost" href="{% url 'platform_plans' %}">{% icon "chevron-left" %} All plans</a></div>
+<div class="card">
+  <form method="post">{% csrf_token %}
+    {% for e in form.non_field_errors %}<div class="alert alert-error" style="margin-bottom:12px">{{ e }}</div>{% endfor %}
+    <div class="form-grid">
+      {% include "partials/field.html" with f=form.name %}
+      {% include "partials/field.html" with f=form.price %}
+      {% include "partials/field.html" with f=form.tagline cls="full" %}
+      {% include "partials/field.html" with f=form.period_days %}
+      {% include "partials/field.html" with f=form.staff_limit %}
+      {% include "partials/field.html" with f=form.sort_order %}
+      <div class="field">{% include "partials/field.html" with f=form.is_public %}{% include "partials/field.html" with f=form.highlight %}</div>
+    </div>
+    <hr>
+    <h2>Features in this plan</h2>
+    <p class="muted" style="margin-top:-4px">Tick what this plan includes. Unticking a built-in feature locks that part of the app for organisations on this plan.
+      <a href="{% url 'platform_features' %}">Add or rename features</a>.</p>
+    <div class="feature-picks">{% include "partials/field.html" with f=form.features %}</div>
+    <button class="btn btn-accent">{% icon "save" %} Save plan</button>
+  </form>
+</div>
+{% endblock %}

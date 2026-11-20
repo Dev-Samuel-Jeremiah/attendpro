@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% load ui %}
+{% block title %}Plans &amp; pricing{% endblock %}
+{% block body %}
+<div class="public">
+  <header class="public-head">
+    {% include "partials/brand.html" %}
+    <div class="btn-row">
+      {% if request.user.is_authenticated %}<a class="btn btn-ghost btn-sm" href="{% url 'home' %}">Back to the app</a>
+      {% else %}<a class="btn btn-ghost btn-sm" href="{% url 'login' %}">Sign in</a>
+      <a class="btn btn-accent btn-sm" href="{% url 'register' %}">Get started free</a>{% endif %}
+    </div>
+  </header>
+  <div class="public-hero">
+    <h1>Simple plans for every team</h1>
+    <p class="muted">Start free with up to 10 staff. Upgrade when you need QR attendance, reports and more.</p>
+  </div>
+  <div class="plans">
+    {% for c in cards %}{% include "billing/_plan_card.html" with mode="pricing" %}{% endfor %}
+  </div>
+  <p class="muted" style="text-align:center;margin:28px 0 40px;font-size:.9rem">Prices in Nigerian naira. Pay securely online with card, bank transfer or USSD via Paystack.</p>
+</div>
+{% endblock %}

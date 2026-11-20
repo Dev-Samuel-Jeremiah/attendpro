@@ -1,0 +1,41 @@
+{% extends "manage/_shell.html" %}{% load ui humanize %}
+{% block title %}Plan &amp; billing{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Plan &amp; billing</h1><p>Your current plan, usage and payments.</p></div>
+  <a class="btn btn-ghost" href="{% url 'pricing' %}" target="_blank">Compare plans</a></div>
+
+<div class="grid grid-3" style="margin-bottom:22px">
+  <div class="card stat t-green"><div class="label">Current plan</div><div class="value">{{ plan.name|default:"—" }}</div>
+    <div class="sub">{% if not plan or plan.is_free %}Free forever{% elif org.plan_expires_at %}Paid until {{ org.plan_expires_at|date:"j M Y" }}{% else %}No expiry{% endif %}</div></div>
+  <div class="card stat t-blue"><div class="label">Staff accounts</div>
+    <div class="value">{{ members_used }}{% if org.staff_limit %}<small style="font-size:1rem;color:var(--muted)"> / {{ org.staff_limit }}</small>{% endif %}</div>
+    {% if org.staff_limit %}<div class="usage"><span style="width:{% widthratio members_used org.staff_limit 100 %}%"></span></div>
+    <div class="sub">{{ org.seats_left }} left · admins included</div>{% else %}<div class="sub">Unlimited</div>{% endif %}</div>
+  <div class="card stat t-amber"><div class="label">Price</div>
+    <div class="value">{% if not plan or plan.is_free %}₦0{% else %}₦{{ plan.price|intcomma }}{% endif %}</div>
+    <div class="sub">{% if plan and not plan.is_free %}per {{ plan.period_label }}{% else %}no payment needed{% endif %}</div></div>
+</div>
+
+{% if not paystack %}<div class="alert alert-info" style="margin-bottom:18px">Online payment is being set up. To upgrade now, contact support.</div>{% endif %}
+
+<div class="plans">
+  {% for c in cards %}{% include "billing/_plan_card.html" with mode="billing" %}{% endfor %}
+</div>
+<p class="muted" style="font-size:.85rem;margin:14px 0 26px">Paying for your current plan before it ends adds a full period on top. Switching plans starts the new plan straight away.
+  When a paid plan ends, your organisation moves to the free plan: nothing is deleted, but paid features lock until you renew.</p>
+
+<div class="card">
+  <div class="card-head"><h2>Payments</h2></div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th><th class="hide-sm">Period</th><th class="hide-sm">Reference</th></tr></thead>
+    <tbody>
+    {% for p in payments %}
+      <tr><td>{{ p.created_at|date:"j M Y, g:i A" }}</td><td>{{ p.plan.name }}</td><td>₦{{ p.amount|intcomma }}</td>
+        <td><span class="badge {% if p.status == 'success' %}b-present{% elif p.status == 'failed' %}b-absent{% else %}b-muted{% endif %}">{{ p.get_status_display }}</span></td>
+        <td class="hide-sm">{% if p.period_end %}{{ p.period_start|date:"j M" }} – {{ p.period_end|date:"j M Y" }}{% else %}—{% endif %}</td>
+        <td class="hide-sm mono" style="font-size:.8rem">{{ p.reference }}</td></tr>
+    {% empty %}<tr><td colspan="6" class="empty">No payments yet.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

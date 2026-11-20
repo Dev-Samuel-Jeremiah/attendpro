@@ -18,6 +18,9 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
+from billing import catalog
+from billing.services import feature_required, staff_limit_message, upgrade_message
+
 from . import services
 from .decorators import member_required, org_admin_required
 from .forms import (ChangePasswordForm, DepartmentForm, ImportForm, LoginForm, MemberForm,
@@ -78,8 +81,16 @@ def register_org(request):
     return render(request, "auth/register.html", {"form": form})
 
 
-@member_required
 def home(request):
+    if not request.user.is_authenticated:
+        return redirect("login")
+    if request.user.is_superuser and not request.user.organisation_id:
+        return redirect("platform")
+    return _member_home(request)
+
+
+@member_required
+def _member_home(request):
     return redirect("dashboard" if request.user.is_org_admin else "portal")
 
 
@@ -129,7 +140,24 @@ def api_scan(request):
 
 @member_required
 def scanner(request):
+    if not request.user.organisation.has_feature(catalog.QR_ATTENDANCE):
+        messages.info(request, upgrade_message(catalog.QR_ATTENDANCE) if request.user.is_org_admin
+                      else "Use the Clock in button to record your attendance.")
+        return redirect("billing" if request.user.is_org_admin else "portal")
     return render(request, "staff/scanner.html")
+
+
+@member_required
+@require_POST
+def api_clock(request):
+    """Clock-in/out button. Body: {"lat": .., "lng": .., "accuracy": ..} from the browser."""
+    try:
+        data = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        data = {}
+    result = services.clock_by_location(request.user, request, data.get("lat"), data.get("lng"),
+                                        data.get("accuracy"))
+    return JsonResponse(result.as_dict())
 
 
 # =========================================================================== #
@@ -137,11 +165,15 @@ def scanner(request):
 # =========================================================================== #
 def kiosk(request, key):
     org = get_object_or_404(Organisation, kiosk_key=key)
-    return render(request, "kiosk/display.html", {"kiosk_org": org, "key": key})
+    return render(request, "kiosk/display.html", {
+        "kiosk_org": org, "key": key, "qr_allowed": org.has_feature(catalog.QR_ATTENDANCE),
+        "show_logo": org.has_feature(catalog.CUSTOM_BRANDING)})
 
 
 def kiosk_token(request, key):
     org = get_object_or_404(Organisation, kiosk_key=key)
+    if not org.has_feature(catalog.QR_ATTENDANCE):
+        return JsonResponse({"error": "QR attendance is not included in this plan."}, status=403)
     token, remaining = services.make_token(org)
     url = services.scan_url(request, token)
     qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=1,
@@ -182,6 +214,7 @@ def portal(request):
     return render(request, "staff/portal.html", {
         "rec": rec, "summary": summary, "recent": recent, "today": today,
         "is_working_day": org.is_working_day(today),
+        "closed": (not rec or not rec.check_in) and services.check_in_closed(org, timezone.localtime()),
     })
 
 
@@ -198,6 +231,9 @@ def my_history(request):
         days.append({"date": d, "code": code, "rec": row["records"].get(d)})
     days.reverse()
     if request.GET.get("export") == "csv":
+        if not org.has_feature(catalog.SELF_SERVICE):
+            messages.info(request, "Downloading your history isn't included in your organisation's plan.")
+            return redirect("my_history")
         resp = HttpResponse(services.export_csv(org, report), content_type="text/csv")
         resp["Content-Disposition"] = f'attachment; filename="my-attendance-{start}-{end}.csv"'
         return resp
@@ -304,8 +340,14 @@ def members(request):
 @org_admin_required
 def member_add(request):
     org = request.user.organisation
+    if org.seats_left() == 0:
+        messages.warning(request, staff_limit_message(org))
+        return redirect("billing")
     form = MemberForm(org, request.POST or None, request.FILES or None, initial={"is_active": True})
     if request.method == "POST" and form.is_valid():
+        if form.cleaned_data.get("is_active") and org.seats_left() == 0:
+            messages.warning(request, staff_limit_message(org))
+            return redirect("billing")
         m = form.save(commit=False)
         m.organisation = org
         m.username = org.next_member_id()
@@ -323,8 +365,11 @@ def member_edit(request, pk):
     m = get_object_or_404(User, pk=pk, organisation=org)
     form = MemberForm(org, request.POST or None, request.FILES or None, instance=m)
     if request.method == "POST" and form.is_valid():
+        reactivating = form.cleaned_data["is_active"] and not User.objects.get(pk=m.pk).is_active
         if m == request.user and (form.cleaned_data["role"] != User.ROLE_ADMIN or not form.cleaned_data["is_active"]):
             messages.error(request, "You cannot remove your own admin access or deactivate yourself.")
+        elif reactivating and org.seats_left() == 0:
+            messages.error(request, staff_limit_message(org))
         else:
             m = form.save(commit=False)
             if form.cleaned_data.get("password"):
@@ -363,14 +408,18 @@ def member_import(request):
     form = ImportForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid():
         raw = form.cleaned_data["file"].read().decode("utf-8-sig", errors="ignore")
-        reader = csv.DictReader(io.StringIO(raw))
-        creds, skipped = [], 0
+        rows = [{(k or "").strip().lower(): (v or "").strip() for k, v in row.items()}
+                for row in csv.DictReader(io.StringIO(raw))]
+        skipped = sum(1 for row in rows if not row.get("first_name"))
+        rows = [row for row in rows if row.get("first_name")]
+        left = org.seats_left()
+        if left is not None and len(rows) > left:
+            messages.error(request, f"This file has {len(rows)} members but your plan has room for {left} more. "
+                                    + staff_limit_message(org))
+            return render(request, "manage/import.html", {"form": form})
+        creds = []
         with transaction.atomic():
-            for row in reader:
-                row = {(k or "").strip().lower(): (v or "").strip() for k, v in row.items()}
-                if not row.get("first_name"):
-                    skipped += 1
-                    continue
+            for row in rows:
                 dept = None
                 if row.get("department"):
                     dept, _ = Department.objects.get_or_create(organisation=org, name=row["department"])
@@ -486,6 +535,7 @@ def record_edit(request, pk):
 
 
 @org_admin_required
+@feature_required(catalog.AUDIT_TRAIL)
 def scan_logs(request):
     logs = ScanLog.objects.filter(organisation=request.user.organisation).select_related("user")[:300]
     return render(request, "manage/logs.html", {"logs": logs})
@@ -495,6 +545,7 @@ def scan_logs(request):
 # Admin: reports
 # =========================================================================== #
 @org_admin_required
+@feature_required(catalog.ADVANCED_REPORTS)
 def reports(request):
     org = request.user.organisation
     today = timezone.localdate()
@@ -520,6 +571,9 @@ def reports(request):
     report = services.build_report(org, start, end, members=members_qs)
 
     fmt = request.GET.get("export")
+    if fmt in ("xlsx", "csv") and not org.has_feature(catalog.EXPORTS):
+        messages.warning(request, upgrade_message(catalog.EXPORTS))
+        return redirect("billing")
     if fmt in ("xlsx", "csv"):
         data = services.export_xlsx(org, report) if fmt == "xlsx" else services.export_csv(org, report)
         fname = f"{org.code}-attendance-{start}-to-{end}.{fmt}"
@@ -543,12 +597,14 @@ def reports(request):
 
 
 @org_admin_required
+@feature_required(catalog.ADVANCED_REPORTS)
 def saved_reports(request):
     reps = SavedReport.objects.filter(organisation=request.user.organisation).select_related("created_by")
     return render(request, "manage/saved_reports.html", {"reps": reps})
 
 
 @org_admin_required
+@feature_required(catalog.ADVANCED_REPORTS)
 def saved_report_download(request, pk):
     rep = get_object_or_404(SavedReport, pk=pk, organisation=request.user.organisation)
     resp = HttpResponse(rep.file.read(), content_type="application/octet-stream")
@@ -572,7 +628,8 @@ def saved_report_delete(request, pk):
 @org_admin_required
 def org_settings(request):
     org = request.user.organisation
-    form = OrgSettingsForm(request.POST or None, request.FILES or None, instance=org)
+    form = OrgSettingsForm(request.POST or None, request.FILES or None, instance=org,
+                           branding=org.has_feature(catalog.CUSTOM_BRANDING))
     if request.method == "POST":
         if "rotate_key" in request.POST:
             org.rotate_kiosk_key()

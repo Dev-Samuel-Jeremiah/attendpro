@@ -10,7 +10,8 @@
 </div>
 <nav class="tabbar">
   <a href="{% url 'portal' %}" class="{% active 'portal' %}">{% icon "home" %}Home</a>
-  <a href="{% url 'scanner' %}" class="scan-tab {% active 'scanner' 'scan' %}">{% icon "scan" %}Scan</a>
+  {% if 'qr_attendance' in features %}<a href="{% url 'scanner' %}" class="scan-tab {% active 'scanner' 'scan' %}">{% icon "scan" %}Scan</a>
+  {% else %}<a href="{% url 'portal' %}#clock" class="scan-tab">{% icon "pin" %}Clock</a>{% endif %}
   <a href="{% url 'my_history' %}" class="{% active 'my_history' %}">{% icon "calendar" %}History</a>
 </nav>
 {% endblock %}

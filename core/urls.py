@@ -12,6 +12,7 @@ urlpatterns = [
     path("scan/", views.scan, name="scan"),
     path("scanner/", views.scanner, name="scanner"),
     path("api/scan/", views.api_scan, name="api_scan"),
+    path("api/clock/", views.api_clock, name="api_clock"),
 
     # Reception display
     path("kiosk/<str:key>/", views.kiosk, name="kiosk"),

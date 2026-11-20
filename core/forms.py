@@ -116,7 +116,8 @@ class OrgSettingsForm(StyledMixin, forms.ModelForm):
     class Meta:
         model = Organisation
         fields = ["name", "org_type", "address", "email", "phone", "logo", "work_start", "work_end",
-                  "grace_minutes", "checkout_gap_minutes", "qr_rotation_seconds"]
+                  "grace_minutes", "checkout_gap_minutes", "qr_rotation_seconds",
+                  "latitude", "longitude", "location_radius_m"]
         widgets = {
             "work_start": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
             "work_end": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
@@ -130,11 +131,28 @@ class OrgSettingsForm(StyledMixin, forms.ModelForm):
             "work_end": "Check-in closes at this time until the next day. Members already in can still check out.",
         }
 
-    def __init__(self, *a, **kw):
+    def __init__(self, *a, branding=True, **kw):
         super().__init__(*a, **kw)
+        if not branding:
+            del self.fields["logo"]  # custom branding is a plan feature
         self.fields["working_days_choice"].initial = [str(d) for d in self.instance.working_day_list()]
         self.fields["qr_rotation_seconds"].min_value = 10
+        self.fields["location_radius_m"].min_value = 20
+        self.fields["location_radius_m"].max_value = 5000
+        for f in ("latitude", "longitude"):
+            self.fields[f].widget.attrs.update({"step": "any", "inputmode": "decimal"})
         self._style()
+
+    def clean(self):
+        cd = super().clean()
+        lat, lng = cd.get("latitude"), cd.get("longitude")
+        if (lat is None) != (lng is None):
+            raise forms.ValidationError("Set both latitude and longitude, or clear both.")
+        if lat is not None and not (-90 <= lat <= 90):
+            self.add_error("latitude", "Latitude must be between -90 and 90.")
+        if lng is not None and not (-180 <= lng <= 180):
+            self.add_error("longitude", "Longitude must be between -180 and 180.")
+        return cd
 
     def save(self, commit=True):
         self.instance.working_days = ",".join(sorted(self.cleaned_data["working_days_choice"]))

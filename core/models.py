@@ -37,10 +37,64 @@ class Organisation(models.Model):
     kiosk_key = models.CharField(max_length=40, unique=True, default=_kiosk_key)
     qr_rotation_seconds = models.PositiveIntegerField(default=30)
 
+    # Where members may use the clock-in button
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    location_radius_m = models.PositiveIntegerField(
+        "Allowed distance (metres)", default=100,
+        help_text="How far from the set location members can be and still clock in")
+
+    # Subscription. No plan, or an expired paid plan, means the free default plan.
+    plan = models.ForeignKey("billing.Plan", on_delete=models.SET_NULL, null=True, blank=True,
+                             related_name="organisations")
+    plan_expires_at = models.DateTimeField(null=True, blank=True,
+                                           help_text="Blank = does not expire")
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
+
+    # ---- Plan & limits ---------------------------------------------------- #
+    @property
+    def plan_is_expired(self):
+        return bool(self.plan_id and self.plan_expires_at and self.plan_expires_at <= timezone.now())
+
+    @property
+    def current_plan(self):
+        """The plan in force right now (cached on this instance for the request)."""
+        if not hasattr(self, "_current_plan"):
+            from billing.models import Plan
+            plan = self.plan
+            if plan is None or self.plan_is_expired:
+                plan = Plan.objects.filter(is_default=True).first()
+            self._current_plan = plan
+        return self._current_plan
+
+    def forget_plan(self):
+        self.__dict__.pop("_current_plan", None)
+
+    def has_feature(self, code):
+        plan = self.current_plan
+        return bool(plan and code in plan.feature_codes())
+
+    @property
+    def staff_limit(self):
+        plan = self.current_plan
+        return plan.staff_limit if plan else None
+
+    def active_member_count(self):
+        return self.members.filter(is_active=True).count()
+
+    def seats_left(self):
+        """None when unlimited."""
+        if self.staff_limit is None:
+            return None
+        return max(self.staff_limit - self.active_member_count(), 0)
+
+    @property
+    def has_location(self):
+        return self.latitude is not None and self.longitude is not None
 
     @property
     def is_school(self):
@@ -137,7 +191,7 @@ class AttendanceRecord(models.Model):
         (STATUS_LEAVE, "On leave / excused"),
         (STATUS_ABSENT, "Absent"),
     ]
-    SOURCE_CHOICES = [("qr", "QR scan"), ("manual", "Manual entry")]
+    SOURCE_CHOICES = [("qr", "QR scan"), ("location", "Clock-in button"), ("manual", "Manual entry")]
 
     organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE, related_name="attendance")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="attendance")
@@ -196,6 +250,11 @@ class ScanLog(models.Model):
     message = models.CharField(max_length=255, blank=True)
     ip = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.CharField(max_length=255, blank=True)
+    # Filled in for the clock-in button
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    accuracy_m = models.PositiveIntegerField(null=True, blank=True)
+    distance_m = models.PositiveIntegerField(null=True, blank=True)
 
     class Meta:
         ordering = ["-timestamp"]

@@ -1,10 +1,19 @@
 {% extends "base.html" %}{% load ui %}
 {% block title %}Reception · {{ kiosk_org.name }}{% endblock %}
 {% block body %}
+{% if not qr_allowed %}
+<div class="kiosk" style="display:grid;place-items:center;text-align:center">
+  <div style="max-width:520px">
+    <h1 style="font-size:2rem">QR attendance isn't switched on</h1>
+    <p style="color:#b9c2dd;font-size:1.1rem">{{ kiosk_org.name }}'s plan doesn't include QR attendance. Members can use the
+      <b>Clock in</b> button in their portal instead, or an administrator can upgrade under <b>Plan &amp; billing</b>.</p>
+  </div>
+</div>
+{% else %}
 <div class="kiosk">
   <section>
     <div class="brand" style="padding:0 0 30px">
-      <span class="brand-mark">{% if kiosk_org.logo %}<img src="{{ kiosk_org.logo.url }}" alt="">{% else %}<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{% endif %}</span>
+      <span class="brand-mark">{% if kiosk_org.logo and show_logo %}<img src="{{ kiosk_org.logo.url }}" alt="">{% else %}<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{% endif %}</span>
       <div><b>{{ kiosk_org.name }}</b><small>Attendance check-in</small></div>
     </div>
     <div class="kiosk-clock" id="clock">--:--</div>
@@ -34,8 +43,9 @@
     </div>
   </section>
 </div>
+{% endif %}
 {% endblock %}
-{% block scripts %}
+{% block scripts %}{% if qr_allowed %}
 <script>
 (function () {
   const url = "{% url 'kiosk_token' key %}";
@@ -91,4 +101,4 @@
   if ("wakeLock" in navigator) { navigator.wakeLock.request("screen").catch(() => {}); }
 })();
 </script>
-{% endblock %}
+{% endif %}{% endblock %}

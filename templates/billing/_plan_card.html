@@ -1,0 +1,29 @@
+{% load ui humanize %}{# mode: "pricing" | "billing" | "platform" #}
+<div class="plan-card{% if c.plan.highlight %} featured{% endif %}{% if mode == 'billing' and c.plan.pk == plan.pk %} current{% endif %}">
+  {% if mode == 'billing' and c.plan.pk == plan.pk %}<span class="plan-flag current">Your plan</span>
+  {% elif c.plan.highlight %}<span class="plan-flag">Most popular</span>{% endif %}
+  <h3>{{ c.plan.name }}{% if not c.plan.is_public %} <span class="badge b-muted">Hidden</span>{% endif %}{% if mode == 'platform' and c.plan.is_default %} <span class="badge b-leave">Default</span>{% endif %}</h3>
+  <p class="plan-tagline">{{ c.plan.tagline }}</p>
+  <div class="plan-price">{% if c.plan.is_free %}Free{% else %}₦{{ c.plan.price|intcomma }}<small> / {{ c.plan.period_label }}</small>{% endif %}</div>
+  <div class="plan-limit">{% icon "users" 16 %} {% if c.plan.staff_limit %}Up to {{ c.plan.staff_limit }} staff{% else %}Unlimited staff{% endif %}</div>
+  <div class="plan-cta">
+  {% if mode == 'billing' %}
+    {% if c.plan.pk == plan.pk and c.plan.is_free %}<span class="btn btn-ghost btn-block is-static">Your current plan</span>
+    {% elif c.plan.is_free %}<span class="btn btn-ghost btn-block is-static">Free fallback plan</span>
+    {% else %}<form method="post" action="{% url 'checkout' c.plan.slug %}">{% csrf_token %}
+      <button class="btn btn-accent btn-block">{% if c.plan.pk == plan.pk %}Renew / extend{% else %}Upgrade to {{ c.plan.name }}{% endif %}</button></form>{% endif %}
+  {% elif mode == 'platform' %}
+    <a class="btn btn-ghost btn-block" href="{% url 'platform_plan_edit' c.plan.pk %}">{% icon "edit" %} Edit price &amp; features</a>
+    <div class="muted" style="font-size:.8rem;text-align:center;margin-top:6px">{{ c.orgs|default:0 }} organisation{{ c.orgs|default:0|pluralize }} on this plan</div>
+  {% elif request.user.is_authenticated and request.user.is_org_admin %}
+    <a class="btn btn-accent btn-block" href="{% url 'billing' %}">Manage plan</a>
+  {% elif c.plan.is_free %}<a class="btn btn-ghost btn-block" href="{% url 'register' %}">Start free</a>
+  {% else %}<a class="btn btn-accent btn-block" href="{% url 'register' %}">Start free, upgrade any time</a>{% endif %}
+  </div>
+  <ul class="plan-feats">
+    {% if c.base %}<li class="plan-base">Everything in {{ c.base.name }}, plus:</li>{% endif %}
+    {% for f in c.features %}
+    <li>{% icon "check" 16 %}<span>{{ f.name }}{% if f.coming_soon %} <span class="soon">Coming soon</span>{% endif %}</span></li>
+    {% empty %}<li class="muted">No features yet</li>{% endfor %}
+  </ul>
+</div>

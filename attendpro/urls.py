@@ -9,4 +9,5 @@ admin.site.site_title = "AttendPro"
 urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
     path("", include("core.urls")),
+    path("", include("billing.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

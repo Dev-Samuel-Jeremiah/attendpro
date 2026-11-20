@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.humanize",
     "core",
+    "billing",
 ]
 
 MIDDLEWARE = [
@@ -61,6 +62,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.organisation",
+                "billing.context_processors.plan",
             ],
         },
     },
@@ -120,6 +122,10 @@ SESSION_COOKIE_AGE = 60 * 60 * 24 * 30
 # Base URL encoded in the reception QR (e.g. "http://192.168.0.10:8000").
 # Leave blank to use whatever address the reception screen was opened with.
 ATTENDPRO_PUBLIC_URL = config("ATTENDPRO_PUBLIC_URL", default="").rstrip("/")
+
+# Paystack (online plan payments). Leave blank to switch online payment off.
+PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY", default="")
+PAYSTACK_PUBLIC_KEY = config("PAYSTACK_PUBLIC_KEY", default="")
 
 # HTTPS hardening. Nginx terminates TLS and tells Django via X-Forwarded-Proto.
 if not DEBUG:

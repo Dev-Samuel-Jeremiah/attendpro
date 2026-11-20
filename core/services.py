@@ -3,6 +3,7 @@ import csv
 import hashlib
 import hmac
 import io
+import math
 import time
 from collections import defaultdict
 from datetime import date, datetime, timedelta
@@ -10,6 +11,8 @@ from datetime import date, datetime, timedelta
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
+
+from billing import catalog
 
 from .models import AttendanceRecord, Organisation, ScanLog, User
 
@@ -98,6 +101,7 @@ def check_in_closed(org: Organisation, local_now: datetime) -> bool:
 
 
 def mark_attendance(user: User, token: str, request, verified_org: Organisation | None = None) -> ScanResult:
+    """A QR scan (in-page scanner, phone camera link, or a scan held during sign-in)."""
     ip = client_ip(request)
     ua = request.META.get("HTTP_USER_AGENT", "")[:255]
 
@@ -109,6 +113,88 @@ def mark_attendance(user: User, token: str, request, verified_org: Organisation 
         return ScanResult(False, "rejected", "QR code not accepted",
                           "This code has expired or belongs to another organisation. "
                           "Scan the live code on the reception screen again.")
+    if not org.has_feature(catalog.QR_ATTENDANCE):
+        ScanLog.objects.create(organisation=org, user=user, action="rejected",
+                               message="QR attendance not in plan", ip=ip, user_agent=ua)
+        return ScanResult(False, "rejected", "QR attendance is not available",
+                          "Your organisation's plan doesn't include QR attendance. "
+                          "Use the Clock in button on your home page instead.")
+    return record_attendance(user, org, request, source="qr")
+
+
+# Phones report how sure they are of the position; worse than this and we can't tell
+# whether someone is inside the premises, so ask them to turn on GPS / move near a window.
+MAX_ACCURACY_M = 300
+# Benefit of the doubt given for GPS error, capped so a vague fix can't stretch the radius far.
+ACCURACY_ALLOWANCE_CAP_M = 50
+
+
+def distance_m(lat1, lng1, lat2, lng2) -> float:
+    """Great-circle distance in metres (haversine)."""
+    r = 6_371_000
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp, dl = p2 - p1, math.radians(lng2 - lng1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+def clock_by_location(user: User, request, lat, lng, accuracy) -> ScanResult:
+    """The clock-in/out button: allowed only within the organisation's set radius."""
+    org = user.organisation
+    ip = client_ip(request)
+    ua = request.META.get("HTTP_USER_AGENT", "")[:255]
+
+    def reject(title, message, log_message, **loc):
+        ScanLog.objects.create(organisation=org, user=user, action="rejected", message=log_message,
+                               ip=ip, user_agent=ua, **loc)
+        return ScanResult(False, "rejected", title, message)
+
+    if not org.has_feature(catalog.MANUAL_CLOCK):
+        return ScanResult(False, "rejected", "Clock-in button not available",
+                          "Your organisation's plan doesn't include the clock-in button.")
+    if not org.has_location:
+        return ScanResult(False, "rejected", "Location not set up",
+                          "Your administrator hasn't set the attendance location yet. Please let them know.")
+    try:
+        lat, lng = float(lat), float(lng)
+        accuracy = abs(float(accuracy or 0))
+        if not (-90 <= lat <= 90 and -180 <= lng <= 180) or math.isnan(accuracy):
+            raise ValueError
+    except (TypeError, ValueError):
+        return ScanResult(False, "rejected", "Location not received",
+                          "We couldn't read your location. Allow location access and try again.")
+
+    dist = distance_m(lat, lng, float(org.latitude), float(org.longitude))
+    loc = {"latitude": round(lat, 6), "longitude": round(lng, 6),
+           "accuracy_m": min(int(accuracy), 2_000_000), "distance_m": min(int(dist), 2_000_000_000)}
+    if accuracy > MAX_ACCURACY_M:
+        return reject("Location not precise enough",
+                      f"Your phone can only place you within {int(accuracy)} m. Turn on GPS / precise "
+                      f"location, or step near a window, and try again.",
+                      f"Location too imprecise (±{int(accuracy)} m)", **loc)
+    if dist - min(accuracy, ACCURACY_ALLOWANCE_CAP_M) > org.location_radius_m:
+        return reject("You're not at the workplace",
+                      f"You are about {_fmt_distance(dist)} away. You can only clock in within "
+                      f"{org.location_radius_m} m of {org.name}.",
+                      f"Outside the allowed area ({_fmt_distance(dist)} away)", **loc)
+    return record_attendance(user, org, request, source="location", log_extra=loc,
+                             note=f"{int(dist)} m from the set location")
+
+
+def _fmt_distance(m):
+    return f"{m / 1000:.1f} km" if m >= 1000 else f"{int(m)} m"
+
+
+def record_attendance(user: User, org: Organisation, request, source: str,
+                      log_extra: dict | None = None, note: str = "") -> ScanResult:
+    """First accepted scan of the day = check-in; later scans = check-out."""
+    ip = client_ip(request)
+    ua = request.META.get("HTTP_USER_AGENT", "")[:255]
+    extra = log_extra or {}
+
+    def log(action, message):
+        ScanLog.objects.create(organisation=org, user=user, action=action, message=message,
+                               ip=ip, user_agent=ua, **extra)
 
     now = timezone.now()
     local_now = timezone.localtime(now)
@@ -118,8 +204,7 @@ def mark_attendance(user: User, token: str, request, verified_org: Organisation 
         rec = AttendanceRecord.objects.select_for_update().filter(user=user, date=today).first()
         if (rec is None or rec.check_in is None) and check_in_closed(org, local_now):
             # Check-in closes at work end until midnight; anyone already in can still check out.
-            ScanLog.objects.create(organisation=org, user=user, action="rejected",
-                                   message="Check-in closed for today", ip=ip, user_agent=ua)
+            log("rejected", "Check-in closed for today")
             return ScanResult(False, "rejected", "Check-in is closed for today",
                               f"Check-in closed at {org.work_end:%I:%M %p}. "
                               f"You can check in again tomorrow.")
@@ -130,29 +215,28 @@ def mark_attendance(user: User, token: str, request, verified_org: Organisation 
         if created or rec.check_in is None:
             rec.check_in = now
             rec.check_in_ip = ip
-            rec.source = "qr"
+            rec.source = source
             rec.status = (AttendanceRecord.STATUS_LATE if local_now.time() > org.late_cutoff(today)
                           else AttendanceRecord.STATUS_PRESENT)
             rec.save()
             late = rec.status == AttendanceRecord.STATUS_LATE
             msg = (f"You arrived {rec.late_by_minutes} min after start time." if late
                    else "You're on time. Have a great day!")
-            ScanLog.objects.create(organisation=org, user=user, action="check_in", message=msg, ip=ip, user_agent=ua)
+            log("check_in", f"{msg} ({note})" if note else msg)
             return ScanResult(True, "check_in", f"Checked in at {local_now:%I:%M %p}", msg, rec)
 
         last = rec.check_out or rec.check_in
         if now - last < timedelta(minutes=org.checkout_gap_minutes):
-            ScanLog.objects.create(organisation=org, user=user, action="duplicate",
-                                   message="Scan ignored (too soon)", ip=ip, user_agent=ua)
+            log("duplicate", "Scan ignored (too soon)")
             return ScanResult(True, "duplicate", "Already recorded",
                               f"Your last scan was at {timezone.localtime(last):%I:%M %p}. "
-                              f"Scan again when you are leaving to check out.", rec)
+                              f"Come back when you are leaving to check out.", rec)
 
         rec.check_out = now
         rec.check_out_ip = ip
         rec.save()
         msg = f"Time on site today: {rec.worked_display}. See you next time!"
-        ScanLog.objects.create(organisation=org, user=user, action="check_out", message=msg, ip=ip, user_agent=ua)
+        log("check_out", f"{msg} ({note})" if note else msg)
         return ScanResult(True, "check_out", f"Checked out at {local_now:%I:%M %p}", msg, rec)
 
 

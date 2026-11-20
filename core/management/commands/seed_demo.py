@@ -4,6 +4,7 @@ from datetime import datetime, time, timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from billing.models import Plan
 from core.models import AttendanceRecord, Department, Organisation, User
 
 FIRST = ["Amina", "David", "Grace", "Ibrahim", "Joy", "Samuel", "Blessing", "Musa", "Esther", "Daniel",
@@ -20,6 +21,10 @@ class Command(BaseCommand):
         if not created:
             self.stdout.write(self.style.WARNING("Demo organisation already exists."))
             return
+        # The demo shows every feature
+        org.plan = Plan.objects.filter(slug="enterprise").first()
+        org.latitude, org.longitude = 9.8965, 8.8583  # Jos, for the clock-in button
+        org.save()
 
         admin = User.objects.create_user(username="DEMO-0001", password="admin123", first_name="Demo",
                                          last_name="Admin", organisation=org, role=User.ROLE_ADMIN,

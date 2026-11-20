@@ -8,7 +8,7 @@
       <div><label class="muted" style="font-size:.8rem">From</label><input class="input" type="date" name="start" value="{{ start|date:'Y-m-d' }}"></div>
       <div><label class="muted" style="font-size:.8rem">To</label><input class="input" type="date" name="end" value="{{ end|date:'Y-m-d' }}"></div>
       <button class="btn btn-sm" type="submit">Apply</button>
-      <a class="btn btn-ghost btn-sm" href="?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&export=csv">{% icon "download" %} CSV</a>
+      {% if 'self_service' in features %}<a class="btn btn-ghost btn-sm" href="?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}&export=csv">{% icon "download" %} CSV</a>{% endif %}
     </form>
   </div>
   <div class="grid grid-4" style="margin:18px 0">

@@ -31,6 +31,21 @@ Open http://localhost:8000
    - point the phone's normal camera at the code and tap the link. If they're not signed in yet, the scan is held for 3 minutes while they sign in.
 5. **First scan of the day is check-in**; it's marked *On time* or *Late* using the start time and grace period. **The next scan is check-out**, and hours worked are calculated. Scans within 5 minutes of the last one are ignored as duplicates.
 
+## Plans
+| | Basic (free) | Professional | Enterprise |
+|---|---|---|---|
+| Staff accounts | 10 | 25 | Unlimited |
+| Clock-in button (only at your premises), dashboard, history | ✓ | ✓ | ✓ |
+| QR attendance, advanced reports, Excel/CSV export, self-service | | ✓ | ✓ |
+| Custom branding (logo), audit trail, priority support | | | ✓ |
+
+Prices, limits and features are edited by the platform super admin under `/platform/`; the
+public pricing page is `/pricing/`. Paid plans are bought online through Paystack
+(`PAYSTACK_SECRET_KEY`). Features not built yet show as *Coming soon*.
+
+The app checks feature codes listed in `billing/catalog.py`; a plan without a feature locks
+that page or button and points the admin to **Plan & billing**.
+
 ## Features
 - Admin dashboard: present / late / not in / on site today, a 14-day chart, departments, live scan feed
 - Daily attendance view, with manual entries for leave, corrections, or anyone who couldn't scan
@@ -72,6 +87,7 @@ deploy/           Gunicorn, systemd, Nginx, backup and update scripts + DEPLOY.m
 core/models.py    Organisation, User (ID login), Department, AttendanceRecord, ScanLog, SavedReport
 core/services.py  rotating QR tokens, check-in/out logic, report calculations, Excel/CSV export
 core/views.py     auth, kiosk, scanning, member portal, admin pages
+billing/          plans, features, Paystack payments, platform super-admin pages
 templates/        manage/ (admin), staff/ (member portal), kiosk/, auth/
 static/           css/app.css, vendor/html5-qrcode.min.js
 ```

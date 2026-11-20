@@ -1,0 +1,24 @@
+{% extends "platform/_shell.html" %}{% load ui %}
+{% block title %}{% if feature %}Edit feature{% else %}Add feature{% endif %}{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>{% if feature %}{{ feature.name }}{% else %}Add feature{% endif %}</h1>
+  <p>{% if feature.is_builtin %}Built-in: the app checks this feature (code <span class="mono">{{ feature.code }}</span>). You can rename it and move it between plans.
+  {% else %}Shown on the pricing page under the plans you tick. It doesn't change what the app does until it has been built.{% endif %}</p></div>
+  <a class="btn btn-ghost" href="{% url 'platform_features' %}">{% icon "chevron-left" %} All features</a></div>
+<div class="card">
+  <form method="post">{% csrf_token %}
+    <div class="form-grid">
+      {% include "partials/field.html" with f=form.name %}
+      {% include "partials/field.html" with f=form.status %}
+      {% include "partials/field.html" with f=form.description cls="full" %}
+      {% include "partials/field.html" with f=form.sort_order %}
+      {% include "partials/field.html" with f=form.plans cls="full" %}
+    </div>
+    <div class="btn-row"><button class="btn btn-accent">{% icon "save" %} Save feature</button></div>
+  </form>
+  {% if feature and not feature.is_builtin %}
+  <form method="post" action="{% url 'platform_feature_delete' feature.pk %}" onsubmit="return confirm('Delete this feature from every plan?')" style="margin-top:12px">{% csrf_token %}
+    <button class="btn btn-danger btn-sm">{% icon "x" %} Delete feature</button></form>
+  {% endif %}
+</div>
+{% endblock %}

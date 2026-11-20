@@ -16,9 +16,32 @@
       <div><small>Check out</small><b>{{ rec.check_out|localtime_fmt }}</b></div>
       <div><small>Status</small><b>{% if rec %}{{ rec.get_status_display }}{% elif is_working_day %}Not in{% else %}Off day{% endif %}</b></div>
     </div>
-    <a href="{% url 'scanner' %}" class="btn btn-accent btn-lg btn-block">{% icon "scan" %}
-      {% if not rec or not rec.check_in %}Scan to check in{% else %}Scan to check out{% endif %}</a>
-    <p style="margin:12px 0 0;text-align:center;font-size:.82rem;color:#aeb8d6">Start time {{ org.work_start|time:"g:i A" }} · {{ org.grace_minutes }} min grace</p>
+    {% if closed %}
+      <div class="clock-note">{% icon "clock" 16 %} Check-in closed at {{ org.work_end|time:"g:i A" }}. You can check in again tomorrow.</div>
+    {% else %}
+      {% if 'manual_clock' in features %}
+        {% if org.has_location %}
+        <button type="button" id="clock" class="btn btn-accent btn-lg btn-block" data-url="{% url 'api_clock' %}">{% icon "pin" %}
+          <span>{% if not rec or not rec.check_in %}Clock in{% else %}Clock out{% endif %}</span></button>
+        {% else %}
+        <div class="clock-note" id="clock">{% icon "pin" 16 %} The attendance location hasn't been set yet.
+          {% if request.user.is_org_admin %}<a href="{% url 'org_settings' %}#location">Set it in Settings</a>{% else %}Please tell your administrator.{% endif %}</div>
+        {% endif %}
+      {% endif %}
+      {% if 'qr_attendance' in features %}
+        <a href="{% url 'scanner' %}" class="btn {% if 'manual_clock' in features and org.has_location %}btn-on-dark{% else %}btn-accent{% endif %} btn-lg btn-block" style="margin-top:10px">{% icon "scan" %}
+          {% if not rec or not rec.check_in %}Scan QR to check in{% else %}Scan QR to check out{% endif %}</a>
+      {% endif %}
+    {% endif %}
+    <p style="margin:12px 0 0;text-align:center;font-size:.82rem;color:#aeb8d6">Start time {{ org.work_start|time:"g:i A" }} · {{ org.grace_minutes }} min grace · closes {{ org.work_end|time:"g:i A" }}</p>
+  </div>
+
+  <div class="card" id="clock-result" hidden>
+    <div class="result">
+      <div class="result-icon" id="r-icon"></div>
+      <h1 id="r-title"></h1>
+      <p class="muted" id="r-msg"></p>
+    </div>
   </div>
 
   <div class="card">
@@ -46,8 +69,62 @@
       </li>
       {% endfor %}
     </ul>
-    {% else %}<div class="empty">No attendance yet. Scan the QR code at reception to get started.</div>{% endif %}
+    {% else %}<div class="empty">No attendance yet.</div>{% endif %}
   </div>
   <p style="text-align:center"><a href="{% url 'change_password' %}" class="muted">{% icon "key" 14 %} Change password</a></p>
 </div>
+{% endblock %}
+{% block scripts %}{% csrf_token %}
+<script>
+(function () {
+  const btn = document.querySelector("button#clock");
+  if (!btn) return;
+  const $ = id => document.getElementById(id);
+  const label = btn.querySelector("span"), original = label.textContent;
+  const icons = {ok: '{% icon "check" %}', out: '{% icon "out" %}', warn: '{% icon "clock" %}', bad: '{% icon "x" %}'};
+  const csrf = document.querySelector("[name=csrfmiddlewaretoken]").value;
+
+  function show(d) {
+    const kind = !d.ok ? "bad" : d.action === "check_out" ? "out" : d.action === "duplicate" ? "warn" : "ok";
+    $("clock-result").hidden = false;
+    $("clock-result").querySelector(".result").className = "result " + kind;
+    $("r-icon").innerHTML = icons[kind];
+    $("r-title").textContent = d.title;
+    $("r-msg").textContent = d.message;
+    $("clock-result").scrollIntoView({behavior: "smooth", block: "center"});
+  }
+  function reset() { btn.disabled = false; label.textContent = original; }
+
+  btn.addEventListener("click", function () {
+    if (!navigator.geolocation) {
+      show({ok: false, title: "Location not supported", message: "This browser can't share your location. Try Chrome or Safari on your phone."});
+      return;
+    }
+    btn.disabled = true;
+    label.textContent = "Checking your location…";
+    navigator.geolocation.getCurrentPosition(async function (pos) {
+      try {
+        const r = await fetch(btn.dataset.url, {
+          method: "POST",
+          headers: {"Content-Type": "application/json", "X-CSRFToken": csrf},
+          body: JSON.stringify({lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy})
+        });
+        const d = await r.json();
+        show(d);
+        if (d.ok && d.action !== "duplicate") { setTimeout(() => location.reload(), 2500); return; }
+      } catch (e) {
+        show({ok: false, title: "No connection", message: "Couldn't reach the server. Check your Wi-Fi or data and try again."});
+      }
+      reset();
+    }, function (err) {
+      const denied = err.code === 1;
+      show({ok: false,
+            title: denied ? "Location permission needed" : "Couldn't get your location",
+            message: denied ? "Allow location access for this site in your browser settings, then tap Clock in again."
+                            : "Turn on location (GPS), move near a window or outside, and try again."});
+      reset();
+    }, {enableHighAccuracy: true, timeout: 20000, maximumAge: 0});
+  });
+})();
+</script>
 {% endblock %}

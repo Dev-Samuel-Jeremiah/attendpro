@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% load ui %}
+{% block body %}
+<div class="mobile-head">
+  <button onclick="document.body.classList.toggle('nav-open')" aria-label="Menu">{% icon "menu" 24 %}</button>
+  <b>AttendPro Platform</b>
+</div>
+<div class="shell">
+  <aside class="sidebar" onclick="if(event.target.closest('a'))document.body.classList.remove('nav-open')">
+    <div class="brand"><span class="brand-mark">{% icon "layers" 20 %}</span><div><b>AttendPro</b><small>Platform admin</small></div></div>
+    <nav class="nav">
+      <div class="nav-label">Customers</div>
+      <a href="{% url 'platform' %}" class="{% active 'platform' 'platform_org' %}">{% icon "users" %} Organisations</a>
+      <a href="{% url 'platform_payments' %}" class="{% active 'platform_payments' %}">{% icon "card" %} Payments</a>
+      <div class="nav-label">Catalogue</div>
+      <a href="{% url 'platform_plans' %}" class="{% active 'platform_plans' 'platform_plan_edit' 'platform_plan_add' %}">{% icon "star" %} Plans &amp; prices</a>
+      <a href="{% url 'platform_features' %}" class="{% active 'platform_features' 'platform_feature_edit' 'platform_feature_add' %}">{% icon "list" %} Features</a>
+      <a href="{% url 'pricing' %}" target="_blank">{% icon "monitor" %} Public pricing page</a>
+      <div class="nav-label">System</div>
+      <a href="{% url 'admin:index' %}">{% icon "settings" %} Django admin</a>
+    </nav>
+    <div class="sidebar-foot">
+      {% avatar request.user %}
+      <div class="who"><b>{{ request.user.get_full_name|default:request.user.username }}</b><small>Super admin</small></div>
+      <a href="{% url 'logout' %}" title="Sign out" style="color:#8a93b2">{% icon "logout" 20 %}</a>
+    </div>
+  </aside>
+  <main class="main">
+    {% include "partials/messages.html" %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "platform/_shell.html" %}{% load ui humanize %}
+{% block title %}{{ o.name }}{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>{{ o.name }}</h1><p><span class="mono">{{ o.code }}</span> · {{ active }} active account{{ active|pluralize }} · joined {{ o.created_at|date:"j M Y" }}</p></div>
+  <a class="btn btn-ghost" href="{% url 'platform' %}">{% icon "chevron-left" %} All organisations</a></div>
+<div class="grid grid-main">
+  <div class="card">
+    <h2>Change plan</h2>
+    <p class="muted" style="margin-top:-4px">Use this for free upgrades, trials, refunds or bank-transfer payments. Leave <b>Expires</b> blank for no end date.
+      Payments made online through Paystack update this automatically.</p>
+    <form method="post">{% csrf_token %}
+      <div class="form-grid">
+        {% include "partials/field.html" with f=form.plan %}
+        {% include "partials/field.html" with f=form.plan_expires_at %}
+      </div>
+      <button class="btn btn-accent">{% icon "save" %} Save</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Now in force</h2>
+    <p><b>{{ o.current_plan.name|default:"—" }}</b>{% if o.plan_is_expired %} <span class="badge b-absent">{{ o.plan.name }} expired</span>{% endif %}</p>
+    <p class="muted">Staff limit: {{ o.staff_limit|default:"unlimited" }}<br>Email: {{ o.email|default:"—" }}<br>Phone: {{ o.phone|default:"—" }}</p>
+  </div>
+</div>
+<div class="card" style="margin-top:18px">
+  <div class="card-head"><h2>Payments</h2></div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th><th>Reference</th></tr></thead>
+    <tbody>{% for p in payments %}
+      <tr><td>{{ p.created_at|date:"j M Y, g:i A" }}</td><td>{{ p.plan.name }}</td><td>₦{{ p.amount|intcomma }}</td>
+        <td><span class="badge {% if p.status == 'success' %}b-present{% elif p.status == 'failed' %}b-absent{% else %}b-muted{% endif %}">{{ p.get_status_display }}</span></td>
+        <td class="mono" style="font-size:.8rem">{{ p.reference }}</td></tr>
+    {% empty %}<tr><td colspan="5" class="empty">No payments.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endblock %}

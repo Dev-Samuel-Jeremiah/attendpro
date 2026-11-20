@@ -1,0 +1,10 @@
+{% extends "platform/_shell.html" %}{% load ui %}
+{% block title %}Plans &amp; prices{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Plans &amp; prices</h1><p>Change prices, staff limits and which features each plan includes. Changes show on the pricing page straight away.</p></div>
+  <a class="btn btn-accent" href="{% url 'platform_plan_add' %}">{% icon "plus" %} Add plan</a></div>
+<div class="plans">
+  {% for c in cards %}{% include "billing/_plan_card.html" with mode="platform" %}{% endfor %}
+</div>
+<p class="muted" style="font-size:.85rem;margin-top:16px">A new price applies to payments made from now on. Organisations that already paid keep their current period.</p>
+{% endblock %}

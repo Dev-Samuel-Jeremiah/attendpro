@@ -160,6 +160,26 @@ $ sudo -u attendpro pg_restore --clean --if-exists -d db_attendpro /srv/attendpr
 $ systemctl start attendpro
 ```
 
+## 10. Plans, prices and Paystack
+
+Sign in with the super-admin account from step 6. It opens the **Platform** pages:
+
+- **Plans & prices**: change each plan's price, billing period, staff limit and features.
+- **Features**: rename features, mark them *Available* or *Coming soon*, or add new ones.
+- **Organisations**: see everyone's plan and usage, or give an organisation a plan by hand
+  (free upgrades, trials, bank-transfer payments).
+
+To take payments online, in the Paystack dashboard (Settings → API Keys & Webhooks):
+
+1. Copy the **secret key** and **public key** into `.env` as `PAYSTACK_SECRET_KEY` /
+   `PAYSTACK_PUBLIC_KEY` (use the *test* keys first, then the *live* ones).
+2. Set the **Webhook URL** to `https://attendpro.cloud/billing/paystack/webhook/`.
+3. Restart: `systemctl restart attendpro`.
+
+A plan activates when Paystack confirms the payment, either when the payer returns to the
+site or through the webhook, whichever comes first. When a paid period ends, the
+organisation drops to the free plan until it pays again; no data is removed.
+
 ---
 
 ## Updating after a code change
