@@ -9,6 +9,7 @@
 {% endblock %}
 {% block body_class %}lp{% endblock %}
 {% block body %}
+<div class="lp-progress" aria-hidden="true"><span id="lp-progress"></span></div>
 <header class="lp-nav" id="top">
   <div class="lp-wrap lp-nav-in">
     <a href="/" class="lp-brand" aria-label="AttendPro home">
@@ -29,9 +30,11 @@
   <!-- Hero -->
   <section class="lp-hero">
     <div class="lp-glow" aria-hidden="true"></div>
+    <div class="lp-aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="lp-dots" aria-hidden="true"></div>
     <div class="lp-wrap lp-hero-in">
       <div class="lp-hero-copy">
-        <span class="lp-pill"><span class="lp-dot"></span> Attendance for schools and organisations</span>
+        <span class="lp-pill"><span class="lp-dot"></span> Attendance for <span class="lp-rotate" id="lp-rotate">schools</span></span>
         <h1>Clock in with <span class="lp-nw">one tap.</span><br><span class="lp-grad">Know who's in, live.</span></h1>
         <p class="lp-lead">Your team records attendance on their own phones: scan the live QR code at the entrance, or tap <b>Clock in</b> when they're on site. You see arrivals, lateness and hours as they happen, with reports ready when you need them.</p>
         <div class="lp-cta-row">
@@ -45,8 +48,8 @@
         </ul>
       </div>
 
-      <div class="lp-hero-art" aria-hidden="true">
-        <div class="lp-board">
+      <div class="lp-hero-art" id="lp-art">
+        <div class="lp-board" aria-hidden="true">
           <div class="lp-board-top"><span></span><span></span><span></span><b>Today · Dashboard</b></div>
           <div class="lp-board-stats">
             <div><small>In</small><b>42</b><i class="t-green"></i></div>
@@ -62,8 +65,9 @@
             <div><span class="lp-av">GO</span><b>Grace Okafor</b><em class="late">Late · 8:14</em></div>
           </div>
         </div>
+        <div class="lp-tryme" id="lp-tryme" aria-hidden="true">Tap to try {% icon "chevron-right" 14 %}</div>
         <div class="lp-phone">
-          <i class="lp-btn-side lp-btn-power"></i><i class="lp-btn-side lp-btn-vol1"></i><i class="lp-btn-side lp-btn-vol2"></i>
+          <i class="lp-btn-side lp-btn-power" aria-hidden="true"></i><i class="lp-btn-side lp-btn-vol1"></i><i class="lp-btn-side lp-btn-vol2"></i>
           <div class="lp-screen">
             <div class="lp-island"></div>
             <div class="lp-status">
@@ -84,10 +88,11 @@
               <h4>Good morning, Amina</h4>
               <div class="lp-clock-wrap">
                 <span class="lp-ring r1"></span><span class="lp-ring r2"></span>
-                <div class="lp-clock" id="lp-btn">
+                <button type="button" class="lp-clock" id="lp-btn" aria-label="Try it: tap to clock in">
                   <span class="lp-clock-idle">{% icon "pin" 26 %}<b>Clock in</b></span>
                   <span class="lp-clock-done">{% icon "check" 30 %}<b id="lp-in">7:52 AM</b></span>
-                </div>
+                </button>
+                <span class="lp-burst" id="lp-burst" aria-hidden="true">{% for i in "12345678"|make_list %}<i style="--a:{{ forloop.counter0 }}"></i>{% endfor %}</span>
               </div>
               <div class="lp-onsite"><span></span> <em id="lp-status">You're on site · 18 m away</em></div>
             </div>
@@ -104,20 +109,31 @@
             <div class="lp-home-bar"></div>
           </div>
         </div>
-        <div class="lp-chip lp-chip-a">{% icon "qr" 16 %} QR changes every 30 s</div>
-        <div class="lp-chip lp-chip-b">{% icon "bell" 16 %} 3 people not in yet</div>
+        <div class="lp-chip lp-chip-a" aria-hidden="true">{% icon "qr" 16 %} QR changes every 30 s</div>
+        <div class="lp-chip lp-chip-b" aria-hidden="true">{% icon "bell" 16 %} 3 people not in yet</div>
       </div>
     </div>
   </section>
 
-  <!-- Who it's for -->
-  <section class="lp-for">
-    <div class="lp-wrap">
-      <p>Made for places where people show up</p>
-      <ul>
-        <li>{% icon "users" 18 %} Schools</li><li>{% icon "grid" 18 %} Offices</li><li>{% icon "activity" 18 %} Clinics</li>
+  <!-- Who it's for: endless band -->
+  <section class="lp-for" aria-label="Who uses AttendPro">
+    <p>Made for places where people show up</p>
+    <div class="lp-marquee"><div class="lp-marquee-track">
+      {% for _ in "ab"|make_list %}<ul{% if forloop.last %} aria-hidden="true"{% endif %}>
+        <li>{% icon "users" 18 %} Schools</li><li>{% icon "grid" 18 %} Offices</li><li>{% icon "activity" 18 %} Clinics &amp; hospitals</li>
         <li>{% icon "settings" 18 %} Factories &amp; sites</li><li>{% icon "home" 18 %} Churches &amp; NGOs</li><li>{% icon "pin" 18 %} Multi-branch teams</li>
-      </ul>
+        <li>{% icon "card" 18 %} Banks &amp; shops</li><li>{% icon "calendar" 18 %} Hotels &amp; restaurants</li>
+      </ul>{% endfor %}
+    </div></div>
+  </section>
+
+  <!-- Facts -->
+  <section class="lp-facts">
+    <div class="lp-wrap lp-facts-in">
+      <div class="reveal"><b><span data-count="1">1</span></b><small>tap to clock in</small></div>
+      <div class="reveal"><b><span data-count="30">30</span><em>s</em></b><small>until the QR code changes</small></div>
+      <div class="reveal"><b><span data-count="10">10</span></b><small>staff free, for ever</small></div>
+      <div class="reveal"><b><span data-count="3">3</span></b><small>report formats: Excel, CSV, PDF</small></div>
     </div>
   </section>
 
@@ -159,7 +175,7 @@
         <h2>Up and running before your first coffee</h2>
         <p>No hardware to buy and nothing for staff to install.</p>
       </div>
-      <ol class="lp-steps">
+      <ol class="lp-steps" id="lp-steps"><span class="lp-steps-line" aria-hidden="true"><i></i></span>
         <li class="reveal"><span class="lp-num">1</span><h3>Add your team</h3><p>Register people one by one or import a spreadsheet. Everyone gets an ID and password, printed on tidy login slips.</p></li>
         <li class="reveal"><span class="lp-num">2</span><h3>Choose how they clock in</h3><p>Put the live QR code on a screen at reception, or set your location so the Clock in button only works on site.</p></li>
         <li class="reveal"><span class="lp-num">3</span><h3>Watch it fill up</h3><p>Arrivals appear on your dashboard as they happen. Lateness, hours and absences are worked out for you.</p></li>
@@ -223,22 +239,78 @@
     </div>
   </section>
 
-  <!-- Features -->
+  <!-- Features: bento -->
   <section class="lp-section lp-tint" id="features">
     <div class="lp-wrap">
       <div class="lp-head reveal">
         <span class="lp-kicker">Features</span>
         <h2>Everything you need, nothing you don't</h2>
+        <p>Built around one daily habit, with the tools you need behind it.</p>
       </div>
-      <div class="lp-features">
-        <article class="reveal"><span>{% icon "qr" 22 %}</span><h3>QR attendance</h3><p>A rotating code on any screen at the entrance. Staff scan with the app or their phone's camera.</p></article>
-        <article class="reveal"><span>{% icon "pin" 22 %}</span><h3>GPS clock-in</h3><p>A Clock in button that works only on your premises, within the distance you choose.</p></article>
-        <article class="reveal"><span>{% icon "leave" 22 %}</span><h3>Leave management</h3><p>Annual, sick and casual leave with allowances, requests and approvals, all in the register.</p></article>
-        <article class="reveal"><span>{% icon "file" 22 %}</span><h3>Excel, CSV &amp; PDF</h3><p>Summary, daily register and time log, ready to print or send to your accountant.</p></article>
-        <article class="reveal"><span>{% icon "bell" 22 %}</span><h3>Automatic alerts</h3><p>In-app and email notices for late arrivals, absences, missed clock-outs and leave decisions.</p></article>
-        <article class="reveal"><span>{% icon "trend" 22 %}</span><h3>Analytics</h3><p>Trends, weekday patterns, arrival times and side-by-side team comparisons.</p></article>
-        <article class="reveal"><span>{% icon "layers" 22 %}</span><h3>Multiple branches</h3><p>Each site with its own location and reception screen, all in one account.</p></article>
-        <article class="reveal"><span>{% icon "users" 22 %}</span><h3>Bulk import</h3><p>Bring your whole staff list in from a spreadsheet and print everyone's login slip.</p></article>
+      <div class="lp-bento">
+        <article class="lp-cell lp-cell-wide reveal">
+          <div class="lp-cell-copy"><span class="lp-ico">{% icon "pin" 20 %}</span><h3>GPS clock-in with a geofence</h3>
+            <p>Draw a circle around your premises. The Clock in button only works inside it, and every branch can have its own.</p></div>
+          <div class="lp-geo" aria-hidden="true">
+            <div class="lp-geo-map"><i class="road r1"></i><i class="road r2"></i><i class="road r3"></i>
+              <span class="lp-fence"><span class="lp-fence-pulse"></span></span>
+              <span class="lp-pin in" style="--x:46%;--y:44%"></span><span class="lp-pin in" style="--x:56%;--y:58%"></span>
+              <span class="lp-pin out" style="--x:84%;--y:22%"></span>
+              <span class="lp-geo-tag">{% icon "check" 12 %} Inside · 18 m</span>
+              <span class="lp-geo-tag out">{% icon "x" 12 %} 1.2 km away</span>
+            </div>
+          </div>
+        </article>
+        <article class="lp-cell reveal">
+          <span class="lp-ico">{% icon "leave" 20 %}</span><h3>Leave, approved in a tap</h3>
+          <p>Allowances, requests and approvals, written straight into the register.</p>
+          <div class="lp-leave" aria-hidden="true">
+            <div class="lp-leave-top"><span class="lp-av">EP</span><div><b>Esther Pam</b><small>Annual leave · 3 days</small></div></div>
+            <div class="lp-leave-bar"><i style="width:65%"></i></div><small class="lp-leave-left">13 of 20 days left</small>
+            <div class="lp-leave-actions"><span class="ok">{% icon "check" 12 %} Approve</span><span>Decline</span></div>
+          </div>
+        </article>
+        <article class="lp-cell reveal">
+          <span class="lp-ico">{% icon "bell" 20 %}</span><h3>Alerts that arrive on time</h3>
+          <p>In-app and email notices, so nothing waits for month-end.</p>
+          <div class="lp-notes" aria-hidden="true">
+            <div><i class="amber"></i><b>Grace arrived late</b><small>8:14 AM</small></div>
+            <div><i class="red"></i><b>3 people not in yet</b><small>9:10 AM</small></div>
+            <div><i class="green"></i><b>Leave approved</b><small>Yesterday</small></div>
+          </div>
+        </article>
+        <article class="lp-cell reveal">
+          <span class="lp-ico">{% icon "file" 20 %}</span><h3>Reports in one click</h3>
+          <p>Summary, daily register and time log for any period.</p>
+          <div class="lp-files" aria-hidden="true">
+            <span class="xls">XLSX</span><span class="csv">CSV</span><span class="pdf">PDF</span>
+          </div>
+        </article>
+        <article class="lp-cell reveal">
+          <span class="lp-ico">{% icon "trend" 20 %}</span><h3>Analytics that explain</h3>
+          <p>Trends, weekday patterns and arrival times at a glance.</p>
+          <svg class="lp-spark" viewBox="0 0 220 70" aria-hidden="true">
+            <defs><linearGradient id="lpSparkFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3b5bdb" stop-opacity=".22"/><stop offset="1" stop-color="#3b5bdb" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0,52 L22,46 L44,49 L66,34 L88,38 L110,26 L132,30 L154,18 L176,22 L198,12 L220,14 L220,70 L0,70Z" fill="url(#lpSparkFill)"/>
+            <path class="lp-spark-line" d="M0,52 L22,46 L44,49 L66,34 L88,38 L110,26 L132,30 L154,18 L176,22 L198,12 L220,14" fill="none" stroke="#3b5bdb" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+            <circle cx="220" cy="14" r="4" fill="#3b5bdb" stroke="#fff" stroke-width="2"/>
+          </svg>
+        </article>
+        <article class="lp-cell lp-cell-wide reveal">
+          <div class="lp-cell-copy"><span class="lp-ico">{% icon "layers" 20 %}</span><h3>Every branch, one account</h3>
+            <p>Each site gets its own location and reception screen. See them all side by side, or one at a time.</p></div>
+          <div class="lp-branches" aria-hidden="true">
+            <div><b>Main campus</b><span class="lp-meter"><i style="width:94%"></i></span><em>94%</em></div>
+            <div><b>Bukuru campus</b><span class="lp-meter"><i style="width:88%"></i></span><em>88%</em></div>
+            <div><b>Rayfield annex</b><span class="lp-meter"><i style="width:97%"></i></span><em>97%</em></div>
+          </div>
+        </article>
+        <article class="lp-cell reveal">
+          <span class="lp-ico">{% icon "users" 20 %}</span><h3>Bring everyone in at once</h3>
+          <p>Import a spreadsheet and print a login slip for each person.</p>
+          <div class="lp-import" aria-hidden="true"><span class="lp-csv">staff.csv</span>{% icon "chevron-right" 16 %}
+            <span class="lp-stack"><span class="lp-av">AY</span><span class="lp-av">DG</span><span class="lp-av">GO</span><span class="lp-av more">+24</span></span></div>
+        </article>
       </div>
     </div>
   </section>
