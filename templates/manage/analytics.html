@@ -1,0 +1,78 @@
+{% extends "manage/_shell.html" %}{% load ui static %}
+{% block title %}Analytics{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Analytics</h1><p>{{ start|date:"j M Y" }} – {{ end|date:"j M Y" }} · compared with the {{ length }} days before</p></div></div>
+
+<form class="filters viz-filters" method="get">
+  <div class="seg">{% for key, label in presets %}<a href="?range={{ key }}{% if dept %}&dept={{ dept }}{% endif %}{% if branch %}&branch={{ branch }}{% endif %}" class="{% if preset == key %}on{% endif %}">{{ label }}</a>{% endfor %}</div>
+  <input type="hidden" name="range" value="{{ preset }}">
+  <select class="input" name="dept" onchange="this.form.submit()"><option value="">All departments</option>{% for x in departments %}<option value="{{ x.pk }}" {% if dept == x.pk|stringformat:"s" %}selected{% endif %}>{{ x.name }}</option>{% endfor %}</select>
+  {% if branches %}<select class="input" name="branch" onchange="this.form.submit()"><option value="">All branches</option><option value="main" {% if branch == 'main' %}selected{% endif %}>Main location</option>{% for b in branches %}<option value="{{ b.pk }}" {% if branch == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select>{% endif %}
+</form>
+
+<div class="kpis">
+  {% for t in tiles %}
+  <div class="card kpi">
+    <div class="kpi-label">{{ t.label }}</div>
+    <div class="kpi-value">{{ t.value }}</div>
+    <div class="kpi-delta {{ t.tone }}" title="Change versus the previous {{ length }} days">{{ t.arrow }} {{ t.change }}{% if t.sub %} <span class="muted">· {{ t.sub }}</span>{% endif %}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="grid grid-2 viz-grid">
+  <div class="card">
+    <div class="card-head"><h2>Attendance rate by {{ chart_data.trend_unit }}</h2></div>
+    <div class="viz" id="chart-trend">{% if not chart_data.trend %}<div class="empty">No working days in this period yet.</div>{% endif %}</div>
+    <details class="viz-table"><summary>Show as table</summary>
+      <table class="table"><thead><tr><th>{{ chart_data.trend_unit|capfirst }}</th><th>Attendance</th></tr></thead>
+      <tbody>{% for p in chart_data.trend %}<tr><td>{{ p.label }}</td><td>{{ p.rate }}%</td></tr>{% endfor %}</tbody></table></details>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Pattern by weekday</h2>
+      <div class="viz-legend"><span><i style="background:#119e72"></i>On time</span><span><i style="background:#c98300"></i>Late</span><span><i style="background:#de4450"></i>Absent</span></div></div>
+    <div class="viz" id="chart-weekdays">{% if not chart_data.weekdays %}<div class="empty">No data yet.</div>{% endif %}</div>
+    <details class="viz-table"><summary>Show as table</summary>
+      <table class="table"><thead><tr><th>Day</th><th>On time</th><th>Late</th><th>Absent</th><th>Expected days</th></tr></thead>
+      <tbody>{% for w in chart_data.weekdays %}<tr><td>{{ w.label }}</td><td>{{ w.on_time }}%</td><td>{{ w.late }}%</td><td>{{ w.absent }}%</td><td>{{ w.n }}</td></tr>{% endfor %}</tbody></table></details>
+  </div>
+
+  <div class="card viz-wide">
+    <div class="card-head"><h2>When people arrive</h2>
+      <div class="viz-legend"><span><i style="background:#119e72"></i>On time</span><span><i style="background:#c98300"></i>Late (after {{ chart_data.histogram.cutoff }})</span></div></div>
+    <div class="viz" id="chart-arrivals">{% if not a.kpis.arrival_min %}<div class="empty">No arrivals recorded in this period.</div>{% endif %}</div>
+    <p class="muted" style="font-size:.82rem;margin:6px 0 0">Work starts {{ chart_data.histogram.start }}. 15-minute groups.{% if chart_data.histogram.early %} {{ chart_data.histogram.early }} arrived more than an hour early.{% endif %}{% if chart_data.histogram.later %} {{ chart_data.histogram.later }} arrived more than two hours after start.{% endif %}</p>
+    <details class="viz-table"><summary>Show as table</summary>
+      <table class="table"><thead><tr><th>Arrival time</th><th>People</th></tr></thead>
+      <tbody>{% for b in chart_data.histogram.buckets %}<tr><td>{{ b.label }}{% if b.late %} · late{% endif %}</td><td>{{ b.n }}</td></tr>{% endfor %}</tbody></table></details>
+  </div>
+</div>
+
+<div class="grid grid-2 viz-grid">
+  <div class="card">
+    <div class="card-head"><h2>By department</h2></div>
+    {% include "manage/_meter_list.html" with groups=a.departments %}
+  </div>
+  {% if show_branches %}
+  <div class="card">
+    <div class="card-head"><h2>By branch</h2></div>
+    {% include "manage/_meter_list.html" with groups=a.branches %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="grid grid-3 viz-grid">
+  <div class="card"><div class="card-head"><h2>Most late</h2></div>
+    {% for r in a.people.most_late %}<div class="person-row">{% avatar r.user %}<div><b>{{ r.user.display_name }}</b><small class="muted">avg arrival {{ r.avg_arrival }}</small></div><span class="badge b-late">{{ r.late }} late</span></div>
+    {% empty %}<p class="muted">Nobody was late. 🎉</p>{% endfor %}</div>
+  <div class="card"><div class="card-head"><h2>Most absences</h2></div>
+    {% for r in a.people.most_absent %}<div class="person-row">{% avatar r.user %}<div><b>{{ r.user.display_name }}</b><small class="muted">{{ r.rate }}% attendance</small></div><span class="badge b-absent">{{ r.absent }} absent</span></div>
+    {% empty %}<p class="muted">No absences.</p>{% endfor %}</div>
+  <div class="card"><div class="card-head"><h2>Perfect attendance</h2></div>
+    {% for r in a.people.perfect %}<div class="person-row">{% avatar r.user %}<div><b>{{ r.user.display_name }}</b><small class="muted">{{ r.expected }} days, always on time</small></div><span class="badge b-present">100%</span></div>
+    {% empty %}<p class="muted">Nobody yet. It needs at least 3 working days, all on time.</p>{% endfor %}</div>
+</div>
+{{ chart_data|json_script:"chart-data" }}
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/analytics.js' %}"></script>{% endblock %}

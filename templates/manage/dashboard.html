@@ -49,9 +49,20 @@
 
   <div class="stack">
     <div class="card">
-      <div class="card-head"><h2><span class="pulse"></span>Live scans</h2><a href="{% url 'scan_logs' %}">Log →</a></div>
+      <div class="card-head"><h2><span class="pulse"></span>Live scans</h2>{% if 'audit_trail' in features %}<a href="{% url 'scan_logs' %}">Audit trail →</a>{% endif %}</div>
       <ul class="feed" id="feed"><li class="muted">Loading…</li></ul>
     </div>
+    {% if branch_rows %}
+    <div class="card">
+      <div class="card-head"><h2>By branch</h2><a href="{% url 'branches' %}">Branches →</a></div>
+      {% for d in branch_rows %}
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:.88rem"><b>{{ d.name }}</b><span class="muted">{{ d.present }}/{{ d.total }}</span></div>
+        <div class="progress"><span style="width:{{ d.pct }}%"></span></div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
     {% if depts %}
     <div class="card">
       <div class="card-head"><h2>By department</h2></div>

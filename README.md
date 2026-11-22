@@ -39,6 +39,7 @@ Open http://localhost:8000
 | QR attendance, advanced reports, Excel/CSV export, self-service | | ✓ | ✓ |
 | Leave management, PDF export, in-app + email notifications | | ✓ | ✓ |
 | Custom branding (logo), audit trail, priority support | | | ✓ |
+| Multiple branches, GPS geofencing on every scan, advanced analytics | | | ✓ |
 
 Prices, limits and features are edited by the platform super admin under `/platform/`; the
 public pricing page is `/pricing/`. Paid plans are bought online through Paystack

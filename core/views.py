@@ -11,7 +11,7 @@ from django.contrib.auth import login, logout, update_session_auth_hash
 from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import Count, Q
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -27,13 +27,26 @@ from . import services
 from .decorators import member_required, org_admin_required
 from .forms import (ChangePasswordForm, DepartmentForm, ImportForm, LoginForm, MemberForm,
                     OrgRegisterForm, OrgSettingsForm, RecordForm)
-from .models import AttendanceRecord, Department, Organisation, SavedReport, ScanLog, User
+from .models import AttendanceRecord, Branch, Department, Organisation, SavedReport, ScanLog, User
 
 
 def _gen_password():
     # Easy to read aloud / type on a phone: no 0/O/1/l
     alphabet = "abcdefghjkmnpqrstuvwxyz23456789"
     return "".join(secrets.choice(alphabet) for _ in range(8))
+
+
+def _branch_filter(request, org, members_qs):
+    """Apply ?branch= (a branch id, or "main" for people without a branch) when the plan has
+    multiple branches. Returns (queryset, selected value, branches to offer or None)."""
+    if not org.has_feature(catalog.MULTI_BRANCH) or not org.branches.exists():
+        return members_qs, "", None
+    selected = request.GET.get("branch", "")
+    if selected == "main":
+        members_qs = members_qs.filter(branch__isnull=True)
+    elif selected.isdigit():
+        members_qs = members_qs.filter(branch_id=int(selected))
+    return members_qs, selected, org.branches.all()
 
 
 def _parse_date(s, default):
@@ -117,17 +130,29 @@ def _member_home(request):
 PENDING_SCAN_SECONDS = 180
 
 
+def _pending_site(request, pending):
+    """The organisation/branch of a scan held in the session during sign-in, if still valid."""
+    if not pending or timezone.now().timestamp() - pending["at"] >= PENDING_SCAN_SECONDS \
+            or pending["org"] != request.user.organisation_id:
+        return None, None
+    org = request.user.organisation
+    branch = org.branches.filter(pk=pending.get("branch"), is_active=True).first() if pending.get("branch") else None
+    return org, branch
+
+
 def scan(request):
     """Target of the QR URL. Phone camera → opens this → attendance marked.
 
     If the person is not signed in yet, the QR is verified *now* and remembered
     for a few minutes, so the scan still counts after they log in even though
-    the code on screen has rotated in the meantime."""
+    the code on screen has rotated in the meantime. With geofencing, this page
+    first asks the phone for its location and then records the scan."""
     token = request.GET.get("t", "")
     if not request.user.is_authenticated:
-        org = services.verify_token(token) if token else None
+        org, branch = services.parse_token(token) if token else (None, None)
         if org:
-            request.session["pending_scan"] = {"org": org.id, "at": timezone.now().timestamp()}
+            request.session["pending_scan"] = {"org": org.id, "branch": branch.id if branch else None,
+                                               "at": timezone.now().timestamp()}
             messages.info(request, "Sign in to complete your attendance scan.")
         else:
             messages.error(request, "That QR code has expired. Sign in, then scan the live code again.")
@@ -135,24 +160,41 @@ def scan(request):
     if not request.user.organisation_id:
         return redirect("login")
 
+    org = request.user.organisation
+    if org.has_feature(catalog.GEOFENCING) and (token or request.session.get("pending_scan")):
+        # The browser has to send its location, so hand over to a page that does that
+        return render(request, "staff/scan_locate.html", {"token": token})
+
     result = None
     pending = request.session.pop("pending_scan", None)
     if token:
         result = services.mark_attendance(request.user, token, request)
-    elif pending and timezone.now().timestamp() - pending["at"] < PENDING_SCAN_SECONDS \
-            and pending["org"] == request.user.organisation_id:
-        result = services.mark_attendance(request.user, "", request, verified_org=request.user.organisation)
+    else:
+        p_org, p_branch = _pending_site(request, pending)
+        if p_org:
+            result = services.mark_attendance(request.user, "", request, verified_org=p_org, verified_branch=p_branch)
     return render(request, "staff/scan_result.html", {"result": result})
 
 
 @member_required
 @require_POST
 def api_scan(request):
+    """In-page scanner and the location page. Body: {"token", "lat", "lng", "accuracy"} or {"pending": true, …}."""
     try:
-        token = json.loads(request.body or "{}").get("token", "")
+        data = json.loads(request.body or "{}")
     except json.JSONDecodeError:
-        token = request.POST.get("token", "")
-    return JsonResponse(services.mark_attendance(request.user, token, request).as_dict())
+        data = {}
+    location = {k: data.get(k) for k in ("lat", "lng", "accuracy")}
+    if data.get("pending"):
+        org, branch = _pending_site(request, request.session.pop("pending_scan", None))
+        if org is None:
+            return JsonResponse({"ok": False, "action": "rejected", "title": "Scan expired",
+                                 "message": "That scan is too old. Scan the live code at reception again."})
+        result = services.mark_attendance(request.user, "", request, verified_org=org, verified_branch=branch,
+                                          location=location)
+    else:
+        result = services.mark_attendance(request.user, data.get("token", ""), request, location=location)
+    return JsonResponse(result.as_dict())
 
 
 @member_required
@@ -161,7 +203,8 @@ def scanner(request):
         messages.info(request, upgrade_message(catalog.QR_ATTENDANCE) if request.user.is_org_admin
                       else "Use the Clock in button to record your attendance.")
         return redirect("billing" if request.user.is_org_admin else "portal")
-    return render(request, "staff/scanner.html")
+    return render(request, "staff/scanner.html",
+                  {"need_location": request.user.organisation.has_feature(catalog.GEOFENCING)})
 
 
 @member_required
@@ -180,18 +223,30 @@ def api_clock(request):
 # =========================================================================== #
 # Reception kiosk (public URL protected by secret key)
 # =========================================================================== #
+def _kiosk_site(key):
+    """(organisation, branch or None) for a reception screen link."""
+    org = Organisation.objects.filter(kiosk_key=key).first()
+    if org:
+        return org, None
+    branch = get_object_or_404(Branch.objects.select_related("organisation"), kiosk_key=key, is_active=True)
+    if not branch.organisation.has_feature(catalog.MULTI_BRANCH):
+        raise Http404
+    return branch.organisation, branch
+
+
 def kiosk(request, key):
-    org = get_object_or_404(Organisation, kiosk_key=key)
+    org, branch = _kiosk_site(key)
     return render(request, "kiosk/display.html", {
-        "kiosk_org": org, "key": key, "qr_allowed": org.has_feature(catalog.QR_ATTENDANCE),
+        "kiosk_org": org, "kiosk_branch": branch, "key": key,
+        "qr_allowed": org.has_feature(catalog.QR_ATTENDANCE),
         "show_logo": org.has_feature(catalog.CUSTOM_BRANDING)})
 
 
 def kiosk_token(request, key):
-    org = get_object_or_404(Organisation, kiosk_key=key)
+    org, branch = _kiosk_site(key)
     if not org.has_feature(catalog.QR_ATTENDANCE):
         return JsonResponse({"error": "QR attendance is not included in this plan."}, status=403)
-    token, remaining = services.make_token(org)
+    token, remaining = services.make_token(org, branch)
     url = services.scan_url(request, token)
     qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=1,
                        image_factory=qrcode.image.svg.SvgPathImage)
@@ -200,14 +255,15 @@ def kiosk_token(request, key):
     svg = qr.make_image().to_string(encoding="unicode")
 
     today = timezone.localdate()
-    recent = (ScanLog.objects.filter(organisation=org, timestamp__date=today,
-                                     action__in=["check_in", "check_out"])
-              .select_related("user")[:6])
-    present = AttendanceRecord.objects.filter(organisation=org, date=today, check_in__isnull=False).count()
-    total = org.members.filter(is_active=True).count()
+    logs = ScanLog.objects.filter(organisation=org, timestamp__date=today, action__in=["check_in", "check_out"])
+    present = AttendanceRecord.objects.filter(organisation=org, date=today, check_in__isnull=False)
+    members = org.members.filter(is_active=True)
+    if branch:
+        logs, present, members = logs.filter(branch=branch), present.filter(branch=branch), members.filter(branch=branch)
+    recent = logs.select_related("user")[:6]
     resp = JsonResponse({
         "svg": svg, "remaining": remaining, "rotation": org.qr_rotation_seconds,
-        "present": present, "total": total,
+        "present": present.count(), "total": members.count(),
         "recent": [{"name": l.user.first_name or l.user.username, "initials": l.user.initials,
                     "action": "In" if l.action == "check_in" else "Out",
                     "time": timezone.localtime(l.timestamp).strftime("%I:%M %p")} for l in recent],
@@ -305,12 +361,21 @@ def dashboard(request):
         depts.append({"name": dpt.name, "total": dpt.n, "present": p,
                       "pct": round(p * 100 / dpt.n) if dpt.n else 0})
 
+    branch_rows = []
+    if org.has_feature(catalog.MULTI_BRANCH) and org.branches.exists():
+        groups = [(b.name, members.filter(branch=b), recs.filter(user__branch=b)) for b in org.branches.filter(is_active=True)]
+        groups.insert(0, ("Main location", members.filter(branch__isnull=True), recs.filter(user__branch__isnull=True)))
+        for name, people, their_recs in groups:
+            n, p = people.count(), their_recs.filter(status__in=["present", "late"]).count()
+            if n:
+                branch_rows.append({"name": name, "total": n, "present": p, "pct": round(p * 100 / n)})
+
     return render(request, "manage/dashboard.html", {
         "today": today, "total": total, "present": present, "late": late, "leave": leave,
         "absent": max(total - present - leave, 0), "on_site": on_site,
         "rate": round(present * 100 / total) if total else 0,
         "recs": recs.order_by("-check_in")[:12], "absent_members": absent_members,
-        "trend": trend, "depts": depts, "is_working_day": org.is_working_day(today),
+        "trend": trend, "depts": depts, "branch_rows": branch_rows, "is_working_day": org.is_working_day(today),
     })
 
 
@@ -342,6 +407,7 @@ def members(request):
                        Q(email__icontains=q) | Q(designation__icontains=q))
     if dept:
         qs = qs.filter(department_id=dept)
+    qs, branch, branches = _branch_filter(request, org, qs)
     if status == "active":
         qs = qs.filter(is_active=True)
     elif status == "inactive":
@@ -351,7 +417,7 @@ def members(request):
     rows = [(m, today_recs.get(m.id)) for m in qs]
     return render(request, "manage/members.html", {
         "rows": rows, "q": q, "dept": dept, "status": status, "departments": org.departments.all(),
-        "dept_form": DepartmentForm()})
+        "dept_form": DepartmentForm(), "branch": branch, "branches": branches})
 
 
 @org_admin_required
@@ -499,6 +565,7 @@ def attendance(request):
     members_qs = org.members.filter(is_active=True).select_related("department")
     if dept:
         members_qs = members_qs.filter(department_id=dept)
+    members_qs, branch, branches = _branch_filter(request, org, members_qs)
     recs = {r.user_id: r for r in AttendanceRecord.objects.filter(organisation=org, date=d)}
     rows = []
     for m in members_qs:
@@ -516,7 +583,7 @@ def attendance(request):
     return render(request, "manage/attendance.html", {
         "rows": rows, "d": d, "prev": d - timedelta(days=1), "next": d + timedelta(days=1),
         "is_today": d == today, "dept": dept, "departments": org.departments.all(), "counts": counts,
-        "is_working_day": org.is_working_day(d)})
+        "is_working_day": org.is_working_day(d), "branch": branch, "branches": branches})
 
 
 @org_admin_required
@@ -585,6 +652,7 @@ def reports(request):
     members_qs = org.members.filter(is_active=True).select_related("department")
     if dept:
         members_qs = members_qs.filter(department_id=dept)
+    members_qs, branch, branches = _branch_filter(request, org, members_qs)
     report = services.build_report(org, start, end, members=members_qs)
 
     fmt = request.GET.get("export")
@@ -596,7 +664,10 @@ def reports(request):
         fname = f"{org.code}-attendance-{start}-to-{end}.{fmt}"
         if request.GET.get("save"):
             dept_name = org.departments.filter(pk=dept).first() if dept else None
-            title = f"Attendance {start:%d %b} – {end:%d %b %Y}" + (f" · {dept_name}" if dept_name else "")
+            branch_name = (org.branches.filter(pk=branch).first() if branch.isdigit() else
+                           "Main location" if branch == "main" else None)
+            title = (f"Attendance {start:%d %b} – {end:%d %b %Y}" + (f" · {dept_name}" if dept_name else "")
+                     + (f" · {branch_name}" if branch_name else ""))
             rep = SavedReport(organisation=org, title=title, start_date=start, end_date=end,
                               file_format=fmt, created_by=request.user)
             rep.file.save(fname, ContentFile(data), save=True)
@@ -610,7 +681,7 @@ def reports(request):
 
     return render(request, "manage/reports.html", {
         "report": report, "start": start, "end": end, "dept": dept, "departments": org.departments.all(),
-        "query": request.GET.urlencode()})
+        "query": request.GET.urlencode(), "branch": branch, "branches": branches})
 
 
 @org_admin_required

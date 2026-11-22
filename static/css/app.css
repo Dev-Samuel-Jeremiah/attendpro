@@ -427,3 +427,60 @@ table.table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 .leave-actions { display: grid; gap: 8px; justify-items: start; }
 .toggles .field { margin-bottom: 4px; }
 @media (max-width: 900px) { .leave-item { grid-template-columns: 1fr; } }
+
+/* ---------- Branches ---------- */
+.branch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+.branch-card { display: grid; gap: 10px; align-content: start; }
+.branch-card .card-head { margin-bottom: 0; }
+.branch-card p { margin: 0; }
+.branch-card.inactive { opacity: .65; }
+.branch-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.branch-stats div { background: var(--bg); border-radius: 10px; padding: 8px 10px; }
+.branch-stats b { display: block; font-size: 1.2rem; }
+.branch-stats small { color: var(--muted); font-size: .75rem; }
+
+/* ---------- Analytics ---------- */
+.viz-filters { margin-bottom: 18px; }
+.viz-filters .input { width: auto; }
+.seg { display: inline-flex; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 3px; flex-wrap: wrap; }
+.seg a { padding: 6px 12px; border-radius: 8px; color: var(--text); font-size: .85rem; font-weight: 500; }
+.seg a:hover { background: #f1f3f9; text-decoration: none; }
+.seg a.on { background: var(--ink); color: #fff; }
+.kpis > .card, .leave-balances > .card, .branch-grid > .card { margin-top: 0; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.kpi-label { color: var(--muted); font-size: .82rem; font-weight: 600; }
+.kpi-value { font-size: 1.9rem; font-weight: 700; letter-spacing: -.02em; margin: 4px 0 2px; }
+.kpi-delta { font-size: .8rem; font-weight: 600; color: var(--muted); }
+.kpi-delta.good { color: var(--accent-ink); }
+.kpi-delta.bad { color: #c0392b; }
+.kpi-delta .muted { font-weight: 400; }
+.viz-grid { margin-bottom: 18px; }
+.viz-wide { grid-column: 1 / -1; }
+.viz { position: relative; min-height: 120px; }
+.viz svg { display: block; overflow: visible; }
+.viz-mark:focus { outline: none; }
+.viz-mark:focus path, .viz-mark:hover path { filter: brightness(1.12); }
+.viz-tip { position: absolute; pointer-events: none; background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(13,21,48,.12); padding: 8px 10px; font-size: .8rem; z-index: 2; min-width: 120px; }
+.viz-tip-title { color: var(--muted); margin-bottom: 4px; }
+.viz-tip-row { display: flex; align-items: center; gap: 6px; }
+.viz-tip-row i { width: 12px; height: 2px; border-radius: 1px; display: inline-block; }
+.viz-tip-row b { font-variant-numeric: tabular-nums; }
+.viz-tip-row span { color: var(--muted); }
+.viz-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .8rem; color: var(--muted); }
+.viz-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.viz-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.viz-table { margin-top: 10px; font-size: .85rem; }
+.viz-table summary { cursor: pointer; color: var(--muted); }
+.viz-table table { margin-top: 8px; }
+.meters { display: grid; gap: 12px; }
+.meter-row { display: grid; grid-template-columns: minmax(190px, 1.5fr) 1.6fr 52px; gap: 12px; align-items: center; }
+.meter-name { display: grid; min-width: 0; }
+.meter-name b { font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meter { height: 8px; border-radius: 999px; background: var(--leave-soft); overflow: hidden; }
+.meter span { display: block; height: 100%; border-radius: 999px; background: #3b5bdb; }
+.meter-fig { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.person-row { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.person-row:last-child { border-bottom: 0; }
+.person-row > div { display: grid; min-width: 0; }
+@media (max-width: 640px) { .meter-row { grid-template-columns: 1fr 52px; } .meter-row .meter { grid-column: 1 / -1; grid-row: 2; } }

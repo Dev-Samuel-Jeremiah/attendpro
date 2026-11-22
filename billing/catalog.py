@@ -14,3 +14,6 @@ CUSTOM_BRANDING = "custom_branding"   # organisation logo
 AUDIT_TRAIL = "audit_trail"           # scan log page
 LEAVE = "leave_management"            # leave requests, approvals and balances
 NOTIFICATIONS = "notifications"       # in-app + email alerts
+MULTI_BRANCH = "multi_branch"         # several sites, each with its own location and reception QR
+GEOFENCING = "geofencing"             # GPS check on QR scans too; clock in at any branch
+ANALYTICS = "advanced_analytics"      # analytics page

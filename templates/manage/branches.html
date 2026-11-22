@@ -1,0 +1,35 @@
+{% extends "manage/_shell.html" %}{% load ui %}
+{% block title %}Branches{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Branches</h1><p>Each branch has its own location, allowed distance and reception QR screen. Assign staff to a branch on their profile.</p></div>
+  <a class="btn btn-accent" href="{% url 'branch_add' %}">{% icon "plus" %} Add branch</a></div>
+
+{% if geofencing %}<div class="alert alert-info" style="margin-bottom:18px">{% icon "pin" 16 %} Geofencing is on: QR scans also check the phone's location, and staff can clock in at any branch. The branch they used is recorded.</div>
+{% else %}<div class="alert alert-info" style="margin-bottom:18px">Staff can use the Clock in button only at their own branch.</div>{% endif %}
+
+<div class="branch-grid">
+  <div class="card branch-card">
+    <div class="card-head"><h2>Main location</h2><a class="btn btn-ghost btn-sm" href="{% url 'org_settings' %}#location">{% icon "edit" %} Edit</a></div>
+    <p class="muted">{{ org.address|default:"Your organisation's own location (Settings)." }}</p>
+    <div class="branch-stats"><div><b>{{ main_staff }}</b><small>staff</small></div><div><b>{{ main_present }}</b><small>in today</small></div>
+      <div><b>{% if org.has_location %}{{ org.location_radius_m }} m{% else %}—{% endif %}</b><small>radius</small></div></div>
+    {% if not org.has_location %}<div class="alert alert-warning" style="font-size:.85rem">No location set yet.</div>{% endif %}
+    <div class="btn-row"><a class="btn btn-ghost btn-sm" href="{{ main_kiosk_url }}" target="_blank">{% icon "monitor" %} Reception screen</a></div>
+  </div>
+  {% for r in rows %}
+  <div class="card branch-card{% if not r.b.is_active %} inactive{% endif %}">
+    <div class="card-head"><h2>{{ r.b.name }}{% if not r.b.is_active %} <span class="badge b-muted">Inactive</span>{% endif %}</h2>
+      <a class="btn btn-ghost btn-sm" href="{% url 'branch_edit' r.b.pk %}">{% icon "edit" %} Edit</a></div>
+    <p class="muted">{{ r.b.address|default:"No address" }}</p>
+    <div class="branch-stats"><div><b>{{ r.b.staff }}</b><small>staff</small></div><div><b>{{ r.present }}</b><small>in today</small></div>
+      <div><b>{% if r.b.has_location %}{{ r.b.radius_m }} m{% else %}—{% endif %}</b><small>radius</small></div></div>
+    {% if not r.b.has_location %}<div class="alert alert-warning" style="font-size:.85rem">No location set: staff of this branch can't use the Clock in button yet.</div>{% endif %}
+    <div class="btn-row">
+      {% if r.b.is_active %}<a class="btn btn-ghost btn-sm" href="{{ r.kiosk_url }}" target="_blank">{% icon "monitor" %} Reception screen</a>{% endif %}
+      {% if r.b.has_location %}<a class="btn btn-ghost btn-sm" href="https://www.google.com/maps?q={{ r.b.latitude }},{{ r.b.longitude }}" target="_blank" rel="noopener">{% icon "pin" %} Map</a>{% endif %}
+      <a class="btn btn-ghost btn-sm" href="{% url 'members' %}?branch={{ r.b.pk }}">{% icon "users" %} Staff</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

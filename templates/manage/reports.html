@@ -18,6 +18,7 @@
     <div><label class="muted" style="font-size:.8rem">From</label><input class="input" type="date" name="start" value="{{ start|date:'Y-m-d' }}"></div>
     <div><label class="muted" style="font-size:.8rem">To</label><input class="input" type="date" name="end" value="{{ end|date:'Y-m-d' }}"></div>
     <div><label class="muted" style="font-size:.8rem">Department</label><select class="input" name="dept"><option value="">All</option>{% for d in departments %}<option value="{{ d.pk }}" {% if dept == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></div>
+    {% if branches %}<div><label class="muted" style="font-size:.8rem">Branch</label>{% if branches %}<select class="input" name="branch"><option value="">All branches</option><option value="main" {% if branch == 'main' %}selected{% endif %}>Main location</option>{% for b in branches %}<option value="{{ b.pk }}" {% if branch == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select>{% endif %}</div>{% endif %}
     <button class="btn btn-sm">Run report</button>
     <span class="muted" style="font-size:.85rem">Quick:</span>
     <a href="?preset=week" class="btn btn-ghost btn-sm">This week</a>

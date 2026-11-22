@@ -1,0 +1,9 @@
+<div class="meters">
+  {% for g in groups %}
+  <div class="meter-row">
+    <div class="meter-name"><b>{{ g.name }}</b><small class="muted">{{ g.people }} {{ g.people|pluralize:"person,people" }} · {{ g.late_rate }}% late · {{ g.hours }} h each</small></div>
+    <div class="meter"><span style="width:{{ g.rate }}%"></span></div>
+    <div class="meter-fig">{{ g.rate }}%</div>
+  </div>
+  {% empty %}<p class="muted">No data.</p>{% endfor %}
+</div>

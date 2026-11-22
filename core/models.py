@@ -140,6 +140,34 @@ class Organisation(models.Model):
         self.save(update_fields=["kiosk_key"])
 
 
+class Branch(models.Model):
+    """A site of a multi-branch organisation (Enterprise): own location, radius and reception QR."""
+    organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE, related_name="branches")
+    name = models.CharField(max_length=100)
+    address = models.CharField(max_length=255, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    radius_m = models.PositiveIntegerField("Allowed distance (metres)", default=100)
+    kiosk_key = models.CharField(max_length=40, unique=True, default=_kiosk_key)
+    is_active = models.BooleanField("Active", default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("organisation", "name")
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def has_location(self):
+        return self.latitude is not None and self.longitude is not None
+
+    def rotate_kiosk_key(self):
+        self.kiosk_key = _kiosk_key()
+        self.save(update_fields=["kiosk_key"])
+
+
 class Department(models.Model):
     organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE, related_name="departments")
     name = models.CharField(max_length=100)
@@ -165,6 +193,8 @@ class User(AbstractUser):
     category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default="staff")
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True,
                                    related_name="members")
+    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name="members",
+                               help_text="Where this person normally works")
     designation = models.CharField(max_length=100, blank=True, help_text="Job title or class")
     phone = models.CharField(max_length=30, blank=True)
     photo = models.ImageField(upload_to="photos/", blank=True, null=True)
@@ -212,6 +242,8 @@ class AttendanceRecord(models.Model):
     check_out_ip = models.GenericIPAddressField(null=True, blank=True)
     leave_request = models.ForeignKey("leave.LeaveRequest", on_delete=models.SET_NULL, null=True, blank=True,
                                       related_name="records")
+    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name="attendance",
+                               help_text="Where they checked in")
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -264,6 +296,7 @@ class ScanLog(models.Model):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     accuracy_m = models.PositiveIntegerField(null=True, blank=True)
     distance_m = models.PositiveIntegerField(null=True, blank=True)
+    branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True, related_name="scan_logs")
 
     class Meta:
         ordering = ["-timestamp"]

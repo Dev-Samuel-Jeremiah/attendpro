@@ -1,0 +1,61 @@
+{% extends layout %}{% load ui static %}
+{% block title %}Attendance{% endblock %}
+{% block content %}
+<div class="card" style="max-width:480px;margin:0 auto">
+  <div class="result warn" id="result">
+    <div class="result-icon" id="r-icon">{% icon "pin" %}</div>
+    <h1 id="r-title">Confirming your location…</h1>
+    <p class="muted" id="r-msg">Allow location access if your phone asks. It's only used to confirm you're at work.</p>
+    <div class="times" id="r-times" style="display:none">
+      <div><small class="muted">Check in</small><b id="r-in">—</b></div>
+      <div><small class="muted">Check out</small><b id="r-out">—</b></div>
+      <div><small class="muted">Hours</small><b id="r-hours">—</b></div>
+    </div>
+    <div class="btn-row" style="justify-content:center">
+      <a href="{% url 'portal' %}" class="btn btn-accent" id="done" style="display:none">Done</a>
+      <button class="btn btn-ghost" id="retry" type="button" style="display:none">Try again</button>
+    </div>
+  </div>
+</div>
+{% csrf_token %}
+{% endblock %}
+{% block scripts %}
+<script src="{% static 'js/locate.js' %}"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const icons = {ok: '{% icon "check" %}', out: '{% icon "out" %}', warn: '{% icon "clock" %}', bad: '{% icon "x" %}'};
+  const csrf = document.querySelector("[name=csrfmiddlewaretoken]").value;
+  const token = "{{ token|escapejs }}";
+  function show(d) {
+    const kind = !d.ok ? "bad" : d.action === "check_out" ? "out" : d.action === "duplicate" ? "warn" : "ok";
+    $("result").className = "result " + kind;
+    $("r-icon").innerHTML = icons[kind];
+    $("r-title").textContent = d.title;
+    $("r-msg").textContent = d.message;
+    $("r-times").style.display = d.ok ? "" : "none";
+    $("r-in").textContent = d.check_in || "—";
+    $("r-out").textContent = d.check_out || "—";
+    $("r-hours").textContent = d.worked || "—";
+    $("done").style.display = "";
+  }
+  async function go() {
+    $("retry").style.display = "none";
+    let loc;
+    try { loc = await AttendPro.locate(); }
+    catch (e) { show({ok: false, title: e.title, message: e.message}); $("retry").style.display = ""; return; }
+    try {
+      const body = Object.assign(token ? {token: token} : {pending: true}, loc);
+      const r = await fetch("{% url 'api_scan' %}", {method: "POST",
+        headers: {"Content-Type": "application/json", "X-CSRFToken": csrf}, body: JSON.stringify(body)});
+      show(await r.json());
+    } catch (e) {
+      show({ok: false, title: "No connection", message: "Couldn't reach the server. Check your Wi-Fi or data and try again."});
+      $("retry").style.display = "";
+    }
+  }
+  $("retry").onclick = go;
+  go();
+})();
+</script>
+{% endblock %}

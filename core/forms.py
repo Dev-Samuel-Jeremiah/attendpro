@@ -4,7 +4,7 @@ from django.contrib.auth.password_validation import validate_password
 
 from billing.models import Plan
 
-from .models import AttendanceRecord, Department, Organisation, User
+from .models import AttendanceRecord, Branch, Department, Organisation, User
 
 
 class StyledMixin:
@@ -87,13 +87,19 @@ class MemberForm(StyledMixin, forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "category", "department", "designation", "email", "phone",
+        fields = ["first_name", "last_name", "category", "department", "branch", "designation", "email", "phone",
                   "photo", "role", "is_active"]
         labels = {"designation": "Job title / class", "role": "Access level", "is_active": "Active"}
 
     def __init__(self, org, *a, **kw):
         super().__init__(*a, **kw)
         self.fields["department"].queryset = Department.objects.filter(organisation=org)
+        from billing import catalog
+        if org.has_feature(catalog.MULTI_BRANCH):
+            self.fields["branch"].queryset = org.branches.filter(is_active=True)
+            self.fields["branch"].empty_label = "Main location"
+        else:
+            del self.fields["branch"]
         self.fields["first_name"].required = True
         self.fields["last_name"].required = True
         self._style()
@@ -242,3 +248,40 @@ class ChangePasswordForm(StyledMixin, forms.Form):
             except forms.ValidationError as e:
                 self.add_error("new1", e)
         return cd
+
+
+class BranchForm(StyledMixin, forms.ModelForm):
+    class Meta:
+        model = Branch
+        fields = ["name", "address", "latitude", "longitude", "radius_m", "is_active"]
+
+    def __init__(self, org, *a, **kw):
+        super().__init__(*a, **kw)
+        self.org = org
+        self.fields["radius_m"].min_value = 20
+        self.fields["radius_m"].max_value = 5000
+        for f in ("latitude", "longitude"):
+            self.fields[f].widget.attrs.update({"step": "any", "inputmode": "decimal"})
+        self._style()
+
+    def clean_name(self):
+        name = self.cleaned_data["name"].strip()
+        qs = Branch.objects.filter(organisation=self.org, name__iexact=name)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError("You already have a branch with that name.")
+        return name
+
+    def clean(self):
+        cd = super().clean()
+        if (cd.get("latitude") is None) != (cd.get("longitude") is None):
+            raise forms.ValidationError("Set both latitude and longitude, or clear both.")
+        return cd
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.organisation = self.org
+        if commit:
+            obj.save()
+        return obj

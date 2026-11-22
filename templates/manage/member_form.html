@@ -14,6 +14,7 @@
         {% include "partials/field.html" with f=form.last_name %}
         {% include "partials/field.html" with f=form.category %}
         {% include "partials/field.html" with f=form.department %}
+        {% if 'branch' in form.fields %}{% include "partials/field.html" with f=form.branch %}{% endif %}
         {% include "partials/field.html" with f=form.designation %}
         {% include "partials/field.html" with f=form.phone %}
         {% include "partials/field.html" with f=form.email %}

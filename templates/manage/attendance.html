@@ -5,7 +5,7 @@
   <div><h1>Daily attendance</h1><p>{{ d|date:"l, j F Y" }}{% if not is_working_day %} · non-working day{% endif %}</p></div>
   <div class="btn-row">
     <a class="btn btn-ghost btn-sm" href="?date={{ prev|date:'Y-m-d' }}&dept={{ dept }}">{% icon "chevron-left" %}</a>
-    <form method="get" class="btn-row"><input type="date" class="input" name="date" value="{{ d|date:'Y-m-d' }}" onchange="this.form.submit()" style="width:auto"><input type="hidden" name="dept" value="{{ dept }}"></form>
+    <form method="get" class="btn-row"><input type="date" class="input" name="date" value="{{ d|date:'Y-m-d' }}" onchange="this.form.submit()" style="width:auto"><input type="hidden" name="dept" value="{{ dept }}"><input type="hidden" name="branch" value="{{ branch }}"></form>
     <a class="btn btn-ghost btn-sm" href="?date={{ next|date:'Y-m-d' }}&dept={{ dept }}">{% icon "chevron-right" %}</a>
     {% if not is_today %}<a class="btn btn-ghost btn-sm" href="?dept={{ dept }}">Today</a>{% endif %}
     <a class="btn btn-accent" href="{% url 'record_add' %}?date={{ d|date:'Y-m-d' }}">{% icon "plus" %} Add entry</a>
@@ -17,7 +17,8 @@
   <span class="badge b-leave">Excused {{ counts.leave }}</span>
   <span class="badge b-absent">Absent {{ counts.absent }}</span>
   <form method="get" style="margin-left:auto"><input type="hidden" name="date" value="{{ d|date:'Y-m-d' }}">
-    <select class="input" name="dept" onchange="this.form.submit()" style="width:auto"><option value="">All departments</option>{% for x in departments %}<option value="{{ x.pk }}" {% if dept == x.pk|stringformat:"s" %}selected{% endif %}>{{ x.name }}</option>{% endfor %}</select></form>
+    <select class="input" name="dept" onchange="this.form.submit()" style="width:auto"><option value="">All departments</option>{% for x in departments %}<option value="{{ x.pk }}" {% if dept == x.pk|stringformat:"s" %}selected{% endif %}>{{ x.name }}</option>{% endfor %}</select>
+    {% if branches %}<select class="input" name="branch" onchange="this.form.submit()" style="width:auto"><option value="">All branches</option><option value="main" {% if branch == 'main' %}selected{% endif %}>Main location</option>{% for b in branches %}<option value="{{ b.pk }}" {% if branch == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select>{% endif %}</form>
 </div>
 <div class="card">
   <div class="table-wrap"><table class="table">

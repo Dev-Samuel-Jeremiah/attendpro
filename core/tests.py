@@ -77,7 +77,7 @@ class LocationClockTests(TestCase):
     def test_outside_radius_is_rejected_and_logged(self):
         result = self.clock(self.LAT + 0.01, self.LNG)  # about 1.1 km
         self.assertFalse(result.ok)
-        self.assertIn("km away", result.message)
+        self.assertIn("1.1 km from Loc Org", result.message)
         self.assertFalse(AttendanceRecord.objects.exists())
         self.assertEqual(ScanLog.objects.get(user=self.user).action, "rejected")
 

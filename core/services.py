@@ -6,6 +6,7 @@ import io
 import math
 import time
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
 from django.conf import settings
@@ -15,46 +16,52 @@ from django.utils import timezone
 from billing import catalog
 from notifications.services import admins_of, notify
 
-from .models import AttendanceRecord, Organisation, ScanLog, User
+from .models import AttendanceRecord, Branch, Organisation, ScanLog, User
 
 
 # --------------------------------------------------------------------------- #
 # Rotating QR tokens
 # --------------------------------------------------------------------------- #
-def _sign(org: Organisation, window: int) -> str:
-    msg = f"{org.id}:{org.kiosk_key}:{window}".encode()
-    return hmac.new(settings.SECRET_KEY.encode(), msg, hashlib.sha256).hexdigest()[:16]
+def _sign(org: Organisation, window: int, branch: Branch | None = None) -> str:
+    msg = (f"{org.id}:{org.kiosk_key}:{window}" if branch is None
+           else f"{org.id}:b{branch.id}:{branch.kiosk_key}:{window}")
+    return hmac.new(settings.SECRET_KEY.encode(), msg.encode(), hashlib.sha256).hexdigest()[:16]
 
 
 def current_window(org: Organisation, now: float | None = None) -> int:
     return int((now or time.time()) // max(org.qr_rotation_seconds, 10))
 
 
-def make_token(org: Organisation) -> tuple[str, int]:
-    """Returns (token, seconds_until_rotation)."""
+def make_token(org: Organisation, branch: Branch | None = None) -> tuple[str, int]:
+    """Returns (token, seconds_until_rotation). Branch reception screens get their own codes."""
     now = time.time()
     rot = max(org.qr_rotation_seconds, 10)
     w = current_window(org, now)
     remaining = int(rot - (now % rot))
-    return f"{org.id}.{w}.{_sign(org, w)}", remaining
+    who = f"{org.id}" if branch is None else f"{org.id}-{branch.id}"
+    return f"{who}.{w}.{_sign(org, w, branch)}", remaining
+
+
+def parse_token(token: str) -> tuple[Organisation | None, Branch | None]:
+    """(organisation, branch or None) for a valid token, else (None, None). A token is valid for
+    its own window and the one after it (so a scan that starts just before rotation still
+    succeeds). Screenshots of the QR expire within about a minute."""
+    try:
+        who, w, sig = token.strip().split(".")
+        org_id, _, branch_id = who.partition("-")
+        org = Organisation.objects.get(pk=int(org_id))
+        branch = org.branches.get(pk=int(branch_id), is_active=True) if branch_id else None
+        w = int(w)
+    except (ValueError, Organisation.DoesNotExist, Branch.DoesNotExist):
+        return None, None
+    now_w = current_window(org)
+    if w not in (now_w, now_w - 1) or not hmac.compare_digest(sig, _sign(org, w, branch)):
+        return None, None
+    return org, branch
 
 
 def verify_token(token: str) -> Organisation | None:
-    """A token is valid for its own window and the one after it (so a scan
-    that starts just before rotation still succeeds). Screenshots of the QR
-    expire within about a minute."""
-    try:
-        org_id, w, sig = token.strip().split(".")
-        org = Organisation.objects.get(pk=int(org_id))
-        w = int(w)
-    except (ValueError, Organisation.DoesNotExist):
-        return None
-    now_w = current_window(org)
-    if w not in (now_w, now_w - 1):
-        return None
-    if not hmac.compare_digest(sig, _sign(org, w)):
-        return None
-    return org
+    return parse_token(token)[0]
 
 
 def scan_url(request, token: str) -> str:
@@ -101,12 +108,17 @@ def check_in_closed(org: Organisation, local_now: datetime) -> bool:
     return org.work_end > org.work_start and local_now.time() >= org.work_end
 
 
-def mark_attendance(user: User, token: str, request, verified_org: Organisation | None = None) -> ScanResult:
-    """A QR scan (in-page scanner, phone camera link, or a scan held during sign-in)."""
+def mark_attendance(user: User, token: str, request, verified_org: Organisation | None = None,
+                    location: dict | None = None, verified_branch: Branch | None = None) -> ScanResult:
+    """A QR scan (in-page scanner, phone camera link, or a scan held during sign-in). With
+    geofencing, the phone's location must also be inside the scanned site's radius."""
     ip = client_ip(request)
     ua = request.META.get("HTTP_USER_AGENT", "")[:255]
 
-    org = verified_org or verify_token(extract_token(token))
+    if verified_org is not None:
+        org, branch = verified_org, verified_branch
+    else:
+        org, branch = parse_token(extract_token(token))
     if org is None or org.id != user.organisation_id:
         if user.organisation_id:
             ScanLog.objects.create(organisation_id=user.organisation_id, user=user, action="rejected",
@@ -120,7 +132,19 @@ def mark_attendance(user: User, token: str, request, verified_org: Organisation 
         return ScanResult(False, "rejected", "QR attendance is not available",
                           "Your organisation's plan doesn't include QR attendance. "
                           "Use the Clock in button on your home page instead.")
-    return record_attendance(user, org, request, source="qr")
+    if branch is not None and not org.has_feature(catalog.MULTI_BRANCH):
+        branch = None
+    log_extra = {"branch": branch}
+    if org.has_feature(catalog.GEOFENCING):
+        site = branch_site(branch) if branch else main_site(org)
+        if site is not None:
+            outcome = check_location([site], location or {})
+            log_extra.update(outcome.log)
+            if not outcome.ok:
+                ScanLog.objects.create(organisation=org, user=user, action="rejected", message=outcome.log_message,
+                                       ip=ip, user_agent=ua, **log_extra)
+                return ScanResult(False, "rejected", outcome.title, outcome.message)
+    return record_attendance(user, org, request, source="qr", log_extra=log_extra, branch=branch)
 
 
 # Phones report how sure they are of the position; worse than this and we can't tell
@@ -139,47 +163,110 @@ def distance_m(lat1, lng1, lat2, lng2) -> float:
     return 2 * r * math.asin(math.sqrt(a))
 
 
+@dataclass
+class Site:
+    """A place attendance may be recorded: the organisation's main location or a branch."""
+    branch: Branch | None
+    name: str
+    lat: float
+    lng: float
+    radius: int
+
+
+def main_site(org: Organisation) -> Site | None:
+    if not org.has_location:
+        return None
+    return Site(None, org.name, float(org.latitude), float(org.longitude), org.location_radius_m)
+
+
+def branch_site(branch: Branch | None) -> Site | None:
+    if branch is None or not branch.has_location:
+        return None
+    return Site(branch, branch.name, float(branch.latitude), float(branch.longitude), branch.radius_m)
+
+
+def allowed_sites(user: User) -> list[Site]:
+    """Where `user` may use the clock-in button.
+    Geofencing (Enterprise): the main location and every active branch.
+    Multiple branches only: the member's own branch (else the main location).
+    Otherwise: the organisation's location."""
+    org = user.organisation
+    multi = org.has_feature(catalog.MULTI_BRANCH)
+    if org.has_feature(catalog.GEOFENCING):
+        sites = [main_site(org)]
+        if multi:
+            sites += [branch_site(b) for b in org.branches.filter(is_active=True)]
+        return [s for s in sites if s]
+    if multi and user.branch_id and user.branch.is_active:
+        s = branch_site(user.branch)
+        return [s] if s else []
+    s = main_site(org)
+    return [s] if s else []
+
+
+@dataclass
+class LocationCheck:
+    ok: bool
+    title: str = ""
+    message: str = ""
+    log_message: str = ""
+    site: Site | None = None
+    log: dict | None = None
+
+
+def check_location(sites: list[Site], loc: dict) -> LocationCheck:
+    """Is the reported position inside one of `sites`? `loc` = {"lat", "lng", "accuracy"} from the browser."""
+    try:
+        lat, lng = float(loc.get("lat")), float(loc.get("lng"))
+        accuracy = abs(float(loc.get("accuracy") or 0))
+        if not (-90 <= lat <= 90 and -180 <= lng <= 180) or math.isnan(accuracy):
+            raise ValueError
+    except (TypeError, ValueError):
+        return LocationCheck(False, "Location needed",
+                             "We need your location to confirm you're at work. Allow location access for "
+                             "this site and try again.", "No location received", log={})
+    dists = sorted(((distance_m(lat, lng, s.lat, s.lng), s) for s in sites), key=lambda x: x[0])
+    dist, site = dists[0]
+    log = {"latitude": round(lat, 6), "longitude": round(lng, 6), "accuracy_m": min(int(accuracy), 2_000_000),
+           "distance_m": min(int(dist), 2_000_000_000), "branch": site.branch}
+    if accuracy > MAX_ACCURACY_M:
+        return LocationCheck(False, "Location not precise enough",
+                             f"Your phone can only place you within {int(accuracy)} m. Turn on GPS / precise "
+                             f"location, or step near a window, and try again.",
+                             f"Location too imprecise (±{int(accuracy)} m)", site, log)
+    if dist - min(accuracy, ACCURACY_ALLOWANCE_CAP_M) > site.radius:
+        return LocationCheck(False, "You're not at the workplace",
+                             f"You are about {_fmt_distance(dist)} from {site.name}. You can only record "
+                             f"attendance within {site.radius} m of it.",
+                             f"Outside the allowed area ({_fmt_distance(dist)} from {site.name})", site, log)
+    return LocationCheck(True, site=site, log=log)
+
+
 def clock_by_location(user: User, request, lat, lng, accuracy) -> ScanResult:
-    """The clock-in/out button: allowed only within the organisation's set radius."""
+    """The clock-in/out button: allowed only within an allowed site's radius."""
     org = user.organisation
     ip = client_ip(request)
     ua = request.META.get("HTTP_USER_AGENT", "")[:255]
 
-    def reject(title, message, log_message, **loc):
-        ScanLog.objects.create(organisation=org, user=user, action="rejected", message=log_message,
-                               ip=ip, user_agent=ua, **loc)
-        return ScanResult(False, "rejected", title, message)
-
     if not org.has_feature(catalog.MANUAL_CLOCK):
         return ScanResult(False, "rejected", "Clock-in button not available",
                           "Your organisation's plan doesn't include the clock-in button.")
-    if not org.has_location:
+    sites = allowed_sites(user)
+    if not sites:
         return ScanResult(False, "rejected", "Location not set up",
                           "Your administrator hasn't set the attendance location yet. Please let them know.")
-    try:
-        lat, lng = float(lat), float(lng)
-        accuracy = abs(float(accuracy or 0))
-        if not (-90 <= lat <= 90 and -180 <= lng <= 180) or math.isnan(accuracy):
-            raise ValueError
-    except (TypeError, ValueError):
-        return ScanResult(False, "rejected", "Location not received",
-                          "We couldn't read your location. Allow location access and try again.")
-
-    dist = distance_m(lat, lng, float(org.latitude), float(org.longitude))
-    loc = {"latitude": round(lat, 6), "longitude": round(lng, 6),
-           "accuracy_m": min(int(accuracy), 2_000_000), "distance_m": min(int(dist), 2_000_000_000)}
-    if accuracy > MAX_ACCURACY_M:
-        return reject("Location not precise enough",
-                      f"Your phone can only place you within {int(accuracy)} m. Turn on GPS / precise "
-                      f"location, or step near a window, and try again.",
-                      f"Location too imprecise (±{int(accuracy)} m)", **loc)
-    if dist - min(accuracy, ACCURACY_ALLOWANCE_CAP_M) > org.location_radius_m:
-        return reject("You're not at the workplace",
-                      f"You are about {_fmt_distance(dist)} away. You can only clock in within "
-                      f"{org.location_radius_m} m of {org.name}.",
-                      f"Outside the allowed area ({_fmt_distance(dist)} away)", **loc)
-    return record_attendance(user, org, request, source="location", log_extra=loc,
-                             note=f"{int(dist)} m from the set location")
+    outcome = check_location(sites, {"lat": lat, "lng": lng, "accuracy": accuracy})
+    if not outcome.ok:
+        if outcome.log:  # we got coordinates: keep the attempt in the audit trail
+            ScanLog.objects.create(organisation=org, user=user, action="rejected", message=outcome.log_message,
+                                   ip=ip, user_agent=ua, **outcome.log)
+        return ScanResult(False, "rejected", "Location not received" if not outcome.log else outcome.title,
+                          "We couldn't read your location. Allow location access and try again."
+                          if not outcome.log else outcome.message)
+    where = f" at {outcome.site.name}" if outcome.site.branch else ""
+    return record_attendance(user, org, request, source="location", log_extra=outcome.log,
+                             note=f"{outcome.log['distance_m']} m from the set location{where}",
+                             branch=outcome.site.branch)
 
 
 def _fmt_distance(m):
@@ -187,7 +274,7 @@ def _fmt_distance(m):
 
 
 def record_attendance(user: User, org: Organisation, request, source: str,
-                      log_extra: dict | None = None, note: str = "") -> ScanResult:
+                      log_extra: dict | None = None, note: str = "", branch: Branch | None = None) -> ScanResult:
     """First accepted scan of the day = check-in; later scans = check-out."""
     ip = client_ip(request)
     ua = request.META.get("HTTP_USER_AGENT", "")[:255]
@@ -217,6 +304,7 @@ def record_attendance(user: User, org: Organisation, request, source: str,
             rec.check_in = now
             rec.check_in_ip = ip
             rec.source = source
+            rec.branch = branch
             rec.status = (AttendanceRecord.STATUS_LATE if local_now.time() > org.late_cutoff(today)
                           else AttendanceRecord.STATUS_PRESENT)
             rec.save()

@@ -34,7 +34,8 @@
         {% include "partials/field.html" with f=form.email_notifications %}
       </div>
       {% endif %}
-      <hr><h2 id="location">{% icon "pin" 18 %} Attendance location</h2>
+      <hr><h2 id="location">{% icon "pin" 18 %} {% if 'multi_branch' in features %}Main location{% else %}Attendance location{% endif %}</h2>
+      {% if 'multi_branch' in features %}<p class="muted" style="margin:-4px 0 6px">For staff not assigned to a branch. <a href="{% url 'branches' %}">Set up branches</a> for your other sites.</p>{% endif %}
       <p class="muted" style="margin-top:-4px">Members can only use the <b>Clock in</b> button when their phone is within the allowed distance of this point.
         Stand at your premises and tap <b>Use my current location</b>, or paste the coordinates from Google Maps.</p>
       {% for e in form.non_field_errors %}<div class="alert alert-error" style="margin-bottom:12px">{{ e }}</div>{% endfor %}

@@ -12,6 +12,7 @@
       <a href="{% url 'dashboard' %}" class="{% active 'dashboard' %}">{% icon "grid" %} Dashboard</a>
       <a href="{% url 'attendance' %}" class="{% active 'attendance' 'record_add' 'record_edit' %}">{% icon "calendar" %} Daily attendance</a>
       <a href="{% url 'reports' %}" class="{% active 'reports' %}">{% icon "chart" %} Reports{% if 'advanced_reports' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% endif %}</a>
+      <a href="{% url 'analytics' %}" class="{% active 'analytics' %}">{% icon "trend" %} Analytics{% if 'advanced_analytics' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% endif %}</a>
       <a href="{% url 'saved_reports' %}" class="{% active 'saved_reports' %}">{% icon "folder" %} Saved reports{% if 'advanced_reports' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% endif %}</a>
       <div class="nav-label">People</div>
       <a href="{% url 'members' %}" class="{% active 'members' 'member_add' 'member_edit' 'member_import' 'credentials' %}">{% icon "users" %} Members</a>
@@ -20,6 +21,7 @@
       <div class="nav-label">Setup</div>
       {% if 'qr_attendance' in features %}<a href="{% url 'kiosk' org.kiosk_key %}" target="_blank">{% icon "monitor" %} Reception QR screen</a>
       {% else %}<a href="{% url 'billing' %}">{% icon "monitor" %} Reception QR screen<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span></a>{% endif %}
+      <a href="{% url 'branches' %}" class="{% active 'branches' 'branch_add' 'branch_edit' %}">{% icon "pin" %} Branches{% if 'multi_branch' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% endif %}</a>
       <a href="{% url 'org_settings' %}" class="{% active 'org_settings' %}">{% icon "settings" %} Settings</a>
       <a href="{% url 'billing' %}" class="{% active 'billing' %}">{% icon "card" %} Plan &amp; billing{% if plan %}<span class="nav-plan">{{ plan.name }}</span>{% endif %}</a>
       <div class="nav-label">Me</div>
