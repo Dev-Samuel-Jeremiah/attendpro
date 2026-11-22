@@ -20,24 +20,20 @@
   const onScroll = () => nav.classList.toggle("scrolled", window.scrollY > 8);
   window.addEventListener("scroll", onScroll, {passive: true}); onScroll();
 
-  // Phone demo: today's date, then press "Clock in" → "Checked in"
+  // Phone demo: today's date, then tap the round "Clock in" button → green tick and time
   const now = new Date();
   $("lp-today").textContent = now.toLocaleDateString([], {weekday: "long", day: "numeric", month: "long"});
-  const btn = $("lp-btn"), ok = $("lp-ok");
-  ok.classList.add("hide");
+  const btn = $("lp-btn"), status = $("lp-status");
   function demo() {
     btn.classList.add("press");
     setTimeout(() => {
-      btn.classList.remove("press"); btn.classList.add("hide"); ok.classList.remove("hide");
-      $("lp-in").textContent = "7:52 AM"; $("lp-status").textContent = "On time";
-    }, 260);
-    setTimeout(() => {
-      ok.classList.add("hide"); btn.classList.remove("hide");
-      $("lp-in").textContent = "—"; $("lp-status").textContent = "Not in";
-    }, 4200);
+      btn.classList.remove("press"); btn.classList.add("done");
+      status.textContent = "Checked in · on time";
+    }, 240);
+    setTimeout(() => { btn.classList.remove("done"); status.textContent = "You're on site · 18 m away"; }, 4400);
   }
-  if (!calm) { setTimeout(demo, 1400); setInterval(demo, 6500); }
-  else { demo(); }
+  if (!calm) { setTimeout(demo, 1400); setInterval(demo, 7000); }
+  else { btn.classList.add("done"); status.textContent = "Checked in · on time"; }
 
   // Live feed: a new arrival slides in at the top every few seconds
   const feed = $("lp-feed");

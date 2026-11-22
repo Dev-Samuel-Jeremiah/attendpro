@@ -63,14 +63,45 @@
           </div>
         </div>
         <div class="lp-phone">
-          <div class="lp-phone-notch"></div>
-          <div class="lp-phone-screen">
-            <small id="lp-today">Monday</small>
-            <h4>Good morning, Amina</h4>
-            <div class="lp-phone-times"><div><small>In</small><b id="lp-in">—</b></div><div><small>Status</small><b id="lp-status">Not in</b></div></div>
-            <div class="lp-phone-btn" id="lp-btn">{% icon "pin" 16 %} Clock in</div>
-            <div class="lp-phone-ok" id="lp-ok">{% icon "check" 18 %} Checked in</div>
-            <small class="lp-phone-foot">{% icon "pin" 12 %} At Main campus · 18 m</small>
+          <i class="lp-btn-side lp-btn-power"></i><i class="lp-btn-side lp-btn-vol1"></i><i class="lp-btn-side lp-btn-vol2"></i>
+          <div class="lp-screen">
+            <div class="lp-island"></div>
+            <div class="lp-status">
+              <b>7:52</b>
+              <span class="lp-status-icons">
+                <svg viewBox="0 0 18 12" width="14" height="10"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+                <svg viewBox="0 0 16 12" width="13" height="10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1.5 4.5a9.5 9.5 0 0 1 13 0M4 7.3a6 6 0 0 1 8 0"/><circle cx="8" cy="10" r="1.2" fill="currentColor" stroke="none"/></svg>
+                <span class="lp-battery"><i></i></span>
+              </span>
+            </div>
+            <div class="lp-app-head">
+              <span class="lp-app-logo"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+              <div><b>Main campus</b><small>AttendPro</small></div>
+              <span class="lp-app-av">AY</span>
+            </div>
+            <div class="lp-today">
+              <small id="lp-today">Monday</small>
+              <h4>Good morning, Amina</h4>
+              <div class="lp-clock-wrap">
+                <span class="lp-ring r1"></span><span class="lp-ring r2"></span>
+                <div class="lp-clock" id="lp-btn">
+                  <span class="lp-clock-idle">{% icon "pin" 26 %}<b>Clock in</b></span>
+                  <span class="lp-clock-done">{% icon "check" 30 %}<b id="lp-in">7:52 AM</b></span>
+                </div>
+              </div>
+              <div class="lp-onsite"><span></span> <em id="lp-status">You're on site · 18 m away</em></div>
+            </div>
+            <div class="lp-mini">
+              <div><small>This month</small><b>96%</b><span class="lp-mini-bar"><i style="width:96%"></i></span></div>
+              <div><small>Hours</small><b>41.5</b><span class="lp-mini-bar blue"><i style="width:78%"></i></span></div>
+            </div>
+            <nav class="lp-tabs">
+              <span class="on">{% icon "home" 18 %}<small>Home</small></span>
+              <span>{% icon "pin" 18 %}<small>Clock</small></span>
+              <span>{% icon "calendar" 18 %}<small>History</small></span>
+              <span>{% icon "leave" 18 %}<small>Leave</small></span>
+            </nav>
+            <div class="lp-home-bar"></div>
           </div>
         </div>
         <div class="lp-chip lp-chip-a">{% icon "qr" 16 %} QR changes every 30 s</div>
@@ -201,11 +232,11 @@
       </div>
       <div class="lp-features">
         <article class="reveal"><span>{% icon "qr" 22 %}</span><h3>QR attendance</h3><p>A rotating code on any screen at the entrance. Staff scan with the app or their phone's camera.</p></article>
-        <article class="reveal"><span>{% icon "pin" 22 %}</span><h3>GPS clock-in</h3><p>A Clock in button that only works at your premises, accurate to the distance you choose.</p></article>
+        <article class="reveal"><span>{% icon "pin" 22 %}</span><h3>GPS clock-in</h3><p>A Clock in button that works only on your premises, within the distance you choose.</p></article>
         <article class="reveal"><span>{% icon "leave" 22 %}</span><h3>Leave management</h3><p>Annual, sick and casual leave with allowances, requests and approvals, all in the register.</p></article>
         <article class="reveal"><span>{% icon "file" 22 %}</span><h3>Excel, CSV &amp; PDF</h3><p>Summary, daily register and time log, ready to print or send to your accountant.</p></article>
         <article class="reveal"><span>{% icon "bell" 22 %}</span><h3>Automatic alerts</h3><p>In-app and email notices for late arrivals, absences, missed clock-outs and leave decisions.</p></article>
-        <article class="reveal"><span>{% icon "trend" 22 %}</span><h3>Analytics</h3><p>Trends, weekday patterns, arrival times and how each department or branch compares.</p></article>
+        <article class="reveal"><span>{% icon "trend" 22 %}</span><h3>Analytics</h3><p>Trends, weekday patterns, arrival times and side-by-side team comparisons.</p></article>
         <article class="reveal"><span>{% icon "layers" 22 %}</span><h3>Multiple branches</h3><p>Each site with its own location and reception screen, all in one account.</p></article>
         <article class="reveal"><span>{% icon "users" 22 %}</span><h3>Bulk import</h3><p>Bring your whole staff list in from a spreadsheet and print everyone's login slip.</p></article>
       </div>
