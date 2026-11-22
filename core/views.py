@@ -113,10 +113,16 @@ def register_org(request):
 
 def home(request):
     if not request.user.is_authenticated:
-        return redirect("login")
+        return landing(request)
     if request.user.is_superuser and not request.user.organisation_id:
         return redirect("platform")
     return _member_home(request)
+
+
+def landing(request):
+    """Public home page for visitors who aren't signed in."""
+    from billing.views import _public_plans, plan_cards
+    return render(request, "landing.html", {"cards": plan_cards(_public_plans())})
 
 
 @member_required

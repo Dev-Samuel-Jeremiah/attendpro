@@ -1,0 +1,267 @@
+{% extends "base.html" %}{% load ui static %}
+{% block title %}AttendPro: attendance your team clocks in one tap{% endblock %}
+{% block head %}
+<meta name="description" content="AttendPro records staff and student attendance in one tap: a rotating QR code at the entrance or a GPS-checked clock-in button. Live dashboard, leave, reports and alerts. Free for up to 10 staff.">
+<meta property="og:title" content="AttendPro: attendance in one tap">
+<meta property="og:description" content="Clock in by QR or GPS, see who's in live, and export reports. Free for up to 10 staff.">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="{% static 'css/landing.css' %}">
+{% endblock %}
+{% block body_class %}lp{% endblock %}
+{% block body %}
+<header class="lp-nav" id="top">
+  <div class="lp-wrap lp-nav-in">
+    <a href="/" class="lp-brand" aria-label="AttendPro home">
+      <span class="lp-mark"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+      AttendPro
+    </a>
+    <nav class="lp-links" aria-label="Sections">
+      <a href="#how">How it works</a><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a>
+    </nav>
+    <div class="lp-nav-cta">
+      <a href="{% url 'login' %}" class="lp-btn lp-btn-quiet">Sign in</a>
+      <a href="{% url 'register' %}?plan=basic" class="lp-btn lp-btn-primary">Start free</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Hero -->
+  <section class="lp-hero">
+    <div class="lp-glow" aria-hidden="true"></div>
+    <div class="lp-wrap lp-hero-in">
+      <div class="lp-hero-copy">
+        <span class="lp-pill"><span class="lp-dot"></span> Attendance for schools and organisations</span>
+        <h1>Clock in with <span class="lp-nw">one tap.</span><br><span class="lp-grad">Know who's in, live.</span></h1>
+        <p class="lp-lead">Your team records attendance on their own phones: scan the live QR code at the entrance, or tap <b>Clock in</b> when they're on site. You see arrivals, lateness and hours as they happen, with reports ready when you need them.</p>
+        <div class="lp-cta-row">
+          <a href="{% url 'register' %}?plan=basic" class="lp-btn lp-btn-primary lp-btn-lg">Start free {% icon "chevron-right" 18 %}</a>
+          <a href="#how" class="lp-btn lp-btn-ghost lp-btn-lg">See how it works</a>
+        </div>
+        <ul class="lp-assure">
+          <li>{% icon "check" 16 %} Free for up to 10 staff</li>
+          <li>{% icon "check" 16 %} No app to install</li>
+          <li>{% icon "check" 16 %} Ready in minutes</li>
+        </ul>
+      </div>
+
+      <div class="lp-hero-art" aria-hidden="true">
+        <div class="lp-board">
+          <div class="lp-board-top"><span></span><span></span><span></span><b>Today · Dashboard</b></div>
+          <div class="lp-board-stats">
+            <div><small>In</small><b>42</b><i class="t-green"></i></div>
+            <div><small>Late</small><b>3</b><i class="t-amber"></i></div>
+            <div><small>Leave</small><b>2</b><i class="t-blue"></i></div>
+          </div>
+          <div class="lp-board-bars">
+            {% for h in "6 8 7 9 8 4 9 8 9 7 9 8"|make_list %}{% if h != " " %}<span style="--h:{{ h }}"></span>{% endif %}{% endfor %}
+          </div>
+          <div class="lp-board-feed" id="lp-feed">
+            <div><span class="lp-av">AY</span><b>Amina Yusuf</b><em class="ok">In · 7:52</em></div>
+            <div><span class="lp-av">DG</span><b>David Gyang</b><em class="ok">In · 7:55</em></div>
+            <div><span class="lp-av">GO</span><b>Grace Okafor</b><em class="late">Late · 8:14</em></div>
+          </div>
+        </div>
+        <div class="lp-phone">
+          <div class="lp-phone-notch"></div>
+          <div class="lp-phone-screen">
+            <small id="lp-today">Monday</small>
+            <h4>Good morning, Amina</h4>
+            <div class="lp-phone-times"><div><small>In</small><b id="lp-in">—</b></div><div><small>Status</small><b id="lp-status">Not in</b></div></div>
+            <div class="lp-phone-btn" id="lp-btn">{% icon "pin" 16 %} Clock in</div>
+            <div class="lp-phone-ok" id="lp-ok">{% icon "check" 18 %} Checked in</div>
+            <small class="lp-phone-foot">{% icon "pin" 12 %} At Main campus · 18 m</small>
+          </div>
+        </div>
+        <div class="lp-chip lp-chip-a">{% icon "qr" 16 %} QR changes every 30 s</div>
+        <div class="lp-chip lp-chip-b">{% icon "bell" 16 %} 3 people not in yet</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Who it's for -->
+  <section class="lp-for">
+    <div class="lp-wrap">
+      <p>Made for places where people show up</p>
+      <ul>
+        <li>{% icon "users" 18 %} Schools</li><li>{% icon "grid" 18 %} Offices</li><li>{% icon "activity" 18 %} Clinics</li>
+        <li>{% icon "settings" 18 %} Factories &amp; sites</li><li>{% icon "home" 18 %} Churches &amp; NGOs</li><li>{% icon "pin" 18 %} Multi-branch teams</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Problem -->
+  <section class="lp-section">
+    <div class="lp-wrap">
+      <div class="lp-head reveal">
+        <span class="lp-kicker">Why switch</span>
+        <h2>Paper registers and fingerprint machines cost you more than you think</h2>
+      </div>
+      <div class="lp-vs reveal">
+        <div class="lp-vs-old">
+          <h3>The old way</h3>
+          <ul>
+            <li>{% icon "x" 16 %} Queues at one machine every morning</li>
+            <li>{% icon "x" 16 %} Friends signing in for friends</li>
+            <li>{% icon "x" 16 %} Hours spent adding up a register by hand</li>
+            <li>{% icon "x" 16 %} You find out who was late at the end of the month</li>
+          </ul>
+        </div>
+        <div class="lp-vs-new">
+          <h3>With AttendPro</h3>
+          <ul>
+            <li>{% icon "check" 16 %} Everyone clocks in on their own phone, no queue</li>
+            <li>{% icon "check" 16 %} A QR code that expires in seconds, plus a GPS check</li>
+            <li>{% icon "check" 16 %} Reports in Excel, CSV or PDF with one click</li>
+            <li>{% icon "check" 16 %} A live dashboard and alerts the same morning</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="lp-section lp-tint" id="how">
+    <div class="lp-wrap">
+      <div class="lp-head reveal">
+        <span class="lp-kicker">How it works</span>
+        <h2>Up and running before your first coffee</h2>
+        <p>No hardware to buy and nothing for staff to install.</p>
+      </div>
+      <ol class="lp-steps">
+        <li class="reveal"><span class="lp-num">1</span><h3>Add your team</h3><p>Register people one by one or import a spreadsheet. Everyone gets an ID and password, printed on tidy login slips.</p></li>
+        <li class="reveal"><span class="lp-num">2</span><h3>Choose how they clock in</h3><p>Put the live QR code on a screen at reception, or set your location so the Clock in button only works on site.</p></li>
+        <li class="reveal"><span class="lp-num">3</span><h3>Watch it fill up</h3><p>Arrivals appear on your dashboard as they happen. Lateness, hours and absences are worked out for you.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- Anti-cheat -->
+  <section class="lp-section lp-dark">
+    <div class="lp-wrap lp-split">
+      <div class="reveal">
+        <span class="lp-kicker lp-kicker-light">Honest attendance</span>
+        <h2>Proxy sign-ins stop here</h2>
+        <p class="lp-lead-light">A screenshot of yesterday's code won't work, and neither will clocking in from home.</p>
+        <ul class="lp-shield">
+          <li><span>{% icon "qr" 20 %}</span><div><b>A QR code that keeps changing</b><p>The code on the reception screen refreshes every 30 seconds, so a photo shared on WhatsApp stops working almost at once.</p></div></li>
+          <li><span>{% icon "pin" 20 %}</span><div><b>GPS check at the door</b><p>The Clock in button only works within the distance you set from your premises. On Enterprise, QR scans are checked too.</p></div></li>
+          <li><span>{% icon "activity" 20 %}</span><div><b>A record of every attempt</b><p>Every scan is logged with time, IP address and distance, including the ones that were refused.</p></div></li>
+        </ul>
+      </div>
+      <div class="lp-kiosk reveal" aria-hidden="true">
+        <div class="lp-kiosk-top"><b>Main campus</b><span id="lp-clock">08:00</span></div>
+        <div class="lp-qr" id="lp-qr"></div>
+        <div class="lp-kiosk-bar"><span id="lp-bar"></span></div>
+        <small>Code refreshes in <b id="lp-secs">30</b>s</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- Admins vs staff -->
+  <section class="lp-section">
+    <div class="lp-wrap">
+      <div class="lp-head reveal">
+        <span class="lp-kicker">Two sides, one app</span>
+        <h2>Simple for staff. Powerful for you.</h2>
+      </div>
+      <div class="lp-duo">
+        <div class="lp-duo-card reveal">
+          <span class="lp-tag">For administrators</span>
+          <h3>Everything about attendance, in one place</h3>
+          <ul>
+            <li>{% icon "grid" 16 %} Live dashboard: present, late, on leave, not in</li>
+            <li>{% icon "calendar" 16 %} Daily register with quick corrections</li>
+            <li>{% icon "chart" 16 %} Reports for any period, by department or branch</li>
+            <li>{% icon "leave" 16 %} Approve leave in one tap</li>
+            <li>{% icon "bell" 16 %} Alerts for late arrivals and absences</li>
+          </ul>
+        </div>
+        <div class="lp-duo-card reveal">
+          <span class="lp-tag lp-tag-green">For staff and students</span>
+          <h3>One tap in the morning, nothing else to remember</h3>
+          <ul>
+            <li>{% icon "pin" 16 %} Clock in and out from their own phone</li>
+            <li>{% icon "clock" 16 %} See today's times and this month's record</li>
+            <li>{% icon "leave" 16 %} Request leave and see what's left</li>
+            <li>{% icon "bell" 16 %} A reminder if they forget to clock out</li>
+            <li>{% icon "key" 16 %} Stay signed in on their phone for 30 days</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="lp-section lp-tint" id="features">
+    <div class="lp-wrap">
+      <div class="lp-head reveal">
+        <span class="lp-kicker">Features</span>
+        <h2>Everything you need, nothing you don't</h2>
+      </div>
+      <div class="lp-features">
+        <article class="reveal"><span>{% icon "qr" 22 %}</span><h3>QR attendance</h3><p>A rotating code on any screen at the entrance. Staff scan with the app or their phone's camera.</p></article>
+        <article class="reveal"><span>{% icon "pin" 22 %}</span><h3>GPS clock-in</h3><p>A Clock in button that only works at your premises, accurate to the distance you choose.</p></article>
+        <article class="reveal"><span>{% icon "leave" 22 %}</span><h3>Leave management</h3><p>Annual, sick and casual leave with allowances, requests and approvals, all in the register.</p></article>
+        <article class="reveal"><span>{% icon "file" 22 %}</span><h3>Excel, CSV &amp; PDF</h3><p>Summary, daily register and time log, ready to print or send to your accountant.</p></article>
+        <article class="reveal"><span>{% icon "bell" 22 %}</span><h3>Automatic alerts</h3><p>In-app and email notices for late arrivals, absences, missed clock-outs and leave decisions.</p></article>
+        <article class="reveal"><span>{% icon "trend" 22 %}</span><h3>Analytics</h3><p>Trends, weekday patterns, arrival times and how each department or branch compares.</p></article>
+        <article class="reveal"><span>{% icon "layers" 22 %}</span><h3>Multiple branches</h3><p>Each site with its own location and reception screen, all in one account.</p></article>
+        <article class="reveal"><span>{% icon "users" 22 %}</span><h3>Bulk import</h3><p>Bring your whole staff list in from a spreadsheet and print everyone's login slip.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="lp-section" id="pricing">
+    <div class="lp-wrap">
+      <div class="lp-head reveal">
+        <span class="lp-kicker">Pricing</span>
+        <h2>Start free. Upgrade when you grow.</h2>
+        <p>Prices in naira. Pay securely by card, transfer or USSD through Paystack.</p>
+      </div>
+      <div class="plans lp-plans reveal">
+        {% for c in cards %}{% include "billing/_plan_card.html" with mode="pricing" %}{% endfor %}
+      </div>
+      <p class="lp-center"><a href="{% url 'pricing' %}">Compare every feature {% icon "chevron-right" 14 %}</a></p>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="lp-section lp-tint" id="faq">
+    <div class="lp-wrap lp-faq-wrap">
+      <div class="lp-head reveal"><span class="lp-kicker">FAQ</span><h2>Questions people ask</h2></div>
+      <div class="lp-faq reveal">
+        <details><summary>Do staff need to install an app?</summary><p>No. AttendPro runs in the phone's browser. Staff sign in once with their ID and stay signed in for 30 days, so clocking in is a single tap.</p></details>
+        <details><summary>What do we need at the entrance?</summary><p>Any screen with a browser for the QR code: a TV, a monitor or a tablet. On the free plan you don't need a screen at all: staff use the GPS Clock in button.</p></details>
+        <details><summary>Can someone clock in for a colleague?</summary><p>It's made very hard. The QR code changes every 30 seconds and the Clock in button only works on your premises. Every attempt, including refused ones, is logged.</p></details>
+        <details><summary>What if a phone has no GPS or no data?</summary><p>An administrator can add or correct any entry by hand from the daily register, with a note.</p></details>
+        <details><summary>Can we change plans later?</summary><p>Yes. Upgrade any time from Plan &amp; billing. If a paid plan runs out, you move to the free plan: nothing is deleted, and paid features come back as soon as you renew.</p></details>
+        <details><summary>Is our data safe?</summary><p>Each organisation's data is kept separate, connections are encrypted, and the database is backed up every night.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- Final CTA -->
+  <section class="lp-final">
+    <div class="lp-wrap reveal">
+      <h2>Tomorrow morning, let attendance take care of itself.</h2>
+      <p>Set up your organisation in a few minutes. Free for up to 10 staff, no card needed.</p>
+      <div class="lp-cta-row lp-center-row">
+        <a href="{% url 'register' %}?plan=basic" class="lp-btn lp-btn-primary lp-btn-lg">Create your free account {% icon "chevron-right" 18 %}</a>
+        <a href="{% url 'login' %}" class="lp-btn lp-btn-onDark lp-btn-lg">Sign in</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="lp-foot">
+  <div class="lp-wrap lp-foot-in">
+    <div><a href="/" class="lp-brand"><span class="lp-mark"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>AttendPro</a>
+      <p>Attendance in one tap, by Techmiary Technology Concepts.</p></div>
+    <nav aria-label="Footer"><a href="#how">How it works</a><a href="#features">Features</a><a href="{% url 'pricing' %}">Pricing</a><a href="{% url 'login' %}">Sign in</a><a href="{% url 'register' %}">Create account</a></nav>
+    <small>© {% now "Y" %} Techmiary Technology Concepts · techmiary.tech</small>
+  </div>
+</footer>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/landing.js' %}"></script>{% endblock %}

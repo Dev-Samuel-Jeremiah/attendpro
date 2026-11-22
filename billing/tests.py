@@ -325,3 +325,17 @@ class RegisterPlanTests(TestCase):
         Plan.objects.filter(slug="enterprise").update(is_public=False)
         resp = self.client.post(reverse("register"), self.data("enterprise"))
         self.assertContains(resp, "Choose one of the plans shown.")
+
+
+class LandingPageTests(TestCase):
+    def test_visitors_see_the_landing_page_with_live_prices(self):
+        resp = self.client.get("/")
+        self.assertContains(resp, "Clock in with")
+        self.assertContains(resp, "10,000")
+        self.assertContains(resp, "?plan=professional")
+
+    def test_signed_in_users_skip_it(self):
+        org = Organisation.objects.create(code="LP", name="LP")
+        admin = User.objects.create_user(username="LP-0001", password="x", organisation=org, role=User.ROLE_ADMIN)
+        self.client.force_login(admin)
+        self.assertRedirects(self.client.get("/"), reverse("dashboard"))
