@@ -256,3 +256,7 @@ html.js .af-next.hide, html.js .af-back.hide { visibility: hidden; }
 html.js .af-terms { display: none; }
 html.js .af-step[data-step="4"].on ~ .af-terms, .af-terms.show { display: flex; }
 .af-link-plain a { color: var(--muted); }
+.af-cycle { margin: 0 0 14px; }
+#af-plans .price-y { display: none; }
+#af-plans[data-cycle="yearly"] .price-y { display: inline; }
+#af-plans[data-cycle="yearly"] .af-plan:has(.price-y) .price-m { display: none; }

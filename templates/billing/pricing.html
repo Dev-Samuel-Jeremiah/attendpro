@@ -1,4 +1,4 @@
-{% extends "public/_base.html" %}{% load ui %}
+{% extends "public/_base.html" %}{% load static ui %}
 {% block title %}Plans & pricing · AttendPro{% endblock %}
 {% block public_head %}
 <meta name="description" content="AttendPro plans in naira: free for up to 10 staff, Professional and Enterprise for growing schools and organisations.">
@@ -11,7 +11,8 @@
       <h1 style="margin:10px 0 0">Simple plans for every team</h1>
       <p>Start free with up to 10 staff. Upgrade when you need QR attendance, reports and more. Prices in naira, paid securely through Paystack by card, transfer or USSD.</p>
     </div>
-    <div class="plans">
+    {% include "billing/_cycle_switch.html" %}
+    <div class="plans" data-cycle="{{ cycle }}">
       {% for c in cards %}{% include "billing/_plan_card.html" with mode="pricing" %}{% endfor %}
     </div>
   </div>
@@ -22,10 +23,10 @@
     <div class="lp-head"><span class="lp-kicker">Billing questions</span><h2>Before you pay</h2></div>
     <div class="lp-faq">
       <details open><summary>Is Basic really free?</summary><p>Yes, for up to 10 active accounts (administrators included), with no time limit and no card needed. It's also the best way to try AttendPro: start on Basic and upgrade whenever you're ready.</p></details>
-      <details><summary>How do we pay?</summary><p>Online through Paystack, by card, bank transfer or USSD, from <b>Plan &amp; billing</b> in your account. Each payment covers one month. Paystack emails a receipt, and every payment is listed in Plan &amp; billing.</p></details>
+      <details><summary>How do we pay?</summary><p>Online through Paystack, by card, bank transfer or USSD, from <b>Plan &amp; billing</b> in your account. Pay monthly, or yearly and get two months free. Paystack emails a receipt, and every payment is listed in Plan &amp; billing.</p></details>
       <details><summary>Does it renew automatically?</summary><p>No. Nothing is charged without you. We remind your administrators 7, 3 and 1 day before a paid month ends. If you don't renew, you move to the free plan: nothing is deleted, and paid features come back when you pay again.</p></details>
       <details><summary>Can we get a refund?</summary><p>Yes. If you're not satisfied, ask for a full refund within 7 days of paying for a new plan{% if site.sales_email %} at <a href="mailto:{{ site.sales_email }}">{{ site.sales_email }}</a>{% endif %}. After 7 days, the current month isn't refundable. See our <a href="{% url 'terms' %}">terms</a>.</p></details>
-      <details><summary>Can we change plans?</summary><p>Any time. Paying early for the same plan adds another month on top. Switching to a different plan starts it straight away.</p></details>
+      <details><summary>Can we change plans?</summary><p>Any time. Paying early for the same plan adds another period (a month, or a year) on top. Switching to a different plan starts it straight away.</p></details>
       <details><summary>What counts towards the staff limit?</summary><p>Active accounts, including administrators. Deactivated people don't count, so you can stay within your limit by deactivating people who have left.</p></details>
       <details><summary>Do you offer a free trial of paid plans?</summary><p>The free Basic plan is the trial: it has the Clock in button, the live dashboard and attendance history for up to 10 people. If you'd like to see Professional or Enterprise features first, <a href="{% url 'contact' %}">talk to us</a>.</p></details>
     </div>
@@ -33,3 +34,4 @@
   </div>
 </section>
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/cycle.js' %}"></script>{% endblock %}

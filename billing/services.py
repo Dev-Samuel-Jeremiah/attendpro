@@ -13,7 +13,7 @@ from django.db import transaction
 from django.shortcuts import redirect
 from django.utils import timezone
 
-from .models import Feature, Payment, Plan
+from .models import MONTHLY, YEARLY, Feature, Payment, Plan
 
 PAYSTACK_API = "https://api.paystack.co"
 
@@ -87,18 +87,24 @@ def _paystack(method, path, payload=None):
     return body["data"]
 
 
-def start_checkout(org, plan, user, callback_url):
+def clean_cycle(value, plan=None):
+    cycle = value if value in (MONTHLY, YEARLY) else MONTHLY
+    return MONTHLY if plan is not None and cycle == YEARLY and not plan.has_yearly else cycle
+
+
+def start_checkout(org, plan, user, callback_url, cycle=MONTHLY):
     """Create a pending Payment and return the Paystack page to send the payer to."""
     email = user.email or org.email
     if not email:
         raise PaystackError("Add an email address to your profile or organisation settings first.")
+    cycle = clean_cycle(cycle, plan)
     payment = Payment.objects.create(
-        organisation=org, plan=plan, amount_kobo=plan.price * 100, created_by=user,
+        organisation=org, plan=plan, amount_kobo=plan.price_for(cycle) * 100, cycle=cycle, created_by=user,
         reference=f"AP-{org.code}-{secrets.token_hex(6)}".upper())
     data = _paystack("POST", "/transaction/initialize", {
         "email": email, "amount": payment.amount_kobo, "currency": "NGN",
         "reference": payment.reference, "callback_url": callback_url,
-        "metadata": {"organisation": org.code, "plan": plan.slug, "payment_id": payment.pk},
+        "metadata": {"organisation": org.code, "plan": plan.slug, "cycle": cycle, "payment_id": payment.pk},
     })
     return data["authorization_url"]
 
@@ -126,7 +132,7 @@ def apply_paystack_result(payment, data):
                 payment.status = Payment.STATUS_FAILED
                 payment.save(update_fields=["status"])
             return payment
-        start, end = activate_plan(payment.organisation, payment.plan)
+        start, end = activate_plan(payment.organisation, payment.plan, days=payment.plan.days_for(payment.cycle))
         payment.status = Payment.STATUS_SUCCESS
         payment.channel = (data.get("channel") or "")[:30]
         payment.paid_at = timezone.now()

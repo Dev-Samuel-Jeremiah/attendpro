@@ -565,3 +565,19 @@ table.stacked td > .btn:only-child, table.stacked td > form:only-child { margin-
 /* Medium screens: slightly tighter table cells so ordinary tables still fit beside the sidebar */
 @media (max-width: 1200px) { .table th, .table td { padding-left: 7px; padding-right: 7px; } }
 .msg.done { opacity: .65; }
+
+/* ---------- Monthly / yearly prices ---------- */
+.cycle-switch { display: flex; width: fit-content; margin: 0 auto 26px; padding: 4px; border-radius: 999px; background: #fff;
+  border: 1px solid var(--line); box-shadow: var(--shadow); gap: 2px; }
+.cycle-switch button { border: 0; background: none; font: inherit; font-weight: 650; font-size: .92rem; color: var(--muted);
+  padding: 9px 18px; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background .2s, color .2s; }
+.cycle-switch button span { font-size: .7rem; font-weight: 750; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); }
+.cycle-switch button[aria-checked="true"] { background: var(--ink); color: #fff; }
+.cycle-switch button[aria-checked="true"] span { background: var(--accent); color: #fff; }
+.cycle-switch button:focus-visible { outline: 3px solid rgba(18,184,134,.35); outline-offset: 2px; }
+.plans .price-y, .plans .price-y-note { display: none; }
+.plans[data-cycle="yearly"] .plan-card:not(.no-yearly) .price-m { display: none; }
+.plans[data-cycle="yearly"] .plan-card:not(.no-yearly) .price-y { display: inline; }
+.plans[data-cycle="yearly"] .plan-card:not(.no-yearly) .price-y-note { display: block; }
+.price-y-note { color: var(--muted); font-size: .8rem; margin-top: 2px; }
+.price-y-note b { color: var(--accent-ink); }

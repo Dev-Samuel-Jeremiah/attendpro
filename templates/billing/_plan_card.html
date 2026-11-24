@@ -1,23 +1,27 @@
 {% load ui humanize %}{# mode: "pricing" | "billing" | "platform" #}
-<div class="plan-card{% if c.plan.highlight %} featured{% endif %}{% if mode == 'billing' and c.plan.pk == plan.pk %} current{% endif %}">
+<div class="plan-card{% if not c.plan.has_yearly %} no-yearly{% endif %}{% if c.plan.highlight %} featured{% endif %}{% if mode == 'billing' and c.plan.pk == plan.pk %} current{% endif %}">
   {% if mode == 'billing' and c.plan.pk == plan.pk %}<span class="plan-flag current">Your plan</span>
   {% elif c.plan.highlight %}<span class="plan-flag">Most popular</span>{% endif %}
   <h3>{{ c.plan.name }}{% if not c.plan.is_public %} <span class="badge b-muted">Hidden</span>{% endif %}{% if mode == 'platform' and c.plan.is_default %} <span class="badge b-leave">Default</span>{% endif %}</h3>
   <p class="plan-tagline">{{ c.plan.tagline }}</p>
-  <div class="plan-price">{% if c.plan.is_free %}Free{% else %}₦{{ c.plan.price|intcomma }}<small> / {{ c.plan.period_label }}</small>{% endif %}</div>
+  <div class="plan-price">{% if c.plan.is_free %}Free{% else %}
+    <span class="price-m">₦{{ c.plan.price|intcomma }}<small> / {{ c.plan.period_label }}</small></span>
+    {% if c.plan.has_yearly %}<span class="price-y">₦{{ c.plan.yearly_price|intcomma }}<small> / year</small></span>{% endif %}{% endif %}</div>
+  {% if c.plan.has_yearly %}<div class="price-y-note">₦{{ c.plan.yearly_per_month|intcomma }} a month, billed yearly · <b>save ₦{{ c.plan.yearly_saving|intcomma }}</b></div>{% endif %}
   <div class="plan-limit">{% icon "users" 16 %} {% if c.plan.staff_limit %}Up to {{ c.plan.staff_limit }} staff{% else %}Unlimited staff{% endif %}</div>
   <div class="plan-cta">
   {% if mode == 'billing' %}
     {% if c.plan.pk == plan.pk and c.plan.is_free %}<span class="btn btn-ghost btn-block is-static">Your current plan</span>
     {% elif c.plan.is_free %}<span class="btn btn-ghost btn-block is-static">Free fallback plan</span>
     {% else %}<form method="post" action="{% url 'checkout' c.plan.slug %}">{% csrf_token %}
+      <input type="hidden" name="cycle" value="{{ cycle|default:'monthly' }}" data-cycle-input>
       <button class="btn btn-accent btn-block">{% if c.plan.pk == plan.pk %}Renew / extend{% else %}Upgrade to {{ c.plan.name }}{% endif %}</button></form>{% endif %}
   {% elif mode == 'platform' %}
     <a class="btn btn-ghost btn-block" href="{% url 'platform_plan_edit' c.plan.pk %}">{% icon "edit" %} Edit price &amp; features</a>
     <div class="muted" style="font-size:.8rem;text-align:center;margin-top:6px">{{ c.orgs|default:0 }} organisation{{ c.orgs|default:0|pluralize }} on this plan</div>
   {% elif request.user.is_authenticated and request.user.is_org_admin %}
     <a class="btn btn-accent btn-block" href="{% url 'billing' %}">Manage plan</a>
-  {% else %}<a class="btn {% if c.plan.highlight %}btn-accent{% else %}btn-ghost{% endif %} btn-block" href="{% url 'register' %}?plan={{ c.plan.slug }}">{% if c.plan.is_free %}Start free{% else %}Choose {{ c.plan.name }}{% endif %}</a>{% endif %}
+  {% else %}<a class="btn {% if c.plan.highlight %}btn-accent{% else %}btn-ghost{% endif %} btn-block" href="{% url 'register' %}?plan={{ c.plan.slug }}{% if c.plan.has_yearly %}&amp;cycle={{ cycle|default:'monthly' }}{% endif %}" {% if c.plan.has_yearly %}data-cycle-link{% endif %}>{% if c.plan.is_free %}Start free{% else %}Choose {{ c.plan.name }}{% endif %}</a>{% endif %}
   </div>
   <ul class="plan-feats">
     {% if c.base %}<li class="plan-base">Everything in {{ c.base.name }}, plus:</li>{% endif %}

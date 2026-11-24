@@ -327,7 +327,8 @@
         <h2>Start free. Upgrade when you grow.</h2>
         <p>Prices in naira. Pay securely by card, transfer or USSD through Paystack.</p>
       </div>
-      <div class="plans lp-plans reveal">
+      {% include "billing/_cycle_switch.html" %}
+      <div class="plans lp-plans reveal" data-cycle="{{ cycle }}">
         {% for c in cards %}{% include "billing/_plan_card.html" with mode="pricing" %}{% endfor %}
       </div>
       <p class="lp-center"><a href="{% url 'pricing' %}">Compare every feature {% icon "chevron-right" 14 %}</a></p>
@@ -345,7 +346,7 @@
         <details><summary>What if a phone has no GPS or no data?</summary><p>If your plan includes it, they can scan the QR code at reception instead. Otherwise an administrator can mark the day as excused with a note. Clock-in and clock-out times themselves can only come from the person's own scan, so nobody can edit them.</p></details>
         <details><summary>Can we change plans later?</summary><p>Yes. Upgrade any time from Plan &amp; billing. If a paid plan runs out, you move to the free plan: nothing is deleted, and paid features come back as soon as you renew.</p></details>
         <details><summary>Is our data safe?</summary><p>Each organisation's data is kept separate, connections are encrypted, and the database is backed up every night. Location is only read at the moment someone clocks in. See our <a href="{% url 'privacy' %}">privacy policy</a>.</p></details>
-        <details><summary>How do we pay, and can we get a refund?</summary><p>Paid plans are paid monthly through Paystack (card, bank transfer or USSD) and never renew automatically. If you're not happy, ask for a full refund within 7 days of paying for a new plan. <a href="{% url 'pricing' %}#billing-faq">More about billing</a></p></details>
+        <details><summary>How do we pay, and can we get a refund?</summary><p>Paid plans are paid monthly, or yearly with two months free, through Paystack (card, bank transfer or USSD), and never renew automatically. If you're not happy, ask for a full refund within 7 days of paying for a new plan. <a href="{% url 'pricing' %}#billing-faq">More about billing</a></p></details>
         <details><summary>How do we reach you?</summary><p>{% if site.whatsapp %}WhatsApp <a href="https://wa.me/{{ site.whatsapp_digits }}" target="_blank" rel="noopener">{{ site.whatsapp }}</a>, {% endif %}{% if site.sales_email %}email <a href="mailto:{{ site.sales_email }}">{{ site.sales_email }}</a>, {% endif %}or <a href="{% url 'contact' %}">send us a message</a> and we'll get back to you.</p></details>
       </div>
     </div>
@@ -382,4 +383,4 @@
 
 {% include "public/_footer.html" %}
 {% endblock %}
-{% block scripts %}<script src="{% static 'js/landing.js' %}"></script>{% endblock %}
+{% block scripts %}<script src="{% static 'js/cycle.js' %}"></script><script src="{% static 'js/landing.js' %}"></script>{% endblock %}

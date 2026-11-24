@@ -105,7 +105,8 @@ def register_org(request):
                                    f"and upgrade to {plan.name} from this page.")
             return redirect("billing")
         try:
-            return redirect(start_checkout(org, plan, admin, request.build_absolute_uri(reverse("paystack_callback"))))
+            return redirect(start_checkout(org, plan, admin, request.build_absolute_uri(reverse("paystack_callback")),
+                                           cycle=request.POST.get("cycle")))
         except PaystackError as e:
             messages.warning(request, f"Your account is ready, but the payment couldn't start ({e}). "
                                       f"Use the {plan.name} button below to try again.")
@@ -113,7 +114,9 @@ def register_org(request):
     steps = [("plan",), ("org_name", "org_type", "code"), ("first_name", "last_name", "email", "password1", "password2")]
     error_step = next((i + 1 for i, names in enumerate(steps) if any(n in form.errors for n in names)),
                       4 if form.non_field_errors() else 1)
+    cycle = request.POST.get("cycle") or request.GET.get("cycle") or "monthly"
     return render(request, "auth/register.html", {"form": form, "plans": form.fields["plan"].queryset,
+                                                  "cycle": "yearly" if cycle == "yearly" else "monthly",
                                                   "error_step": error_step if form.errors else 1})
 
 
@@ -143,7 +146,7 @@ def landing(request):
     """Public home page for visitors who aren't signed in."""
     from billing.views import _public_plans, plan_cards
     from billing.models import Testimonial
-    return render(request, "landing.html", {"cards": plan_cards(_public_plans()),
+    return render(request, "landing.html", {"cards": plan_cards(_public_plans()), "cycle": "monthly",
                                             "testimonials": Testimonial.objects.filter(is_published=True)[:6]})
 
 

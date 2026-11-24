@@ -1,4 +1,4 @@
-{% extends "manage/_shell.html" %}{% load ui humanize %}
+{% extends "manage/_shell.html" %}{% load static ui humanize %}
 {% block title %}Plan &amp; billing{% endblock %}
 {% block content %}
 <div class="topbar"><div><h1>Plan &amp; billing</h1><p>Your current plan, usage and payments.</p></div>
@@ -18,7 +18,8 @@
 
 {% if not paystack %}<div class="alert alert-info" style="margin-bottom:18px">Online payment is being set up. To upgrade now, contact support.</div>{% endif %}
 
-<div class="plans">
+{% include "billing/_cycle_switch.html" %}
+<div class="plans" data-cycle="{{ cycle }}">
   {% for c in cards %}{% include "billing/_plan_card.html" with mode="billing" %}{% endfor %}
 </div>
 <p class="muted" style="font-size:.85rem;margin:14px 0 26px">Paying for your current plan before it ends adds a full period on top. Switching plans starts the new plan straight away.
@@ -30,7 +31,7 @@
     <thead><tr><th>Date</th><th>Plan</th><th>Amount</th><th>Status</th><th class="hide-sm">Period</th><th class="hide-sm">Reference</th></tr></thead>
     <tbody>
     {% for p in payments %}
-      <tr><td>{{ p.created_at|date:"j M Y, g:i A" }}</td><td>{{ p.plan.name }}</td><td>₦{{ p.amount|intcomma }}</td>
+      <tr><td>{{ p.created_at|date:"j M Y, g:i A" }}</td><td>{{ p.plan.name }}<br><small class="muted">{{ p.get_cycle_display }}</small></td><td>₦{{ p.amount|intcomma }}</td>
         <td><span class="badge {% if p.status == 'success' %}b-present{% elif p.status == 'failed' %}b-absent{% else %}b-muted{% endif %}">{{ p.get_status_display }}</span></td>
         <td class="hide-sm">{% if p.period_end %}{{ p.period_start|date:"j M" }} – {{ p.period_end|date:"j M Y" }}{% else %}—{% endif %}</td>
         <td class="hide-sm mono" style="font-size:.8rem">{{ p.reference }}</td></tr>
@@ -39,3 +40,4 @@
   </table></div>
 </div>
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/cycle.js' %}"></script>{% endblock %}

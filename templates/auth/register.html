@@ -28,17 +28,23 @@
         <!-- 1. Plan -->
         <fieldset class="af-step" data-step="1">
           <legend>Choose your plan</legend>
-          <div class="af-plans">
+          <input type="hidden" name="cycle" value="{{ cycle }}" id="af-cycle">
+          <div class="cycle-switch af-cycle" role="radiogroup" aria-label="Billing period" id="af-cycle-switch">
+            <button type="button" role="radio" data-cycle="monthly" aria-checked="{% if cycle != 'yearly' %}true{% else %}false{% endif %}">Monthly</button>
+            <button type="button" role="radio" data-cycle="yearly" aria-checked="{% if cycle == 'yearly' %}true{% else %}false{% endif %}">Yearly <span>2 months free</span></button>
+          </div>
+          <div class="af-plans" id="af-plans" data-cycle="{{ cycle }}">
             {% for p in plans %}
             <label class="af-plan{% if p.highlight %} hot{% endif %}">
               <input type="radio" name="plan" value="{{ p.pk }}" required {% if form.plan.value|stringformat:"s" == p.pk|stringformat:"s" %}checked{% endif %}
                      data-name="{{ p.name }}" data-price="{% if p.is_free %}Free{% else %}₦{{ p.price|intcomma }} / {{ p.period_label }}{% endif %}"
+                     data-price-yearly="{% if p.has_yearly %}₦{{ p.yearly_price|intcomma }} / year{% endif %}"
                      data-staff="{% if p.staff_limit %}Up to {{ p.staff_limit }} staff{% else %}Unlimited staff{% endif %}" data-free="{{ p.is_free|yesno:'1,0' }}">
               <span class="af-plan-card">
                 {% if p.highlight %}<span class="af-plan-flag">Popular</span>{% endif %}
                 <span class="af-plan-check">{% icon "check" 14 %}</span>
                 <b>{{ p.name }}</b>
-                <span class="af-plan-price">{% if p.is_free %}Free{% else %}₦{{ p.price|intcomma }}<small>/{{ p.period_label }}</small>{% endif %}</span>
+                <span class="af-plan-price">{% if p.is_free %}Free{% else %}<span class="price-m">₦{{ p.price|intcomma }}<small>/{{ p.period_label }}</small></span>{% if p.has_yearly %}<span class="price-y">₦{{ p.yearly_price|intcomma }}<small>/year</small></span>{% endif %}{% endif %}</span>
                 <small class="af-plan-staff">{% icon "users" 14 %} {% if p.staff_limit %}Up to {{ p.staff_limit }} staff{% else %}Unlimited staff{% endif %}</small>
                 <small class="af-plan-tag">{{ p.tagline }}</small>
               </span>

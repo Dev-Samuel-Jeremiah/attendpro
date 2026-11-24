@@ -10,9 +10,9 @@ from .models import Feature, Plan
 class PlanForm(StyledMixin, forms.ModelForm):
     class Meta:
         model = Plan
-        fields = ["name", "tagline", "price", "period_days", "staff_limit", "features",
+        fields = ["name", "tagline", "price", "yearly_price", "period_days", "staff_limit", "features",
                   "is_public", "highlight", "sort_order"]
-        labels = {"price": "Price (₦)", "period_days": "Billing period (days)",
+        labels = {"price": "Monthly price (₦)", "yearly_price": "Yearly price (₦)", "period_days": "Billing period (days)",
                   "staff_limit": "Staff limit", "is_public": "Show on pricing page",
                   "highlight": "Mark as “Most popular”", "sort_order": "Order"}
         widgets = {"features": forms.CheckboxSelectMultiple}
@@ -28,8 +28,10 @@ class PlanForm(StyledMixin, forms.ModelForm):
 
     def clean(self):
         cd = super().clean()
-        if self.instance.is_default and cd.get("price"):
+        if self.instance.is_default and (cd.get("price") or cd.get("yearly_price")):
             self.add_error("price", "The default plan is the free fallback, so its price must stay 0.")
+        if cd.get("yearly_price") and not cd.get("price"):
+            self.add_error("yearly_price", "Set a monthly price first; a free plan has no yearly price.")
         if cd.get("price") and not cd.get("period_days"):
             self.add_error("period_days", "A paid plan needs a billing period.")
         return cd

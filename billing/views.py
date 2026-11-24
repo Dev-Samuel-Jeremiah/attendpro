@@ -38,15 +38,19 @@ def _public_plans():
         Prefetch("features", queryset=Feature.objects.order_by("sort_order", "name")))
 
 
+def _cycle(request):
+    return "yearly" if request.GET.get("cycle") == "yearly" else "monthly"
+
+
 def pricing(request):
-    return render(request, "billing/pricing.html", {"cards": plan_cards(_public_plans())})
+    return render(request, "billing/pricing.html", {"cards": plan_cards(_public_plans()), "cycle": _cycle(request)})
 
 
 @org_admin_required
 def billing(request):
     org = request.user.organisation
     return render(request, "billing/billing.html", {
-        "cards": plan_cards(_public_plans()),
+        "cards": plan_cards(_public_plans()), "cycle": _cycle(request),
         "members_used": org.active_member_count(),
         "payments": org.payments.select_related("plan")[:20],
         "paystack": services.paystack_enabled(),
@@ -71,7 +75,8 @@ def checkout(request, slug):
         return redirect("billing")
     try:
         url = services.start_checkout(org, plan, request.user,
-                                      request.build_absolute_uri(reverse("paystack_callback")))
+                                      request.build_absolute_uri(reverse("paystack_callback")),
+                                      cycle=request.POST.get("cycle"))
     except services.PaystackError as e:
         messages.error(request, f"Payment could not be started: {e}")
         return redirect("billing")
@@ -93,7 +98,7 @@ def paystack_callback(request):
                                   "If you were charged, your plan will update within a few minutes.")
         return redirect("billing")
     if payment.status == Payment.STATUS_SUCCESS:
-        messages.success(request, f"Payment received. You're on the {payment.plan.name} plan until "
+        messages.success(request, f"Payment received ({payment.get_cycle_display().lower()}). You're on the {payment.plan.name} plan until "
                                   f"{payment.period_end:%d %b %Y}.")
     elif payment.status == Payment.STATUS_FAILED:
         messages.error(request, "The payment didn't go through. You have not been charged.")

@@ -28,11 +28,17 @@ class Feature(models.Model):
         return self.status == self.STATUS_SOON
 
 
+MONTHLY, YEARLY = "monthly", "yearly"
+CYCLE_CHOICES = [(MONTHLY, "Monthly"), (YEARLY, "Yearly")]
+
+
 class Plan(models.Model):
     name = models.CharField(max_length=60)
     slug = models.SlugField(max_length=40, unique=True)
     tagline = models.CharField(max_length=160, blank=True)
     price = models.PositiveIntegerField(default=0, help_text="In naira. 0 means free.")
+    yearly_price = models.PositiveIntegerField(null=True, blank=True,
+                                               help_text="In naira, for 12 months. Blank = no yearly option.")
     period_days = models.PositiveIntegerField(default=30, help_text="How long one payment lasts, in days.")
     staff_limit = models.PositiveIntegerField(null=True, blank=True,
                                               help_text="Active accounts allowed, admins included. Blank = unlimited.")
@@ -54,6 +60,25 @@ class Plan(models.Model):
         return self.price == 0
 
     @property
+    def has_yearly(self):
+        return not self.is_free and bool(self.yearly_price)
+
+    @property
+    def yearly_saving(self):
+        return max(self.price * 12 - (self.yearly_price or 0), 0) if self.has_yearly else 0
+
+    @property
+    def yearly_per_month(self):
+        return round(self.yearly_price / 12) if self.has_yearly else None
+
+    def price_for(self, cycle):
+        """Naira to pay for one period of `cycle` ("monthly" or "yearly")."""
+        return self.yearly_price if cycle == YEARLY and self.has_yearly else self.price
+
+    def days_for(self, cycle):
+        return 365 if cycle == YEARLY and self.has_yearly else self.period_days
+
+    @property
     def period_label(self):
         return {30: "month", 31: "month", 90: "quarter", 365: "year", 366: "year"}.get(
             self.period_days, f"{self.period_days} days")
@@ -71,6 +96,7 @@ class Payment(models.Model):
     organisation = models.ForeignKey("core.Organisation", on_delete=models.CASCADE, related_name="payments")
     plan = models.ForeignKey(Plan, on_delete=models.PROTECT, related_name="payments")
     amount_kobo = models.PositiveBigIntegerField()
+    cycle = models.CharField(max_length=7, choices=CYCLE_CHOICES, default=MONTHLY)
     reference = models.CharField(max_length=64, unique=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_PENDING)
     channel = models.CharField(max_length=30, blank=True)

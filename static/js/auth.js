@@ -151,6 +151,17 @@
     if (e.key === "Enter" && current < 4 && e.target.tagName === "INPUT") { e.preventDefault(); next.click(); }
   });
 
+  // Monthly / yearly
+  const cycleInput = $("af-cycle"), plansBox = $("af-plans");
+  function price(r) {
+    return cycleInput.value === "yearly" && r.dataset.priceYearly ? r.dataset.priceYearly : r.dataset.price;
+  }
+  $("af-cycle-switch").querySelectorAll("[data-cycle]").forEach(b => b.addEventListener("click", () => {
+    cycleInput.value = b.dataset.cycle; plansBox.dataset.cycle = b.dataset.cycle;
+    $("af-cycle-switch").querySelectorAll("[data-cycle]").forEach(x => x.setAttribute("aria-checked", String(x === b)));
+    planChanged();
+  }));
+
   // Plan → summary card in the brand panel
   function planChanged() {
     const r = reg.querySelector('input[name="plan"]:checked');
@@ -158,7 +169,7 @@
     if (!r || !card) return;
     card.hidden = false;
     $("ap-plan-name").textContent = r.dataset.name;
-    $("ap-plan-price").textContent = r.dataset.price;
+    $("ap-plan-price").textContent = price(r);
     $("ap-plan-staff").textContent = r.dataset.staff;
     $("ap-plan-next").textContent = r.dataset.free === "1" ? "Free forever. You'll go straight to your dashboard."
       : "You'll pay securely with Paystack right after creating your account.";
@@ -254,7 +265,7 @@
     const r = reg.querySelector('input[name="plan"]:checked');
     const type = f("org_type");
     const code = codeInput.value.trim().toUpperCase();
-    $("rv-plan").textContent = r ? `${r.dataset.name} · ${r.dataset.price}` : "—";
+    $("rv-plan").textContent = r ? `${r.dataset.name} · ${price(r)}` : "—";
     $("rv-org").textContent = `${f("org_name").value.trim()} (${type.options[type.selectedIndex].text})`;
     $("rv-id").textContent = code ? `${code}-0001` : "—";
     $("rv-admin").textContent = `${f("first_name").value.trim()} ${f("last_name").value.trim()} · ${f("email").value.trim()}`;
