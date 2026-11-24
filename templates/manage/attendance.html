@@ -8,7 +8,7 @@
     <form method="get" class="btn-row"><input type="date" class="input" name="date" value="{{ d|date:'Y-m-d' }}" onchange="this.form.submit()" style="width:auto"><input type="hidden" name="dept" value="{{ dept }}"><input type="hidden" name="branch" value="{{ branch }}"></form>
     <a class="btn btn-ghost btn-sm" href="?date={{ next|date:'Y-m-d' }}&dept={{ dept }}">{% icon "chevron-right" %}</a>
     {% if not is_today %}<a class="btn btn-ghost btn-sm" href="?dept={{ dept }}">Today</a>{% endif %}
-    <a class="btn btn-accent" href="{% url 'record_add' %}?date={{ d|date:'Y-m-d' }}">{% icon "plus" %} Add entry</a>
+    <a class="btn btn-accent" href="{% url 'record_add' %}?date={{ d|date:'Y-m-d' }}">{% icon "plus" %} Record leave or absence</a>
   </div>
 </div>
 <div class="btn-row" style="margin-bottom:16px">
@@ -32,7 +32,7 @@
         <td>{{ x.r.check_out|localtime_fmt }}</td>
         <td class="hide-sm">{% if x.r %}{{ x.r.worked_display }}{% else %}—{% endif %}</td>
         <td class="hide-sm">{% if x.r %}<small class="muted">{{ x.r.get_source_display }}</small>{% endif %}</td>
-        <td style="text-align:right">{% if x.r %}<a class="btn btn-ghost btn-sm" href="{% url 'record_edit' x.r.pk %}">Edit</a>{% else %}<a class="btn btn-ghost btn-sm" href="{% url 'record_add' %}?user={{ x.m.pk }}&date={{ d|date:'Y-m-d' }}">Mark</a>{% endif %}</td>
+        <td style="text-align:right">{% if x.r %}<a class="btn btn-ghost btn-sm" href="{% url 'record_edit' x.r.pk %}">{% if x.r.is_locked %}{% icon "lock" 14 %} View{% else %}Edit{% endif %}</a>{% else %}<a class="btn btn-ghost btn-sm" href="{% url 'record_add' %}?user={{ x.m.pk }}&date={{ d|date:'Y-m-d' }}">Mark</a>{% endif %}</td>
       </tr>
     {% empty %}<tr><td colspan="7" class="empty">No members yet.</td></tr>{% endfor %}
     </tbody>

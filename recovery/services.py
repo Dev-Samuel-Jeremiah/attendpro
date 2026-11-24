@@ -130,6 +130,8 @@ def _iso(v):
 def trash(obj, by):
     """Delete `obj`, keeping a copy for 30 days when the plan includes recovery."""
     from core.models import AttendanceRecord, Branch, Department
+    if isinstance(obj, AttendanceRecord) and obj.is_locked:
+        raise PermissionError("Scanned attendance can't be deleted.")
     org = obj.organisation
     if enabled(org):
         if isinstance(obj, AttendanceRecord):

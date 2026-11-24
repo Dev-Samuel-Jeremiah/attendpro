@@ -1,7 +1,7 @@
 {% extends "manage/_shell.html" %}{% load ui %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<div class="topbar"><div><h1>{{ title }}</h1><p>Use this for corrections, leave, or anyone who couldn't scan.</p></div><a href="{% url 'attendance' %}" class="btn btn-ghost">Back</a></div>
+<div class="topbar"><div><h1>{{ title }}</h1><p>For a day someone didn't scan: mark them on leave, excused or absent. Clock-in and clock-out times can only come from the person's own scan.</p></div><a href="{% url 'attendance' %}" class="btn btn-ghost">Back</a></div>
 <div class="card" style="max-width:640px">
   <form method="post">{% csrf_token %}
     {% for e in form.non_field_errors %}<div class="alert alert-error" style="margin-bottom:14px">{{ e }}</div>{% endfor %}
@@ -9,14 +9,12 @@
       {% include "partials/field.html" with f=form.user cls="full" %}
       {% include "partials/field.html" with f=form.date %}
       {% include "partials/field.html" with f=form.status %}
-      {% include "partials/field.html" with f=form.check_in_time %}
-      {% include "partials/field.html" with f=form.check_out_time %}
       {% include "partials/field.html" with f=form.note cls="full" %}
     </div>
     <div class="btn-row">
       <button class="btn btn-accent" type="submit">{% icon "save" %} Save</button>
       {% if rec %}<button class="btn btn-danger" name="delete" value="1" onclick="return confirm('Delete this entry?')">Delete</button>
-      <small class="muted" style="margin-left:auto">Recorded by {{ rec.get_source_display|lower }}{% if rec.check_in_ip %} from {{ rec.check_in_ip }}{% endif %}</small>{% endif %}
+      <small class="muted" style="margin-left:auto">Added by an administrator</small>{% endif %}
     </div>
   </form>
 </div>

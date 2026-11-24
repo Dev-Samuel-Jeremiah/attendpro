@@ -179,8 +179,9 @@ class OrgSettingsForm(StyledMixin, forms.ModelForm):
 
 
 class RecordForm(StyledMixin, forms.ModelForm):
-    check_in_time = forms.TimeField(required=False, widget=forms.TimeInput(attrs={"type": "time"}))
-    check_out_time = forms.TimeField(required=False, widget=forms.TimeInput(attrs={"type": "time"}))
+    """An administrator's entry for a day with no scan: on leave/excused or absent, never clock times."""
+    STATUS_CHOICES = [(AttendanceRecord.STATUS_LEAVE, "On leave / excused"),
+                      (AttendanceRecord.STATUS_ABSENT, "Absent")]
 
     class Meta:
         model = AttendanceRecord
@@ -192,41 +193,46 @@ class RecordForm(StyledMixin, forms.ModelForm):
         self.org = org
         self.fields["user"].queryset = org.members.filter(is_active=True)
         self.fields["user"].label = "Member"
-        from django.utils import timezone
-        if self.instance.pk:
-            if self.instance.check_in:
-                self.fields["check_in_time"].initial = timezone.localtime(self.instance.check_in).strftime("%H:%M")
-            if self.instance.check_out:
-                self.fields["check_out_time"].initial = timezone.localtime(self.instance.check_out).strftime("%H:%M")
+        self.fields["status"].choices = self.STATUS_CHOICES
+        if self.instance.pk:  # an existing entry stays on its person and day
+            for f in ("user", "date"):
+                self.fields[f].disabled = True
         self._style()
 
     def clean(self):
         cd = super().clean()
+        if self.instance.pk and self.instance.is_locked:
+            raise forms.ValidationError("Scanned attendance can't be changed.")
         user, d = cd.get("user"), cd.get("date")
         if user and d:
             qs = AttendanceRecord.objects.filter(user=user, date=d)
             if self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
-                raise forms.ValidationError("A record already exists for this member on this date — edit that one instead.")
-        ci, co = cd.get("check_in_time"), cd.get("check_out_time")
-        if ci and co and co <= ci:
-            self.add_error("check_out_time", "Check-out must be after check-in.")
+                raise forms.ValidationError(f"{user.display_name} already has attendance for that day. "
+                                            "Scanned attendance can't be changed.")
         return cd
 
     def save(self, commit=True):
-        from datetime import datetime
-        from django.utils import timezone
         rec = super().save(commit=False)
         rec.organisation = self.org
         rec.source = "manual"
-        tz = timezone.get_current_timezone()
-        ci, co = self.cleaned_data.get("check_in_time"), self.cleaned_data.get("check_out_time")
-        rec.check_in = timezone.make_aware(datetime.combine(rec.date, ci), tz) if ci else None
-        rec.check_out = timezone.make_aware(datetime.combine(rec.date, co), tz) if co else None
+        rec.check_in = rec.check_out = None
         if commit:
             rec.save()
         return rec
+
+
+class RecordCommentForm(StyledMixin, forms.ModelForm):
+    """The only thing an administrator can add to a scanned record."""
+    class Meta:
+        model = AttendanceRecord
+        fields = ["note"]
+        labels = {"note": "Administrator's comment"}
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self._style()
 
 
 class ChangePasswordForm(StyledMixin, forms.Form):

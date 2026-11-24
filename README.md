@@ -51,7 +51,7 @@ that page or button and points the admin to **Plan & billing**.
 
 ## Features
 - Admin dashboard: present / late / not in / on site today, a 14-day chart, departments, live scan feed
-- Daily attendance view, with manual entries for leave, corrections, or anyone who couldn't scan
+- Daily attendance view. Scanned clock-in/out times are locked: nobody can change or delete them; administrators can only mark a day with no scan as leave/excused or absent, and add comments
 - Reports for any date range, with presets and a department filter: attendance %, late count, absences, total hours, average arrival time, and a colour-coded daily register
 - **Downloads:** Excel (3 sheets: Summary, Daily register, Time log) and CSV
 - **Saved reports library:** save a report and download it again later

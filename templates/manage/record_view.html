@@ -1,0 +1,41 @@
+{% extends "manage/_shell.html" %}{% load ui %}
+{% block title %}Attendance · {{ rec.user.display_name }}{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>{{ rec.user.display_name }} · {{ rec.date|date:"D j M Y" }}</h1>
+  <p>{% icon "lock" 14 %} Recorded by {{ rec.user.first_name|default:"their" }}{% if rec.user.first_name %}'s{% endif %} own scan. Clock-in and clock-out times can't be changed or deleted by anyone.</p></div>
+  <a href="{% url 'attendance' %}?date={{ rec.date|date:'Y-m-d' }}" class="btn btn-ghost">Back</a></div>
+<div class="grid grid-main">
+  <div class="stack">
+    <div class="card">
+      <div class="times locked-times">
+        <div><small class="muted">Check in</small><b>{{ rec.check_in|localtime_fmt }}</b></div>
+        <div><small class="muted">Check out</small><b>{{ rec.check_out|localtime_fmt }}</b></div>
+        <div><small class="muted">Hours</small><b>{{ rec.worked_display }}</b></div>
+      </div>
+      <dl class="facts">
+        <div><dt>Status</dt><dd><span class="badge b-{{ rec.status }}">{{ rec.get_status_display }}</span>{% if rec.late_by_minutes %} · {{ rec.late_by_minutes }} min late{% endif %}</dd></div>
+        <div><dt>Recorded by</dt><dd>{{ rec.get_source_display }}{% if rec.branch %} at {{ rec.branch }}{% endif %}</dd></div>
+        <div><dt>Check-in from</dt><dd class="mono">{{ rec.check_in_ip|default:"—" }}</dd></div>
+        <div><dt>Check-out from</dt><dd class="mono">{{ rec.check_out_ip|default:"—" }}</dd></div>
+      </dl>
+    </div>
+    <div class="card">
+      <h2>Comment</h2>
+      <p class="muted" style="margin-top:-4px">You can add a note to this day (for example a reason for lateness). It doesn't change the times.</p>
+      <form method="post">{% csrf_token %}
+        {% include "partials/field.html" with f=form.note %}
+        <button class="btn btn-accent">{% icon "save" %} Save comment</button>
+      </form>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Every scan that day</h2></div>
+    <ul class="feed">
+      {% for l in logs %}
+      <li><div><b style="font-size:.9rem">{{ l.timestamp|localtime_fmt:"%I:%M:%S %p" }}</b><br><small class="muted">{{ l.message }}{% if l.distance_m is not None %} · {{ l.distance_m }} m away{% endif %}</small></div>
+        <span class="time">{% if l.action == 'check_in' %}<span class="badge b-present">In</span>{% elif l.action == 'check_out' %}<span class="badge b-leave">Out</span>{% elif l.action == 'duplicate' %}<span class="badge b-muted">Repeat</span>{% else %}<span class="badge b-absent">Refused</span>{% endif %}</span></li>
+      {% empty %}<li class="muted">No scan log for this day.</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

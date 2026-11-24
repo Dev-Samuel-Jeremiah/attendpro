@@ -25,8 +25,9 @@ class RecoveryTests(TestCase):
         self.dept = Department.objects.create(organisation=self.org, name="Accounts")
         self.staff = User.objects.create_user(username="RC-0002", password="x", organisation=self.org,
                                               first_name="Ada", department=self.dept)
+        # an administrator's entry (no clock times): the only kind of attendance that can be deleted
         self.rec = AttendanceRecord.objects.create(organisation=self.org, user=self.staff, date=timezone.localdate(),
-                                                   check_in=timezone.now(), status="present", note="hello")
+                                                   status="absent", source="manual", note="hello")
         self.client.force_login(self.admin)
 
     def test_deleted_entry_can_be_restored_once(self):
@@ -36,7 +37,7 @@ class RecoveryTests(TestCase):
         self.assertContains(self.client.get(reverse("backups")), "Ada")
         self.client.post(reverse("restore_item", args=[item.pk]))
         rec = AttendanceRecord.objects.get()
-        self.assertEqual((rec.user, rec.note, rec.status), (self.staff, "hello", "present"))
+        self.assertEqual((rec.user, rec.note, rec.status), (self.staff, "hello", "absent"))
         with self.assertRaises(services.RestoreError):
             services.restore(DeletedItem.objects.get())
 

@@ -501,3 +501,9 @@ table.table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 .face-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 10px; display: block; background: var(--bg); }
 .face-box { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
 .face-box img { width: 96px; height: 96px; object-fit: cover; border-radius: 14px; }
+
+/* Read-only scanned attendance */
+.locked-times div { background: var(--bg); }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 18px; margin: 16px 0 0; }
+.facts dt { color: var(--muted); font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.facts dd { margin: 3px 0 0; }

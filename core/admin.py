@@ -25,9 +25,23 @@ admin.site.register(Department)
 
 @admin.register(AttendanceRecord)
 class AttendanceAdmin(admin.ModelAdmin):
+    """Read-only apart from the note: clock-in/out times come only from people's own scans."""
     list_display = ("user", "date", "check_in", "check_out", "status", "source")
     list_filter = ("organisation", "status", "source", "date")
     search_fields = ("user__username", "user__first_name", "user__last_name")
+    readonly_fields = ("organisation", "user", "date", "check_in", "check_out", "status", "source",
+                       "check_in_ip", "check_out_ip", "branch", "leave_request", "updated_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return obj is not None and not obj.is_locked
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        actions.pop("delete_selected", None)
+        return actions
 
 
 @admin.register(ScanLog)

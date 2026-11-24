@@ -26,7 +26,7 @@ from billing.services import (PaystackError, feature_required, paystack_enabled,
 from . import services
 from .decorators import member_required, org_admin_required
 from .forms import (ChangePasswordForm, DepartmentForm, ImportForm, LoginForm, MemberForm,
-                    OrgRegisterForm, OrgSettingsForm, RecordForm)
+                    OrgRegisterForm, OrgSettingsForm, RecordCommentForm, RecordForm)
 from .models import AttendanceRecord, Branch, Department, Organisation, SavedReport, ScanLog, User
 
 
@@ -608,21 +608,32 @@ def attendance(request):
 @org_admin_required
 def record_add(request):
     org = request.user.organisation
-    initial = {"date": request.GET.get("date") or timezone.localdate(), "status": "present"}
+    initial = {"date": request.GET.get("date") or timezone.localdate(), "status": AttendanceRecord.STATUS_LEAVE}
     if request.GET.get("user"):
         initial["user"] = request.GET["user"]
     form = RecordForm(org, request.POST or None, initial=initial)
     if request.method == "POST" and form.is_valid():
         rec = form.save()
-        messages.success(request, f"Attendance saved for {rec.user.display_name}.")
+        messages.success(request, f"{rec.get_status_display()} recorded for {rec.user.display_name}.")
         return redirect(f"{reverse('attendance')}?date={rec.date}")
-    return render(request, "manage/record_form.html", {"form": form, "title": "Add attendance entry"})
+    return render(request, "manage/record_form.html", {"form": form, "title": "Record leave or absence"})
 
 
 @org_admin_required
 def record_edit(request, pk):
     org = request.user.organisation
-    rec = get_object_or_404(AttendanceRecord, pk=pk, organisation=org)
+    rec = get_object_or_404(AttendanceRecord.objects.select_related("user", "branch"), pk=pk, organisation=org)
+    if rec.is_locked:
+        # Scanned attendance is evidence: read-only, with room for a comment
+        form = RecordCommentForm(request.POST or None, instance=rec)
+        if request.method == "POST" and "delete" not in request.POST and form.is_valid():
+            form.save()
+            messages.success(request, "Comment saved. The scanned times are unchanged.")
+            return redirect(f"{reverse('attendance')}?date={rec.date}")
+        if request.method == "POST" and "delete" in request.POST:
+            messages.error(request, "Scanned attendance can't be deleted.")
+        logs = ScanLog.objects.filter(organisation=org, user=rec.user, timestamp__date=rec.date).order_by("timestamp")
+        return render(request, "manage/record_view.html", {"rec": rec, "form": form, "logs": logs})
     form = RecordForm(org, request.POST or None, instance=rec)
     if request.method == "POST":
         if "delete" in request.POST:
@@ -636,7 +647,7 @@ def record_edit(request, pk):
             rec = form.save()
             messages.success(request, "Entry updated.")
             return redirect(f"{reverse('attendance')}?date={rec.date}")
-    return render(request, "manage/record_form.html", {"form": form, "rec": rec, "title": "Edit attendance entry"})
+    return render(request, "manage/record_form.html", {"form": form, "rec": rec, "title": "Edit leave or absence"})
 
 
 @org_admin_required

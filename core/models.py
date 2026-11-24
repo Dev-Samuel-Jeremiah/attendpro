@@ -260,6 +260,11 @@ class AttendanceRecord(models.Model):
         return f"{self.user.username} {self.date}"
 
     @property
+    def is_locked(self):
+        """Clock-in/out times are evidence: once a record has one, nobody can change or delete it."""
+        return self.check_in is not None or self.check_out is not None
+
+    @property
     def worked(self):
         if self.check_in and self.check_out and self.check_out > self.check_in:
             return self.check_out - self.check_in
