@@ -507,3 +507,18 @@ table.table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 18px; margin: 16px 0 0; }
 .facts dt { color: var(--muted); font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
 .facts dd { margin: 3px 0 0; }
+
+/* Attendance method choice (Settings) */
+.method-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 8px; }
+.method-opt { cursor: pointer; display: block; }
+.method-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.method-card { display: grid; gap: 6px; align-content: start; height: 100%; padding: 16px; border-radius: 14px; border: 1.5px solid var(--line);
+  background: #fff; transition: border-color .2s, box-shadow .2s, background .2s; }
+.method-card small { color: var(--muted); font-size: .82rem; line-height: 1.45; }
+.method-ico { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: #f1f4fa; color: var(--ink-3); }
+.method-opt:hover .method-card { border-color: #b9c3d8; }
+.method-opt input:checked + .method-card { border-color: var(--accent); background: linear-gradient(170deg, var(--accent-soft), #fff 60%);
+  box-shadow: 0 0 0 1.5px var(--accent); }
+.method-opt input:checked + .method-card .method-ico { background: var(--accent); color: #fff; }
+.method-opt input:focus-visible + .method-card { outline: 3px solid rgba(18,184,134,.35); outline-offset: 2px; }
+@media (max-width: 760px) { .method-pick { grid-template-columns: 1fr; } }

@@ -133,6 +133,12 @@ def mark_attendance(user: User, token: str, request, verified_org: Organisation 
         return ScanResult(False, "rejected", "QR attendance is not available",
                           "Your organisation's plan doesn't include QR attendance. "
                           "Use the Clock in button on your home page instead.")
+    if not org.uses_qr:
+        ScanLog.objects.create(organisation=org, user=user, action="rejected",
+                               message="QR attendance switched off", ip=ip, user_agent=ua)
+        return ScanResult(False, "rejected", "Use the Clock in button",
+                          f"{org.name} records attendance with the Clock in button on your home page, "
+                          f"not the QR code.")
     if branch is not None and not org.has_feature(catalog.MULTI_BRANCH):
         branch = None
     log_extra = {"branch": branch}
@@ -255,6 +261,9 @@ def clock_by_location(user: User, request, lat, lng, accuracy, selfie: str | Non
     if not org.has_feature(catalog.MANUAL_CLOCK):
         return ScanResult(False, "rejected", "Clock-in button not available",
                           "Your organisation's plan doesn't include the clock-in button.")
+    if not org.uses_button:
+        return ScanResult(False, "rejected", "Scan the QR code instead",
+                          f"{org.name} records attendance with the QR code at reception, not the Clock in button.")
     sites = allowed_sites(user)
     if not sites:
         return ScanResult(False, "rejected", "Location not set up",

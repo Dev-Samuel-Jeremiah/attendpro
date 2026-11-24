@@ -18,6 +18,8 @@ def plan(request):
         notice = ("expiring", f"Your {org.plan.name} plan ends on {timezone.localtime(org.plan_expires_at):%d %b %Y}. "
                               f"Renew to keep its features.")
     return {
+        "uses_button": org.uses_button,
+        "uses_qr": org.uses_qr,
         "plan": current,
         "features": current.feature_codes() if current else set(),
         "plan_notice": notice,

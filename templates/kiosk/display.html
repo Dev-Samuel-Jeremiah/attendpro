@@ -5,8 +5,10 @@
 <div class="kiosk" style="display:grid;place-items:center;text-align:center">
   <div style="max-width:520px">
     <h1 style="font-size:2rem">QR attendance isn't switched on</h1>
-    <p style="color:#b9c2dd;font-size:1.1rem">{{ kiosk_org.name }}'s plan doesn't include QR attendance. Members can use the
-      <b>Clock in</b> button in their portal instead, or an administrator can upgrade under <b>Plan &amp; billing</b>.</p>
+    {% if qr_in_plan %}<p style="color:#b9c2dd;font-size:1.1rem">{{ kiosk_org.name }} records attendance with the <b>Clock in</b> button on each person's phone.
+      An administrator can switch the QR code on in <b>Settings → How people record attendance</b>.</p>
+    {% else %}<p style="color:#b9c2dd;font-size:1.1rem">{{ kiosk_org.name }}'s plan doesn't include QR attendance. Members can use the
+      <b>Clock in</b> button in their portal instead, or an administrator can upgrade under <b>Plan &amp; billing</b>.</p>{% endif %}
   </div>
 </div>
 {% else %}

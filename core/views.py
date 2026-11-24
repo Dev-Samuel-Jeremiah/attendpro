@@ -233,10 +233,14 @@ def api_scan(request):
 
 @member_required
 def scanner(request):
-    if not request.user.organisation.has_feature(catalog.QR_ATTENDANCE):
-        messages.info(request, upgrade_message(catalog.QR_ATTENDANCE) if request.user.is_org_admin
-                      else "Use the Clock in button to record your attendance.")
-        return redirect("billing" if request.user.is_org_admin else "portal")
+    org = request.user.organisation
+    if not org.uses_qr:
+        if not org.has_feature(catalog.QR_ATTENDANCE):
+            messages.info(request, upgrade_message(catalog.QR_ATTENDANCE) if request.user.is_org_admin
+                          else "Use the Clock in button to record your attendance.")
+            return redirect("billing" if request.user.is_org_admin else "portal")
+        messages.info(request, "Your organisation uses the Clock in button, not the QR code.")
+        return redirect("portal")
     from faces.services import required as face_required
     return render(request, "staff/scanner.html",
                   {"need_location": request.user.organisation.has_feature(catalog.GEOFENCING),
@@ -274,14 +278,14 @@ def kiosk(request, key):
     org, branch = _kiosk_site(key)
     return render(request, "kiosk/display.html", {
         "kiosk_org": org, "kiosk_branch": branch, "key": key,
-        "qr_allowed": org.has_feature(catalog.QR_ATTENDANCE),
+        "qr_allowed": org.uses_qr, "qr_in_plan": org.has_feature(catalog.QR_ATTENDANCE),
         "show_logo": org.has_feature(catalog.CUSTOM_BRANDING)})
 
 
 def kiosk_token(request, key):
     org, branch = _kiosk_site(key)
-    if not org.has_feature(catalog.QR_ATTENDANCE):
-        return JsonResponse({"error": "QR attendance is not included in this plan."}, status=403)
+    if not org.uses_qr:
+        return JsonResponse({"error": "QR attendance is not in use for this organisation."}, status=403)
     token, remaining = services.make_token(org, branch)
     url = services.scan_url(request, token)
     qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=1,
@@ -771,7 +775,8 @@ def org_settings(request):
     form = OrgSettingsForm(request.POST or None, request.FILES or None, instance=org,
                            branding=org.has_feature(catalog.CUSTOM_BRANDING),
                            notifications=org.has_feature(catalog.NOTIFICATIONS),
-                           face=org.has_feature(catalog.FACE))
+                           face=org.has_feature(catalog.FACE),
+                           method_choice=org.offers_method_choice)
     if request.method == "POST":
         if "rotate_key" in request.POST:
             org.rotate_kiosk_key()

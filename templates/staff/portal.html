@@ -19,7 +19,7 @@
     {% if closed %}
       <div class="clock-note">{% icon "clock" 16 %} Check-in closed at {{ org.work_end|time:"g:i A" }}. You can check in again tomorrow.</div>
     {% else %}
-      {% if 'manual_clock' in features %}
+      {% if uses_button %}
         {% if org.has_location %}
         <button type="button" id="clock" class="btn btn-accent btn-lg btn-block" data-url="{% url 'api_clock' %}">{% icon "pin" %}
           <span>{% if not rec or not rec.check_in %}Clock in{% else %}Clock out{% endif %}</span></button>
@@ -28,8 +28,8 @@
           {% if request.user.is_org_admin %}<a href="{% url 'org_settings' %}#location">Set it in Settings</a>{% else %}Please tell your administrator.{% endif %}</div>
         {% endif %}
       {% endif %}
-      {% if 'qr_attendance' in features %}
-        <a href="{% url 'scanner' %}" class="btn {% if 'manual_clock' in features and org.has_location %}btn-on-dark{% else %}btn-accent{% endif %} btn-lg btn-block" style="margin-top:10px">{% icon "scan" %}
+      {% if uses_qr %}
+        <a href="{% url 'scanner' %}" class="btn {% if uses_button and org.has_location %}btn-on-dark{% else %}btn-accent{% endif %} btn-lg btn-block" style="margin-top:10px">{% icon "scan" %}
           {% if not rec or not rec.check_in %}Scan QR to check in{% else %}Scan QR to check out{% endif %}</a>
       {% endif %}
     {% endif %}

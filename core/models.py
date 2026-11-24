@@ -33,6 +33,13 @@ class Organisation(models.Model):
     checkout_gap_minutes = models.PositiveIntegerField(
         default=5, help_text="Scans closer together than this are treated as duplicates")
 
+    # How people record attendance (when the plan offers both ways)
+    METHOD_BUTTON, METHOD_QR, METHOD_BOTH = "button", "qr", "both"
+    METHOD_CHOICES = [(METHOD_BUTTON, "Clock-in button with location check"),
+                      (METHOD_QR, "QR code at reception"), (METHOD_BOTH, "Both: people can use either")]
+    attendance_method = models.CharField("How people record attendance", max_length=6, choices=METHOD_CHOICES,
+                                         default=METHOD_BOTH)
+
     # Reception QR
     kiosk_key = models.CharField(max_length=40, unique=True, default=_kiosk_key)
     qr_rotation_seconds = models.PositiveIntegerField(default=30)
@@ -107,6 +114,27 @@ class Organisation(models.Model):
     @property
     def has_location(self):
         return self.latitude is not None and self.longitude is not None
+
+    # ---- Attendance method ------------------------------------------------ #
+    @property
+    def offers_method_choice(self):
+        """True when the plan includes both the clock-in button and QR attendance."""
+        from billing import catalog
+        return self.has_feature(catalog.MANUAL_CLOCK) and self.has_feature(catalog.QR_ATTENDANCE)
+
+    @property
+    def uses_button(self):
+        from billing import catalog
+        if not self.has_feature(catalog.MANUAL_CLOCK):
+            return False
+        return not self.offers_method_choice or self.attendance_method != self.METHOD_QR
+
+    @property
+    def uses_qr(self):
+        from billing import catalog
+        if not self.has_feature(catalog.QR_ATTENDANCE):
+            return False
+        return not self.offers_method_choice or self.attendance_method != self.METHOD_BUTTON
 
     @property
     def is_school(self):

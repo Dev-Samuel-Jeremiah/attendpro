@@ -160,7 +160,7 @@ class OrgSettingsForm(StyledMixin, forms.ModelForm):
                   "grace_minutes", "checkout_gap_minutes", "qr_rotation_seconds",
                   "latitude", "longitude", "location_radius_m",
                   "notify_late", "notify_absent", "notify_checkout", "email_notifications",
-                  "face_required", "face_auto_enrol"]
+                  "face_required", "face_auto_enrol", "attendance_method"]
         widgets = {
             "work_start": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
             "work_end": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
@@ -174,8 +174,12 @@ class OrgSettingsForm(StyledMixin, forms.ModelForm):
             "work_end": "Check-in closes at this time until the next day. Members already in can still check out.",
         }
 
-    def __init__(self, *a, branding=True, notifications=True, face=True, **kw):
+    def __init__(self, *a, branding=True, notifications=True, face=True, method_choice=True, **kw):
         super().__init__(*a, **kw)
+        if not method_choice:
+            del self.fields["attendance_method"]
+        else:
+            self.fields["attendance_method"].widget = forms.RadioSelect(choices=Organisation.METHOD_CHOICES)
         if not face:
             del self.fields["face_required"], self.fields["face_auto_enrol"]
         if not branding:

@@ -15,6 +15,23 @@
         {% else %}<div class="field"><label>Logo</label><a class="btn btn-ghost btn-block" href="{% url 'billing' %}">{% icon "lock" %} Enterprise plan</a><div class="help">Upload your logo with custom branding.</div></div>{% endif %}
         {% include "partials/field.html" with f=form.address cls="full" %}
       </div>
+      {% if 'attendance_method' in form.fields %}
+      <hr><h2 id="method">How people record attendance</h2>
+      <p class="muted" style="margin-top:-4px">Your plan includes both ways. Choose what your staff use; the other is switched off everywhere.</p>
+      <div class="method-pick">
+        {% for radio in form.attendance_method %}
+        <label class="method-opt">
+          {{ radio.tag }}
+          <span class="method-card">
+            <span class="method-ico">{% if radio.data.value == 'button' %}{% icon "pin" 22 %}{% elif radio.data.value == 'qr' %}{% icon "qr" 22 %}{% else %}{% icon "layers" 22 %}{% endif %}</span>
+            <b>{% if radio.data.value == 'button' %}Clock-in button{% elif radio.data.value == 'qr' %}QR code at reception{% else %}Both{% endif %}</b>
+            <small>{% if radio.data.value == 'button' %}Staff tap Clock in on their phone. Only works inside your location's allowed distance. No screen needed.{% elif radio.data.value == 'qr' %}Staff scan the live code on a screen at the entrance. The code changes every {{ org.qr_rotation_seconds }} seconds.{% else %}Staff can use either way. Handy while you switch over, or with several entrances.{% endif %}</small>
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+      {% for e in form.attendance_method.errors %}<div class="err">{{ e }}</div>{% endfor %}
+      {% endif %}
       <hr><h2>Attendance rules</h2>
       <div class="form-grid">
         {% include "partials/field.html" with f=form.work_start %}
@@ -64,6 +81,7 @@
     </form>
   </div>
   <div class="stack">
+    {% if uses_qr %}
     <div class="card">
       <h2>{% icon "monitor" 18 %} Reception QR screen</h2>
       <p class="muted">Open this link on the computer or TV at the entrance and leave it full-screen. The code changes every {{ org.qr_rotation_seconds }} seconds, so a photo of it stops working quickly.</p>
@@ -73,6 +91,12 @@
         <form method="post" onsubmit="return confirm('Change the link? The old reception link will stop working.')">{% csrf_token %}<button class="btn btn-ghost" name="rotate_key" value="1">New link</button></form>
       </div>
     </div>
+    {% elif 'attendance_method' in form.fields %}
+    <div class="card">
+      <h2>{% icon "monitor" 18 %} Reception QR screen</h2>
+      <p class="muted">Switched off: your staff use the Clock in button. Choose <b>QR code</b> or <b>Both</b> above to use a reception screen.</p>
+    </div>
+    {% endif %}
     <div class="card">
       <h2>Your organisation code</h2>
       <p class="muted">Member IDs start with <b class="mono">{{ org.code }}-</b>. Staff sign in at:</p>
