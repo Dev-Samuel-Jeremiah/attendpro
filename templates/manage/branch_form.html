@@ -47,9 +47,12 @@
   lat.addEventListener("change", updateMap); lng.addEventListener("change", updateMap);
   document.getElementById("use-location").addEventListener("click", function () {
     status.textContent = "Getting your location…";
-    AttendPro.locate().then(function (p) {
+    AttendPro.locate({target: 15, goodEnough: 30, patience: 12000, maxWait: 30000, onProgress: function (acc) {
+      status.textContent = "Getting a precise location… (±" + acc + " m)";
+    }}).then(function (p) {
       lat.value = p.lat.toFixed(6); lng.value = p.lng.toFixed(6); updateMap();
-      status.textContent = "Filled in (accurate to about " + Math.round(p.accuracy) + " m). Click Save branch to keep it.";
+      status.textContent = "Filled in (accurate to about " + Math.round(p.accuracy) + " m). Click Save branch to keep it." +
+        (p.accuracy > 50 ? " For a more precise reading, stand outside or near a window and try again." : "");
     }, function (e) { status.textContent = e.message; });
   });
 })();

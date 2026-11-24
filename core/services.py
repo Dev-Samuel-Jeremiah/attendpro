@@ -155,7 +155,7 @@ def mark_attendance(user: User, token: str, request, verified_org: Organisation 
     if org.has_feature(catalog.GEOFENCING):
         site = branch_site(branch) if branch else main_site(org)
         if site is not None:
-            outcome = check_location([site], location or {})
+            outcome = check_location([site], location or {}, ua)
             log_extra.update(outcome.log)
             if not outcome.ok:
                 ScanLog.objects.create(organisation=org, user=user, action="rejected", message=outcome.log_message,
@@ -234,7 +234,26 @@ class LocationCheck:
     log: dict | None = None
 
 
-def check_location(sites: list[Site], loc: dict) -> LocationCheck:
+def precise_location_help(user_agent: str = "") -> str:
+    """Where to switch on precise location on this person's phone (matches static/js/locate.js)."""
+    ua = user_agent or ""
+    in_app, android = "AttendProApp/" in ua, "Android" in ua
+    ios = any(k in ua for k in ("iPhone", "iPad", "iPod"))
+    if in_app and android:
+        return ("On your phone: Settings → Apps → AttendPro → Permissions → Location → Allow, and turn on "
+                "“Use precise location”. Also turn on Settings → Location → Google Location Accuracy.")
+    if in_app and ios:
+        return "On your iPhone: Settings → AttendPro → Location → While Using the App, and turn on Precise Location."
+    if android:
+        return ("On your phone: Settings → Apps → Chrome → Permissions → Location → turn on “Use precise "
+                "location”. Also turn on Settings → Location → Google Location Accuracy.")
+    if ios:
+        return ("On your iPhone: Settings → Privacy & Security → Location Services → Safari Websites → "
+                "While Using the App, and turn on Precise Location.")
+    return "Turn on GPS / precise location for this browser."
+
+
+def check_location(sites: list[Site], loc: dict, user_agent: str = "") -> LocationCheck:
     """Is the reported position inside one of `sites`? `loc` = {"lat", "lng", "accuracy"} from the browser."""
     try:
         lat, lng = float(loc.get("lat")), float(loc.get("lng"))
@@ -251,8 +270,9 @@ def check_location(sites: list[Site], loc: dict) -> LocationCheck:
            "distance_m": min(int(dist), 2_000_000_000), "branch": site.branch}
     if accuracy > MAX_ACCURACY_M:
         return LocationCheck(False, "Location not precise enough",
-                             f"Your phone can only place you within {int(accuracy)} m. Turn on GPS / precise "
-                             f"location, or step near a window, and try again.",
+                             f"Your phone could only place you within {int(accuracy)} m, which is too rough "
+                             f"to confirm you're at work. Step outside or near a window, wait a few seconds "
+                             f"and try again. {precise_location_help(user_agent)}",
                              f"Location too imprecise (±{int(accuracy)} m)", site, log)
     if dist - min(accuracy, ACCURACY_ALLOWANCE_CAP_M) > site.radius:
         return LocationCheck(False, "You're not at the workplace",
@@ -278,7 +298,7 @@ def clock_by_location(user: User, request, lat, lng, accuracy, selfie: str | Non
     if not sites:
         return ScanResult(False, "rejected", "Location not set up",
                           "Your administrator hasn't set the attendance location yet. Please let them know.")
-    outcome = check_location(sites, {"lat": lat, "lng": lng, "accuracy": accuracy})
+    outcome = check_location(sites, {"lat": lat, "lng": lng, "accuracy": accuracy}, ua)
     if not outcome.ok:
         if outcome.log:  # we got coordinates: keep the attempt in the audit trail
             ScanLog.objects.create(organisation=org, user=user, action="rejected", message=outcome.log_message,

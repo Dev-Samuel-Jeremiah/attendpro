@@ -93,6 +93,14 @@ class LocationClockTests(TestCase):
         self.assertFalse(result.ok)
         self.assertIn("precise", result.title)
 
+    def test_imprecise_location_explains_where_to_turn_on_precise_location(self):
+        self.request = RequestFactory(HTTP_USER_AGENT="Mozilla/5.0 (Linux; Android 14) AttendProApp/android").post("/")
+        msg = self.clock(self.LAT, self.LNG, accuracy=2000).message
+        self.assertIn("2000 m", msg)
+        self.assertIn("Apps → AttendPro", msg)
+        self.request = RequestFactory(HTTP_USER_AGENT="Mozilla/5.0 (iPhone; CPU iPhone OS 18_0) Safari").post("/")
+        self.assertIn("Safari Websites", self.clock(self.LAT, self.LNG, accuracy=2000).message)
+
     def test_no_location_set(self):
         self.org.latitude = self.org.longitude = None
         self.org.save()

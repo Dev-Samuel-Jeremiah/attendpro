@@ -48,7 +48,8 @@
   };
   const $ = id => document.getElementById(id);
   const needLocation = {{ need_location|yesno:"true,false" }};
-  if (needLocation) AttendPro.locate().catch(() => {});  // ask for permission up front
+  // Ask for permission up front, and get the GPS going so the reading after the scan is quick.
+  if (needLocation) AttendPro.locate().catch(() => {});
   let scanner, busy = false, facing = "environment";
 
   function camMsg(t) { const m = $("cam-msg"); m.textContent = t; m.style.display = "block"; }
@@ -75,8 +76,11 @@
     try { await scanner.stop(); } catch (e) {}
     const body = {token: text};
     if (needLocation) {
-      try { Object.assign(body, await AttendPro.locate()); }
-      catch (e) { show({ok: false, action: "rejected", title: e.title, message: e.message}); return; }
+      camMsg("Code scanned. Getting a precise location…");
+      try {
+        Object.assign(body, await AttendPro.locate({onProgress: acc => camMsg("Code scanned. Getting a precise location… (±" + acc + " m)")}));
+      } catch (e) { $("cam-msg").style.display = "none"; show({ok: false, action: "rejected", title: e.title, message: e.message}); return; }
+      $("cam-msg").style.display = "none";
     }
     try {
       show(await AttendPro.postWithSelfie(api, body, csrf));

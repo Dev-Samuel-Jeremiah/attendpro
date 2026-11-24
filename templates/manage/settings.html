@@ -1,4 +1,4 @@
-{% extends "manage/_shell.html" %}{% load ui %}
+{% extends "manage/_shell.html" %}{% load ui static %}
 {% block title %}Settings{% endblock %}
 {% block content %}
 <div class="topbar"><div><h1>Settings</h1><p>Organisation details, working hours and the reception QR screen.</p></div></div>
@@ -110,6 +110,7 @@
 </div>
 {% endblock %}
 {% block scripts %}
+<script src="{% static 'js/locate.js' %}"></script>
 <script>
 (function () {
   const btn = document.getElementById("use-location"), status = document.getElementById("loc-status");
@@ -120,17 +121,16 @@
   }
   lat.addEventListener("change", updateMap); lng.addEventListener("change", updateMap);
   btn.addEventListener("click", function () {
-    if (!navigator.geolocation) { status.textContent = "This browser can't share your location."; return; }
     status.textContent = "Getting your location…";
-    navigator.geolocation.getCurrentPosition(function (pos) {
-      lat.value = pos.coords.latitude.toFixed(6);
-      lng.value = pos.coords.longitude.toFixed(6);
+    AttendPro.locate({target: 15, goodEnough: 30, patience: 12000, maxWait: 30000, onProgress: function (acc) {
+      status.textContent = "Getting a precise location… (±" + acc + " m)";
+    }}).then(function (p) {
+      lat.value = p.lat.toFixed(6);
+      lng.value = p.lng.toFixed(6);
       updateMap();
-      status.textContent = "Location filled in (accurate to about " + Math.round(pos.coords.accuracy) + " m). Click Save settings to keep it.";
-    }, function (err) {
-      status.textContent = err.code === 1 ? "Location permission was denied. Allow it in your browser and try again."
-                                         : "Couldn't get your location. Try again near a window or outside.";
-    }, {enableHighAccuracy: true, timeout: 20000, maximumAge: 0});
+      status.textContent = "Location filled in (accurate to about " + Math.round(p.accuracy) + " m). Click Save settings to keep it." +
+        (p.accuracy > 50 ? " That's not very precise: for a better reading, stand outside or near a window and try again." : "");
+    }, function (e) { status.textContent = e.message; });
   });
 })();
 </script>
