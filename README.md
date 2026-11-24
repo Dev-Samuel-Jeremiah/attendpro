@@ -40,6 +40,7 @@ Open http://localhost:8000
 | Leave management, PDF export, in-app + email notifications | | ✓ | ✓ |
 | Custom branding (logo), audit trail, priority support | | | ✓ |
 | Multiple branches, GPS geofencing on every scan, advanced analytics | | | ✓ |
+| Face verification, payroll and payslips, weekly backups and 30-day restore | | | ✓ |
 
 Prices, limits and features are edited by the platform super admin under `/platform/`; the
 public pricing page is `/pricing/`. Paid plans are bought online through Paystack

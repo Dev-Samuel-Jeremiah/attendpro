@@ -12,4 +12,7 @@ urlpatterns = [
     path("", include("billing.urls")),
     path("", include("leave.urls")),
     path("", include("notifications.urls")),
+    path("", include("faces.urls")),
+    path("", include("payroll.urls")),
+    path("", include("recovery.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -28,7 +28,8 @@ class Base(TestCase):
     def setUp(self):
         self.org = Organisation.objects.create(code="BR", name="Branchy", plan=Plan.objects.get(slug=self.plan),
                                                latitude=HQ[0], longitude=HQ[1], location_radius_m=100,
-                                               work_start=time(8), work_end=time(23, 59))
+                                               work_start=time(8), work_end=time(23, 59),
+                                               face_required=False)  # these tests are about location
         self.north = Branch.objects.create(organisation=self.org, name="North", latitude=NORTH[0],
                                            longitude=NORTH[1], radius_m=150)
         self.admin = User.objects.create_user(username="BR-0001", password="x", organisation=self.org,

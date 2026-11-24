@@ -14,7 +14,8 @@ pg_dump -d "$DB" -Fc -f "$DEST/db-$STAMP.dump"
 echo "Saved $DEST/db-$STAMP.dump"
 
 if [ "$(date +%u)" = "7" ] || [ "${1:-}" = "--media" ]; then
-    tar -czf "$DEST/media-$STAMP.tar.gz" -C /srv/attendpro media
+    # Uploads, plus private files (registered faces, selfies, organisation backups)
+    tar -czf "$DEST/media-$STAMP.tar.gz" -C /srv/attendpro media $( [ -d /srv/attendpro/app/private_data ] && echo app/private_data )
     echo "Saved $DEST/media-$STAMP.tar.gz"
 fi
 

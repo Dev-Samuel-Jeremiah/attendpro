@@ -109,7 +109,8 @@ def check_in_closed(org: Organisation, local_now: datetime) -> bool:
 
 
 def mark_attendance(user: User, token: str, request, verified_org: Organisation | None = None,
-                    location: dict | None = None, verified_branch: Branch | None = None) -> ScanResult:
+                    location: dict | None = None, verified_branch: Branch | None = None,
+                    selfie: str | None = None) -> ScanResult:
     """A QR scan (in-page scanner, phone camera link, or a scan held during sign-in). With
     geofencing, the phone's location must also be inside the scanned site's radius."""
     ip = client_ip(request)
@@ -144,6 +145,9 @@ def mark_attendance(user: User, token: str, request, verified_org: Organisation 
                 ScanLog.objects.create(organisation=org, user=user, action="rejected", message=outcome.log_message,
                                        ip=ip, user_agent=ua, **log_extra)
                 return ScanResult(False, "rejected", outcome.title, outcome.message)
+    refused = face_gate(user, org, request, selfie, log_extra)
+    if refused:
+        return refused
     return record_attendance(user, org, request, source="qr", log_extra=log_extra, branch=branch)
 
 
@@ -242,7 +246,7 @@ def check_location(sites: list[Site], loc: dict) -> LocationCheck:
     return LocationCheck(True, site=site, log=log)
 
 
-def clock_by_location(user: User, request, lat, lng, accuracy) -> ScanResult:
+def clock_by_location(user: User, request, lat, lng, accuracy, selfie: str | None = None) -> ScanResult:
     """The clock-in/out button: allowed only within an allowed site's radius."""
     org = user.organisation
     ip = client_ip(request)
@@ -264,6 +268,9 @@ def clock_by_location(user: User, request, lat, lng, accuracy) -> ScanResult:
                           "We couldn't read your location. Allow location access and try again."
                           if not outcome.log else outcome.message)
     where = f" at {outcome.site.name}" if outcome.site.branch else ""
+    refused = face_gate(user, org, request, selfie, outcome.log)
+    if refused:
+        return refused
     return record_attendance(user, org, request, source="location", log_extra=outcome.log,
                              note=f"{outcome.log['distance_m']} m from the set location{where}",
                              branch=outcome.site.branch)
@@ -271,6 +278,34 @@ def clock_by_location(user: User, request, lat, lng, accuracy) -> ScanResult:
 
 def _fmt_distance(m):
     return f"{m / 1000:.1f} km" if m >= 1000 else f"{int(m)} m"
+
+
+def would_check_in(user: User, org: Organisation) -> bool:
+    """Would a scan right now be today's check-in (rather than a check-out, repeat or refusal)?"""
+    local_now = timezone.localtime()
+    rec = AttendanceRecord.objects.filter(user=user, date=local_now.date()).first()
+    return (rec is None or rec.check_in is None) and not check_in_closed(org, local_now)
+
+
+def face_gate(user: User, org: Organisation, request, selfie, log_extra=None) -> ScanResult | None:
+    """Enterprise face verification at check-in. Returns a refusal, or None to carry on.
+    Without a selfie it asks the browser for one (action "need_selfie"), which then retries."""
+    from faces import services as faces
+    if not faces.required(org) or not would_check_in(user, org):
+        return None
+    if not selfie:
+        return ScanResult(False, "need_selfie", "Take a selfie",
+                          "Your organisation checks your face when you check in.")
+    try:
+        outcome = faces.verify(user, org, faces.decode(selfie))
+    except faces.SelfieError as e:
+        return ScanResult(False, "rejected", "Photo not received", str(e))
+    if outcome.ok:
+        return None
+    ScanLog.objects.create(organisation=org, user=user, action="rejected", message=f"Face check: {outcome.title}",
+                           ip=client_ip(request), user_agent=request.META.get("HTTP_USER_AGENT", "")[:255],
+                           **(log_extra or {}))
+    return ScanResult(False, "rejected", outcome.title, outcome.message)
 
 
 def record_attendance(user: User, org: Organisation, request, source: str,

@@ -1,0 +1,46 @@
+{% extends "manage/_shell.html" %}{% load ui humanize %}
+{% block title %}Payroll {{ run }}{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Payroll · {{ run.month|date:"F Y" }}</h1>
+  <p><span class="badge {% if run.is_final %}b-present{% else %}b-late{% endif %}">{{ run.get_status_display }}</span>{% if run.is_final %} on {{ run.finalised_at|date:"j M Y" }}{% else %} · check the figures, add any bonus or deduction, then finalise{% endif %}</p></div>
+  <div class="btn-row">
+    <a class="btn btn-ghost" href="?export=xlsx">{% icon "download" %} Excel</a>
+    <a class="btn btn-ghost" href="?export=csv">{% icon "download" %} CSV</a>
+    <a class="btn btn-ghost" href="?export=bank">{% icon "card" %} Bank transfer file</a>
+    <a class="btn btn-ghost" href="{% url 'payroll' %}">{% icon "chevron-left" %} Payroll</a>
+  </div></div>
+<div class="grid grid-4" style="margin-bottom:18px">
+  <div class="card stat t-blue"><div class="label">Gross</div><div class="value">₦{{ totals.gross|floatformat:0|intcomma }}</div></div>
+  <div class="card stat t-red"><div class="label">Deductions</div><div class="value">₦{{ totals.late_deduction|add:totals.absence_deduction|floatformat:0|intcomma }}</div><div class="sub">lateness and absences</div></div>
+  <div class="card stat t-amber"><div class="label">Adjustments</div><div class="value">₦{{ totals.adjustment|floatformat:0|intcomma }}</div></div>
+  <div class="card stat t-green"><div class="label">Net pay</div><div class="value">₦{{ totals.net|floatformat:0|intcomma }}</div><div class="sub">{{ lines|length }} people</div></div>
+</div>
+{% if missing_bank %}<div class="alert alert-warning" style="margin-bottom:16px">{{ missing_bank }} {{ missing_bank|pluralize:"person has,people have" }} no account number, so they're missing from the bank transfer file. <a href="{% url 'pay_rates' %}">Add bank details</a></div>{% endif %}
+<form method="post" class="card">{% csrf_token %}
+  <div class="table-wrap"><table class="table payrun">
+    <thead><tr><th>Person</th><th>Days</th><th>Late</th><th>Absent</th><th>Gross</th><th>Deductions</th><th>Adjustment (₦)</th><th>Net</th><th></th></tr></thead>
+    <tbody>{% for l in lines %}
+      <tr>
+        <td><b>{{ l.user.display_name }}</b><br><small class="muted">{{ l.get_pay_type_display }} · ₦{{ l.rate|floatformat:0|intcomma }}</small></td>
+        <td>{{ l.attended }}/{{ l.expected }}{% if l.paid_leave or l.unpaid_leave %}<br><small class="muted">leave {{ l.paid_leave }}{% if l.unpaid_leave %} + {{ l.unpaid_leave }} unpaid{% endif %}</small>{% endif %}</td>
+        <td>{{ l.late }}</td><td>{{ l.absent }}</td>
+        <td>₦{{ l.gross|floatformat:2|intcomma }}</td>
+        <td>{% if l.deductions %}−₦{{ l.deductions|floatformat:2|intcomma }}{% else %}—{% endif %}</td>
+        <td>{% if run.is_final %}{% if l.adjustment %}₦{{ l.adjustment|floatformat:2|intcomma }}<br><small class="muted">{{ l.adjustment_note }}</small>{% else %}—{% endif %}
+            {% else %}<input class="input" name="adj{{ l.id }}" value="{{ l.adjustment|floatformat:'-2' }}" inputmode="decimal" style="width:110px">
+            <input class="input" name="note{{ l.id }}" value="{{ l.adjustment_note }}" placeholder="Note" style="width:110px;margin-top:4px">{% endif %}</td>
+        <td><b>₦{{ l.net|floatformat:2|intcomma }}</b></td>
+        <td><a class="btn btn-ghost btn-sm" href="{% url 'payslip_admin' l.pk %}" target="_blank">{% icon "file" %} Payslip</a></td>
+      </tr>
+    {% empty %}<tr><td colspan="9" class="empty">Nobody to pay this month.</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% if not run.is_final %}
+  <div class="btn-row" style="margin-top:14px">
+    <button class="btn btn-ghost" name="action" value="save">{% icon "save" %} Save adjustments</button>
+    <button class="btn btn-ghost" name="action" value="recalculate">{% icon "activity" %} Recalculate</button>
+    <button class="btn btn-accent" name="action" value="finalise" onclick="return confirm('Finalise payroll for {{ run }}? Payslips become visible to everyone and the figures are locked.')">{% icon "check" %} Finalise</button>
+    <button class="btn btn-danger" name="action" value="delete" style="margin-left:auto" onclick="return confirm('Delete this draft?')">Delete draft</button>
+  </div>
+  {% endif %}
+</form>
+{% endblock %}

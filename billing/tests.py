@@ -276,7 +276,8 @@ class PlatformTests(TestCase):
         resp = self.client.get(reverse("pricing"))
         self.assertContains(resp, "Everything in Basic, plus")
         self.assertContains(resp, "10,000")
-        self.assertContains(resp, "Coming soon")
+        self.assertContains(resp, "Face verification")
+        self.assertNotContains(resp, "Coming soon")
 
 
 class RegisterPlanTests(TestCase):

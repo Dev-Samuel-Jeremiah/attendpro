@@ -56,6 +56,12 @@ class Organisation(models.Model):
     notify_checkout = models.BooleanField("Remind people who forget to clock out", default=True)
     email_notifications = models.BooleanField("Also send notifications by email", default=True)
 
+    # Face verification (Enterprise)
+    face_required = models.BooleanField("Check a selfie at every check-in", default=True)
+    face_auto_enrol = models.BooleanField(
+        "Use each person's first selfie as their reference face", default=True,
+        help_text="Otherwise an administrator registers each face before that person can check in")
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

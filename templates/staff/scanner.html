@@ -4,7 +4,7 @@
 <div style="max-width:480px;margin:0 auto">
   <div id="scan-view">
     <h1 style="text-align:center">Scan the reception QR</h1>
-    <p class="muted" style="text-align:center;margin-top:0">Point your camera at the code on the screen at the entrance.{% if need_location %} Your location is checked too, so allow location access when asked.{% endif %}</p>
+    <p class="muted" style="text-align:center;margin-top:0">Point your camera at the code on the screen at the entrance.{% if need_location %} Your location is checked too, so allow location access when asked.{% endif %}{% if need_face %} You'll take a quick selfie when you check in.{% endif %}</p>
     <div class="scanner-box">
       <div id="reader"></div>
       <div class="scanner-frame"></div><div class="scan-line"></div>
@@ -38,6 +38,7 @@
 {% block scripts %}
 <script src="{% static 'vendor/html5-qrcode.min.js' %}"></script>
 {% if need_location %}<script src="{% static 'js/locate.js' %}"></script>{% endif %}
+<script src="{% static 'js/selfie.js' %}"></script>
 <script>
 (function () {
   const api = "{% url 'api_scan' %}";
@@ -78,9 +79,7 @@
       catch (e) { show({ok: false, action: "rejected", title: e.title, message: e.message}); return; }
     }
     try {
-      const r = await fetch(api, {method: "POST", headers: {"Content-Type": "application/json", "X-CSRFToken": csrf},
-                                  body: JSON.stringify(body)});
-      show(await r.json());
+      show(await AttendPro.postWithSelfie(api, body, csrf));
     } catch (e) {
       show({ok: false, action: "rejected", title: "No connection", message: "Couldn't reach the server. Check your Wi-Fi or data and try again."});
     }

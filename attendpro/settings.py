@@ -39,6 +39,9 @@ INSTALLED_APPS = [
     "billing",
     "leave",
     "notifications",
+    "faces",
+    "payroll",
+    "recovery",
 ]
 
 MIDDLEWARE = [
@@ -117,6 +120,12 @@ STORAGES = {
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage." + (
         "StaticFilesStorage" if DEBUG else "ManifestStaticFilesStorage")},
 }
+
+# Files that must never be public (selfies, organisation backups). Nginx doesn't serve this
+# folder; the app hands files out only after checking permissions.
+PRIVATE_ROOT = Path(config("DJANGO_PRIVATE_ROOT", default=str(BASE_DIR / "private_data")))
+# OpenCV face models for face verification (downloaded by `manage.py get_face_models`)
+FACE_MODEL_DIR = Path(config("FACE_MODEL_DIR", default=str(BASE_DIR / "face_models")))
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = config("DJANGO_MEDIA_ROOT", default=str(BASE_DIR / "media"))

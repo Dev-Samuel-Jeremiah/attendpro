@@ -4,7 +4,9 @@ python-decouple==3.8
 qrcode[pil]==8.2
 Pillow==12.3.0
 openpyxl==3.1.5
-reportlab==5.0.1          # PDF reports
+reportlab==5.0.1          # PDF reports and payslips
+opencv-python-headless==4.14.0.94   # face verification (runs on the server, no outside service)
+numpy==2.4.4
 
 # Production: app server and PostgreSQL driver
 gunicorn==23.0.0

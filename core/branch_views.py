@@ -38,6 +38,12 @@ def branch_edit(request, pk=None):
     obj = get_object_or_404(Branch, pk=pk, organisation=org) if pk else None
     form = BranchForm(org, request.POST or None, instance=obj)
     if request.method == "POST":
+        if obj and "delete" in request.POST:
+            from recovery.services import trash
+            name = obj.name
+            trash(obj, request.user)
+            messages.success(request, f"{name} deleted. Its staff now belong to the main location.")
+            return redirect("branches")
         if obj and "rotate_key" in request.POST:
             obj.rotate_kiosk_key()
             messages.success(request, f"{obj.name} has a new reception link. Open it on that branch's screen.")

@@ -1,0 +1,53 @@
+{% extends "manage/_shell.html" %}{% load ui %}
+{% block title %}Face checks{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Face checks</h1><p>Selfies taken at check-in, compared with each person's registered face on this server.</p></div>
+  <a class="btn btn-ghost" href="{% url 'org_settings' %}#faces">{% icon "settings" %} Settings</a></div>
+
+{% if not engine_ready %}<div class="alert alert-warning" style="margin-bottom:16px">Face matching isn't installed on this server yet, so selfies are saved but not compared. They'll be checked automatically once it is.</div>{% endif %}
+{% if not org.face_required %}<div class="alert alert-info" style="margin-bottom:16px">Selfies at check-in are switched off. Turn them on in <a href="{% url 'org_settings' %}#faces">Settings</a>.</div>{% endif %}
+
+<div class="grid grid-3" style="margin-bottom:18px">
+  <div class="card stat t-green"><div class="label">Faces registered</div><div class="value">{{ enrolled }}<small style="font-size:1rem;color:var(--muted)"> / {{ total }}</small></div><div class="sub">active people</div></div>
+  <div class="card stat t-amber"><div class="label">To review</div><div class="value">{{ to_review|length }}</div><div class="sub">registered from a first selfie</div></div>
+  <div class="card stat t-blue"><div class="label">Not registered yet</div><div class="value">{{ not_enrolled|length }}</div><div class="sub">{% if org.face_auto_enrol %}registered at their first check-in{% else %}register them from their profile{% endif %}</div></div>
+</div>
+
+<div class="filters" style="margin-bottom:14px">
+  <a class="btn btn-sm {% if tab == 'review' %}btn-accent{% else %}btn-ghost{% endif %}" href="?tab=review">To review{% if to_review %} ({{ to_review|length }}){% endif %}</a>
+  <a class="btn btn-sm {% if tab == 'checks' %}btn-accent{% else %}btn-ghost{% endif %}" href="?tab=checks">Recent checks</a>
+  <a class="btn btn-sm {% if tab == 'refused' %}btn-accent{% else %}btn-ghost{% endif %}" href="?tab=refused">Refused</a>
+</div>
+
+{% if tab == 'review' %}
+  <div class="face-grid">
+  {% for p in to_review %}
+    <div class="card face-card">
+      {% if p.photo %}<img src="{% url 'face_photo' 'ref' p.pk %}" alt="Reference face of {{ p.user.display_name }}">{% endif %}
+      <b>{{ p.user.display_name }}</b><small class="muted">{{ p.user.username }} · {{ p.created_at|date:"j M, g:i A" }}</small>
+      <form method="post" action="{% url 'face_review' p.pk %}" class="btn-row">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button class="btn btn-accent btn-sm" name="action" value="approve">{% icon "check" %} That's them</button>
+        <button class="btn btn-danger btn-sm" name="action" value="reset" onclick="return confirm('Remove this face? Their next selfie becomes the new reference.')">{% icon "x" %} Not them</button>
+      </form>
+    </div>
+  {% empty %}<div class="card empty" style="grid-column:1/-1">Nothing to review. 🎉</div>{% endfor %}
+  </div>
+{% else %}
+  <div class="card"><div class="table-wrap"><table class="table">
+    <thead><tr><th>Selfie</th><th>Registered face</th><th>Person</th><th>Result</th><th>Score</th><th class="hide-sm">When</th></tr></thead>
+    <tbody>
+    {% for c in checks %}
+      <tr>
+        <td>{% if c.photo %}<img class="face-thumb" src="{% url 'face_photo' 'check' c.pk %}" alt="Selfie">{% endif %}</td>
+        <td>{% if c.user.face and c.user.face.photo %}<img class="face-thumb" src="{% url 'face_photo' 'ref' c.user.face.pk %}" alt="Registered face">{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td><b>{{ c.user.display_name }}</b><br><small class="muted">{{ c.user.username }}</small></td>
+        <td><span class="badge {% if c.result == 'match' or c.result == 'enrolled' %}b-present{% elif c.result == 'unchecked' %}b-muted{% else %}b-absent{% endif %}">{{ c.get_result_display }}</span></td>
+        <td class="mono">{{ c.score|default_if_none:"—" }}</td>
+        <td class="hide-sm" style="white-space:nowrap">{{ c.created_at|date:"j M, g:i A" }}</td>
+      </tr>
+    {% empty %}<tr><td colspan="6" class="empty">No selfies yet.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+  <p class="muted" style="font-size:.82rem;margin:10px 0 0">Scores near 1 mean the same person; below {{ 0.363 }} counts as a different person. Selfies are deleted after 90 days.</p></div>
+{% endif %}
+{% endblock %}

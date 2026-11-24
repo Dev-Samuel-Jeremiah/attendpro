@@ -167,9 +167,12 @@ def scan(request):
         return redirect("login")
 
     org = request.user.organisation
-    if org.has_feature(catalog.GEOFENCING) and (token or request.session.get("pending_scan")):
-        # The browser has to send its location, so hand over to a page that does that
-        return render(request, "staff/scan_locate.html", {"token": token})
+    from faces.services import required as face_required
+    need_location, need_face = org.has_feature(catalog.GEOFENCING), face_required(org)
+    if (need_location or need_face) and (token or request.session.get("pending_scan")):
+        # The browser has to send its location and/or a selfie, so hand over to a page that does that
+        return render(request, "staff/scan_locate.html", {"token": token, "need_location": need_location,
+                                                          "need_face": need_face})
 
     result = None
     pending = request.session.pop("pending_scan", None)
@@ -191,15 +194,20 @@ def api_scan(request):
     except json.JSONDecodeError:
         data = {}
     location = {k: data.get(k) for k in ("lat", "lng", "accuracy")}
+    selfie = data.get("selfie")
     if data.get("pending"):
-        org, branch = _pending_site(request, request.session.pop("pending_scan", None))
+        org, branch = _pending_site(request, request.session.get("pending_scan"))
         if org is None:
+            request.session.pop("pending_scan", None)
             return JsonResponse({"ok": False, "action": "rejected", "title": "Scan expired",
                                  "message": "That scan is too old. Scan the live code at reception again."})
         result = services.mark_attendance(request.user, "", request, verified_org=org, verified_branch=branch,
-                                          location=location)
+                                          location=location, selfie=selfie)
+        if result.action != "need_selfie":  # keep the held scan while the selfie is being taken
+            request.session.pop("pending_scan", None)
     else:
-        result = services.mark_attendance(request.user, data.get("token", ""), request, location=location)
+        result = services.mark_attendance(request.user, data.get("token", ""), request, location=location,
+                                          selfie=selfie)
     return JsonResponse(result.as_dict())
 
 
@@ -209,8 +217,10 @@ def scanner(request):
         messages.info(request, upgrade_message(catalog.QR_ATTENDANCE) if request.user.is_org_admin
                       else "Use the Clock in button to record your attendance.")
         return redirect("billing" if request.user.is_org_admin else "portal")
+    from faces.services import required as face_required
     return render(request, "staff/scanner.html",
-                  {"need_location": request.user.organisation.has_feature(catalog.GEOFENCING)})
+                  {"need_location": request.user.organisation.has_feature(catalog.GEOFENCING),
+                   "need_face": face_required(request.user.organisation)})
 
 
 @member_required
@@ -222,7 +232,7 @@ def api_clock(request):
     except json.JSONDecodeError:
         data = {}
     result = services.clock_by_location(request.user, request, data.get("lat"), data.get("lng"),
-                                        data.get("accuracy"))
+                                        data.get("accuracy"), selfie=data.get("selfie"))
     return JsonResponse(result.as_dict())
 
 
@@ -467,7 +477,9 @@ def member_edit(request, pk):
             messages.success(request, f"{m.display_name} updated.")
             return redirect("members")
     recent = m.attendance.order_by("-date")[:10]
+    face = getattr(m, "face", None) if org.has_feature(catalog.FACE) else None
     return render(request, "manage/member_form.html", {"form": form, "member": m, "recent": recent,
+                                                       "face_feature": org.has_feature(catalog.FACE), "face": face,
                                                        "title": f"Edit {m.display_name}"})
 
 
@@ -554,7 +566,8 @@ def department_add(request):
 @org_admin_required
 @require_POST
 def department_delete(request, pk):
-    get_object_or_404(Department, pk=pk, organisation=request.user.organisation).delete()
+    from recovery.services import trash
+    trash(get_object_or_404(Department, pk=pk, organisation=request.user.organisation), request.user)
     messages.success(request, "Department removed.")
     return redirect("members")
 
@@ -613,9 +626,11 @@ def record_edit(request, pk):
     form = RecordForm(org, request.POST or None, instance=rec)
     if request.method == "POST":
         if "delete" in request.POST:
+            from recovery.services import enabled as recovery_on, trash
             d = rec.date
-            rec.delete()
-            messages.success(request, "Entry deleted.")
+            trash(rec, request.user)
+            messages.success(request, "Entry deleted." + (" You can restore it from Backup & recovery for 30 days."
+                                                          if recovery_on(org) else ""))
             return redirect(f"{reverse('attendance')}?date={d}")
         if form.is_valid():
             rec = form.save()
@@ -724,7 +739,8 @@ def org_settings(request):
     org = request.user.organisation
     form = OrgSettingsForm(request.POST or None, request.FILES or None, instance=org,
                            branding=org.has_feature(catalog.CUSTOM_BRANDING),
-                           notifications=org.has_feature(catalog.NOTIFICATIONS))
+                           notifications=org.has_feature(catalog.NOTIFICATIONS),
+                           face=org.has_feature(catalog.FACE))
     if request.method == "POST":
         if "rotate_key" in request.POST:
             org.rotate_kiosk_key()

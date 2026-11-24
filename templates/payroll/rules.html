@@ -1,0 +1,19 @@
+{% extends "manage/_shell.html" %}{% load ui %}
+{% block title %}Payroll rules{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Payroll rules</h1><p>How lateness, absences and unpaid leave affect pay.</p></div>
+  <a class="btn btn-ghost" href="{% url 'payroll' %}">{% icon "chevron-left" %} Payroll</a></div>
+<div class="card" style="max-width:640px">
+  <form method="post">{% csrf_token %}
+    <div class="form-grid">
+      {% include "partials/field.html" with f=form.late_fee %}
+      {% include "partials/field.html" with f=form.free_lates %}
+      {% include "partials/field.html" with f=form.absence_mode cls="full" %}
+      {% include "partials/field.html" with f=form.absence_fee %}
+      {% include "partials/field.html" with f=form.deduct_unpaid_leave %}
+    </div>
+    <p class="muted" style="font-size:.85rem">Daily-rate and hourly staff are simply not paid for days they're absent, so absence deductions only apply to monthly salaries. Paid leave counts as worked.</p>
+    <button class="btn btn-accent">{% icon "save" %} Save rules</button>
+  </form>
+</div>
+{% endblock %}

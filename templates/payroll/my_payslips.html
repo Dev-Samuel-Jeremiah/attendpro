@@ -1,0 +1,15 @@
+{% extends layout %}{% load ui humanize %}
+{% block title %}My payslips{% endblock %}
+{% block content %}
+<div style="max-width:640px">
+  <div class="topbar"><div><h1>My payslips</h1><p>Finalised by your organisation, worked out from your attendance.</p></div></div>
+  <div class="card">
+    <ul class="feed">
+      {% for l in lines %}
+      <li><div><b>{{ l.run.month|date:"F Y" }}</b><br><small class="muted">{{ l.attended }} days · {{ l.late }} late{% if l.deductions %} · −₦{{ l.deductions|floatformat:0|intcomma }}{% endif %}</small></div>
+        <span class="time"><b>₦{{ l.net|floatformat:2|intcomma }}</b> <a class="btn btn-ghost btn-sm" href="{% url 'my_payslip' l.pk %}" target="_blank">{% icon "file" %} PDF</a></span></li>
+      {% empty %}<li class="muted">No payslips yet.</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

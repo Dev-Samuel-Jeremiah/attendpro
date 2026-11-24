@@ -17,3 +17,6 @@ NOTIFICATIONS = "notifications"       # in-app + email alerts
 MULTI_BRANCH = "multi_branch"         # several sites, each with its own location and reception QR
 GEOFENCING = "geofencing"             # GPS check on QR scans too; clock in at any branch
 ANALYTICS = "advanced_analytics"      # analytics page
+FACE = "face_verification"            # selfie matched to a reference face at check-in
+PAYROLL = "payroll"                   # pay rates, monthly payroll runs, payslips
+BACKUP = "advanced_backup"            # weekly organisation backups, full export, recently deleted

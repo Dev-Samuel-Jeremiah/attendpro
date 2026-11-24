@@ -34,6 +34,14 @@
         {% include "partials/field.html" with f=form.email_notifications %}
       </div>
       {% endif %}
+      {% if 'face_required' in form.fields %}
+      <hr><h2 id="faces">{% icon "users" 18 %} Face verification</h2>
+      <p class="muted" style="margin-top:-4px">People take a quick selfie when they check in, and it's compared with their registered face on this server. <a href="{% url 'faces' %}">Review faces</a></p>
+      <div class="toggles">
+        {% include "partials/field.html" with f=form.face_required %}
+        {% include "partials/field.html" with f=form.face_auto_enrol %}
+      </div>
+      {% endif %}
       <hr><h2 id="location">{% icon "pin" 18 %} {% if 'multi_branch' in features %}Main location{% else %}Attendance location{% endif %}</h2>
       {% if 'multi_branch' in features %}<p class="muted" style="margin:-4px 0 6px">For staff not assigned to a branch. <a href="{% url 'branches' %}">Set up branches</a> for your other sites.</p>{% endif %}
       <p class="muted" style="margin-top:-4px">Members can only use the <b>Clock in</b> button when their phone is within the allowed distance of this point.

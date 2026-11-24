@@ -1,0 +1,20 @@
+{% extends "manage/_shell.html" %}{% load ui %}
+{% block title %}Pay rates{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Pay rates</h1><p>How each person is paid, and where. Bank details go into the bank-transfer file.</p></div>
+  <a class="btn btn-ghost" href="{% url 'payroll' %}">{% icon "chevron-left" %} Payroll</a></div>
+<form method="post" class="card">{% csrf_token %}
+  <div class="table-wrap"><table class="table rates">
+    <thead><tr><th>Person</th><th>Paid by</th><th>Rate (₦)</th><th>Bank</th><th>Account number</th><th>Account name</th></tr></thead>
+    <tbody>{% for m, p in rows %}
+      <tr><td><b>{{ m.display_name }}</b><br><small class="muted">{{ m.username }}{% if m.department %} · {{ m.department }}{% endif %}</small></td>
+        <td><select class="input" name="t{{ m.id }}">{% for v, l in types %}<option value="{{ v }}" {% if p.pay_type == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></td>
+        <td><input class="input" name="r{{ m.id }}" value="{{ p.rate|floatformat:'-2' }}" inputmode="decimal" style="min-width:110px"></td>
+        <td><input class="input" name="b{{ m.id }}" value="{{ p.bank_name }}" placeholder="e.g. GTBank" style="min-width:120px"></td>
+        <td><input class="input mono" name="a{{ m.id }}" value="{{ p.account_number }}" inputmode="numeric" maxlength="20" style="min-width:130px"></td>
+        <td><input class="input" name="n{{ m.id }}" value="{{ p.account_name }}" placeholder="{{ m.display_name }}" style="min-width:150px"></td></tr>
+    {% empty %}<tr><td colspan="6" class="empty">No active members.</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <div class="btn-row" style="margin-top:14px"><button class="btn btn-accent">{% icon "save" %} Save pay rates</button></div>
+</form>
+{% endblock %}

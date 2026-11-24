@@ -34,6 +34,24 @@
       <form method="post" action="{% url 'member_reset_password' member.pk %}" onsubmit="return confirm('Generate a new password for {{ member.display_name|escapejs }}?')">{% csrf_token %}
         <button class="btn btn-ghost">{% icon "key" %} Reset password</button></form>
     </div>
+    {% if face_feature %}
+    <div class="card">
+      <h2>Face</h2>
+      {% if face %}
+        <div class="face-box">{% if face.photo %}<img src="{% url 'face_photo' 'ref' face.pk %}" alt="Registered face">{% endif %}
+          <div><b>Registered</b><br><small class="muted">{{ face.get_source_display }} · {{ face.updated_at|date:"j M Y" }}</small>
+            {% if not face.reviewed %}<br><span class="badge b-late">Not reviewed yet</span>{% endif %}</div></div>
+      {% else %}
+        <p class="muted">No face registered yet.{% if org.face_auto_enrol %} Their first check-in selfie will become their reference.{% endif %}</p>
+      {% endif %}
+      <form method="post" action="{% url 'face_enrol' member.pk %}" enctype="multipart/form-data" style="margin-top:12px">{% csrf_token %}
+        <input class="input" type="file" name="photo" accept="image/*" capture="user" required>
+        <div class="btn-row" style="margin-top:10px"><button class="btn btn-ghost">{% icon "upload" %} {% if face %}Replace face{% else %}Register face{% endif %}</button></div>
+      </form>
+      {% if face %}<form method="post" action="{% url 'face_enrol' member.pk %}" style="margin-top:8px" onsubmit="return confirm('Remove the registered face?')">{% csrf_token %}
+        <button class="btn btn-danger btn-sm" name="action" value="reset">{% icon "x" %} Remove face</button></form>{% endif %}
+    </div>
+    {% endif %}
     <div class="card">
       <div class="card-head"><h2>Recent attendance</h2><a href="{% url 'record_add' %}?user={{ member.pk }}">+ Add</a></div>
       <ul class="feed">

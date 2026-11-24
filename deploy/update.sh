@@ -18,6 +18,9 @@ git pull --ff-only
 echo "→ Installing packages"
 $PIP install -q -r requirements.txt
 
+echo "→ Face models for selfie checks (downloaded once, about 39 MB)"
+$PY manage.py get_face_models || echo "⚠ Face models could not be downloaded; selfies are kept but not compared"
+
 echo "→ Updating the database"
 $PY manage.py migrate --noinput
 

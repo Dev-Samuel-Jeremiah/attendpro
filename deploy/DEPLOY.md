@@ -193,6 +193,15 @@ $ systemctl daemon-reload && systemctl enable --now attendpro-alerts.timer
 In-app notifications work straight away. For email too, fill in the `EMAIL_*` lines in `.env`
 (see `.env.example`) and `systemctl restart attendpro`.
 
+## 12. Enterprise extras: faces, payroll, backups
+
+- **Face verification** uses OpenCV on this server. `deploy/update.sh` downloads the two face models
+  (about 39 MB) into `app/face_models/` the first time; without them selfies are saved but not compared.
+- **Private files** (registered faces, selfies, organisation backups) live in `app/private_data/`,
+  which nginx never serves. The Sunday server backup includes them.
+- **Weekly organisation backups**, the 30-day "recently deleted" bin and face-photo clean-up all run from
+  the alerts timer (step 11).
+
 ---
 
 ## Updating after a code change

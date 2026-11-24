@@ -30,3 +30,7 @@ staticfiles/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Private files and downloaded face models
+private_data/
+face_models/

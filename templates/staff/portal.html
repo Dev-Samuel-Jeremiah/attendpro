@@ -1,4 +1,4 @@
-{% extends layout %}{% load ui %}
+{% extends layout %}{% load ui static %}
 {% block title %}My attendance{% endblock %}
 {% block content %}
 <div class="stack" style="max-width:640px">
@@ -71,10 +71,11 @@
     </ul>
     {% else %}<div class="empty">No attendance yet.</div>{% endif %}
   </div>
-  <p style="text-align:center"><a href="{% url 'change_password' %}" class="muted">{% icon "key" 14 %} Change password</a></p>
+  <p style="text-align:center">{% if 'payroll' in features %}<a href="{% url 'my_payslips' %}" class="muted">{% icon "file" 14 %} My payslips</a> · {% endif %}<a href="{% url 'change_password' %}" class="muted">{% icon "key" 14 %} Change password</a></p>
 </div>
 {% endblock %}
 {% block scripts %}{% csrf_token %}
+<script src="{% static 'js/selfie.js' %}"></script>
 <script>
 (function () {
   const btn = document.querySelector("button#clock");
@@ -104,12 +105,9 @@
     label.textContent = "Checking your location…";
     navigator.geolocation.getCurrentPosition(async function (pos) {
       try {
-        const r = await fetch(btn.dataset.url, {
-          method: "POST",
-          headers: {"Content-Type": "application/json", "X-CSRFToken": csrf},
-          body: JSON.stringify({lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy})
-        });
-        const d = await r.json();
+        const d = await AttendPro.postWithSelfie(btn.dataset.url,
+          {lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy}, csrf,
+          () => { label.textContent = "Taking a selfie…"; });
         show(d);
         if (d.ok && d.action !== "duplicate") { setTimeout(() => location.reload(), 2500); return; }
       } catch (e) {

@@ -1,0 +1,39 @@
+{% extends "manage/_shell.html" %}{% load ui humanize %}
+{% block title %}Payroll{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Payroll</h1><p>Monthly pay worked out from attendance: lateness, absences and unpaid leave included.</p></div>
+  <div class="btn-row"><a class="btn btn-ghost" href="{% url 'pay_rules' %}">{% icon "settings" %} Rules</a><a class="btn btn-ghost" href="{% url 'pay_rates' %}">{% icon "users" %} Pay rates</a></div></div>
+{% if no_rate %}<div class="alert alert-warning" style="margin-bottom:16px">{{ no_rate }} active {{ no_rate|pluralize:"person has,people have" }} no pay rate yet. <a href="{% url 'pay_rates' %}">Set pay rates</a></div>{% endif %}
+<div class="grid grid-main">
+  <div class="card">
+    <div class="card-head"><h2>Payroll runs</h2></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Month</th><th>Status</th><th>People</th><th class="hide-sm">Prepared</th><th></th></tr></thead>
+      <tbody>{% for r in runs %}
+        <tr><td><b>{{ r.month|date:"F Y" }}</b></td>
+          <td><span class="badge {% if r.is_final %}b-present{% else %}b-late{% endif %}">{{ r.get_status_display }}</span></td>
+          <td>{{ r.lines.count }}</td><td class="hide-sm">{{ r.created_at|date:"j M Y" }}</td>
+          <td style="text-align:right"><a class="btn btn-ghost btn-sm" href="{% url 'payroll_run' r.pk %}">Open</a></td></tr>
+      {% empty %}<tr><td colspan="5" class="empty">No payroll yet. Prepare your first month on the right.</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div>
+  <div class="stack">
+    <div class="card">
+      <h2>Prepare a month</h2>
+      <p class="muted" style="margin-top:-4px">Creates a draft you can check and adjust before finalising. Preparing it again recalculates it.</p>
+      <form method="post">{% csrf_token %}
+        <div class="field"><label for="month">Month</label><input class="input" type="month" id="month" name="month" value="{{ default_month|date:'Y-m' }}" required></div>
+        <button class="btn btn-accent btn-block">{% icon "card" %} Prepare payroll</button>
+      </form>
+    </div>
+    <div class="card">
+      <h2>Current rules</h2>
+      <ul class="feed" style="font-size:.9rem">
+        <li>₦{{ rules.late_fee|intcomma }} per late arrival{% if rules.free_lates %}, after {{ rules.free_lates }} free{% endif %}</li>
+        <li>{{ rules.get_absence_mode_display }}{% if rules.absence_mode == 'fixed' %}: ₦{{ rules.absence_fee|intcomma }}{% endif %}</li>
+        <li>Unpaid leave {% if rules.deduct_unpaid_leave %}is deducted like an absence{% else %}isn't deducted{% endif %}</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

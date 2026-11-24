@@ -21,6 +21,8 @@
       </div>
       <button class="btn btn-accent">{% icon "save" %} Save branch</button>
     </form>
+    {% if obj %}<form method="post" style="margin-top:12px" onsubmit="return confirm('Delete {{ obj.name|escapejs }}? Its staff move to the main location.')">{% csrf_token %}
+      <button class="btn btn-danger btn-sm" name="delete" value="1">{% icon "x" %} Delete branch</button></form>{% endif %}
   </div>
   {% if obj %}
   <div class="card">
