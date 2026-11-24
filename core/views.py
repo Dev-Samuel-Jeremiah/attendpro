@@ -198,7 +198,8 @@ def scan(request):
     if (need_location or need_face) and (token or request.session.get("pending_scan")):
         # The browser has to send its location and/or a selfie, so hand over to a page that does that
         return render(request, "staff/scan_locate.html", {"token": token, "need_location": need_location,
-                                                          "need_face": need_face})
+                                                          "need_face": need_face,
+                                                          "locate_good": services.locate_good_enough(request.user)})
 
     result = None
     pending = request.session.pop("pending_scan", None)
@@ -250,7 +251,8 @@ def scanner(request):
     from faces.services import required as face_required
     return render(request, "staff/scanner.html",
                   {"need_location": request.user.organisation.has_feature(catalog.GEOFENCING),
-                   "need_face": face_required(request.user.organisation)})
+                   "need_face": face_required(request.user.organisation),
+                   "locate_good": services.locate_good_enough(request.user)})
 
 
 @member_required
@@ -355,6 +357,7 @@ def portal(request):
         "rec": rec, "summary": summary, "recent": recent, "today": today,
         "is_working_day": org.is_working_day(today),
         "closed": (not rec or not rec.check_in) and services.check_in_closed(org, timezone.localtime()),
+        "locate_good": services.locate_good_enough(u),
     })
 
 

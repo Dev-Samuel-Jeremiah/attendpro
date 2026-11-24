@@ -46,7 +46,7 @@
     let loc = {};
     if ({{ need_location|yesno:"true,false" }}) {
       try {
-        loc = await AttendPro.locate({onProgress: acc => { $("r-msg").textContent = "Getting a precise location… (±" + acc + " m). Stay still for a moment."; }});
+        loc = await AttendPro.locate({goodEnough: {{ locate_good|default:60 }}, onProgress: acc => { $("r-msg").textContent = "Getting a precise location… (±" + acc + " m). Stay still for a moment."; }});
       }
       catch (e) { show({ok: false, title: e.title, message: e.message}); $("retry").style.display = ""; return; }
     }

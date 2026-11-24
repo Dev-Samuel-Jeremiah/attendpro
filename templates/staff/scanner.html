@@ -78,7 +78,7 @@
     if (needLocation) {
       camMsg("Code scanned. Getting a precise location…");
       try {
-        Object.assign(body, await AttendPro.locate({onProgress: acc => camMsg("Code scanned. Getting a precise location… (±" + acc + " m)")}));
+        Object.assign(body, await AttendPro.locate({goodEnough: {{ locate_good|default:60 }}, onProgress: acc => camMsg("Code scanned. Getting a precise location… (±" + acc + " m)")}));
       } catch (e) { $("cam-msg").style.display = "none"; show({ok: false, action: "rejected", title: e.title, message: e.message}); return; }
       $("cam-msg").style.display = "none";
     }

@@ -93,6 +93,19 @@ class LocationClockTests(TestCase):
         self.assertFalse(result.ok)
         self.assertIn("precise", result.title)
 
+    def test_big_site_accepts_a_rough_cell_tower_reading(self):
+        # A 1 km site: a phone that only gets a ±600 m cell-tower position 439 m away can clock in...
+        self.org.location_radius_m = 1000
+        self.org.save()
+        self.assertEqual(self.clock(self.LAT + 0.00395, self.LNG, accuracy=600).action, "check_in")
+        self.assertEqual(services.locate_good_enough(self.user), 600)
+
+    def test_rough_reading_still_refused_at_a_small_site(self):
+        # ...but at a 100 m site the same reading is too rough to tell.
+        result = self.clock(self.LAT + 0.0005, self.LNG, accuracy=600)
+        self.assertEqual(result.title, "Location not precise enough")
+        self.assertEqual(services.locate_good_enough(self.user), 60)
+
     def test_imprecise_location_explains_where_to_turn_on_precise_location(self):
         self.request = RequestFactory(HTTP_USER_AGENT="Mozilla/5.0 (Linux; Android 14) AttendProApp/android").post("/")
         msg = self.clock(self.LAT, self.LNG, accuracy=2000).message

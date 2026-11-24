@@ -21,7 +21,7 @@
     {% else %}
       {% if uses_button %}
         {% if org.has_location %}
-        <button type="button" id="clock" class="btn btn-accent btn-lg btn-block" data-url="{% url 'api_clock' %}">{% icon "pin" %}
+        <button type="button" id="clock" class="btn btn-accent btn-lg btn-block" data-url="{% url 'api_clock' %}" data-good-enough="{{ locate_good }}">{% icon "pin" %}
           <span>{% if not rec or not rec.check_in %}Clock in{% else %}Clock out{% endif %}</span></button>
         {% else %}
         <div class="clock-note" id="clock">{% icon "pin" 16 %} The attendance location hasn't been set yet.
@@ -102,7 +102,7 @@
     label.textContent = "Finding your location…";
     let loc;
     try {
-      loc = await AttendPro.locate({onProgress: function (acc, secs) {
+      loc = await AttendPro.locate({goodEnough: +btn.dataset.goodEnough || 60, onProgress: function (acc, secs) {
         label.textContent = acc <= 60 ? "Location found (±" + acc + " m)"
           : secs >= 10 && acc > 300 ? "Still rough (±" + acc + " m). Step outside or near a window…"
           : "Getting a precise location… (±" + acc + " m)";

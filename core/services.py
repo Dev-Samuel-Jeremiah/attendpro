@@ -169,6 +169,9 @@ def mark_attendance(user: User, token: str, request, verified_org: Organisation 
 
 # Phones report how sure they are of the position; worse than this and we can't tell
 # whether someone is inside the premises, so ask them to turn on GPS / move near a window.
+# A site with a bigger radius accepts readings up to its radius (see max_accuracy_for): a phone
+# that can only get a cell-tower position (often ±500-800 m) can still clock in at a site whose
+# administrators chose a 1 km area.
 MAX_ACCURACY_M = 300
 # Benefit of the doubt given for GPS error, capped so a vague fix can't stretch the radius far.
 ACCURACY_ALLOWANCE_CAP_M = 50
@@ -234,6 +237,21 @@ class LocationCheck:
     log: dict | None = None
 
 
+def max_accuracy_for(site: Site) -> int:
+    """The roughest location reading accepted at `site`, in metres."""
+    return max(MAX_ACCURACY_M, int(site.radius or 0))
+
+
+def locate_good_enough(user: User) -> int:
+    """For the phone: after a few seconds of waiting for GPS, it may send a reading this precise
+    instead of waiting longer (static/js/locate.js `goodEnough`). The server still decides."""
+    sites = allowed_sites(user) if user.organisation_id else []
+    if not sites:
+        return 60
+    site = min(sites, key=lambda s: s.radius)
+    return int(max(60, min(max_accuracy_for(site), site.radius * 0.6)))
+
+
 def precise_location_help(user_agent: str = "") -> str:
     """Where to switch on precise location on this person's phone (matches static/js/locate.js)."""
     ua = user_agent or ""
@@ -268,7 +286,7 @@ def check_location(sites: list[Site], loc: dict, user_agent: str = "") -> Locati
     dist, site = dists[0]
     log = {"latitude": round(lat, 6), "longitude": round(lng, 6), "accuracy_m": min(int(accuracy), 2_000_000),
            "distance_m": min(int(dist), 2_000_000_000), "branch": site.branch}
-    if accuracy > MAX_ACCURACY_M:
+    if accuracy > max_accuracy_for(site):
         return LocationCheck(False, "Location not precise enough",
                              f"Your phone could only place you within {int(accuracy)} m, which is too rough "
                              f"to confirm you're at work. Step outside or near a window, wait a few seconds "
