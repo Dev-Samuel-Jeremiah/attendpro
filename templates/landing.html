@@ -1,7 +1,7 @@
 {% extends "base.html" %}{% load ui static %}
 {% block title %}AttendPro: clock in with one tap, know who's in live{% endblock %}
 {% block head %}
-<meta name="description" content="AttendPro records staff and student attendance in one tap: a rotating QR code at the entrance or a GPS-checked clock-in button. Live dashboard, leave, reports and alerts. Free for up to 10 staff.">
+<meta name="description" content="AttendPro records staff and student attendance in one tap: a QR code at the entrance or a GPS-checked clock-in button. Live dashboard, leave, reports and alerts. Free for up to 10 staff.">
 <meta property="og:title" content="AttendPro: clock in with one tap, know who's in live">
 <meta property="og:description" content="Clock in by QR or GPS, see who's in live, and export reports. Free for up to 10 staff.">
 <meta property="og:type" content="website">
@@ -96,7 +96,7 @@
             <div class="lp-home-bar"></div>
           </div>
         </div>
-        <div class="lp-chip lp-chip-a" aria-hidden="true">{% icon "qr" 16 %} QR changes every 30 s</div>
+        <div class="lp-chip lp-chip-a" aria-hidden="true">{% icon "qr" 16 %} Scan the QR to check in</div>
         <div class="lp-chip lp-chip-b" aria-hidden="true">{% icon "bell" 16 %} 3 people not in yet</div>
       </div>
     </div>
@@ -118,7 +118,7 @@
   <section class="lp-facts">
     <div class="lp-wrap lp-facts-in">
       <div class="reveal"><b><span data-count="1">1</span></b><small>tap to clock in</small></div>
-      <div class="reveal"><b><span data-count="30">30</span><em>s</em></b><small>until the QR code changes</small></div>
+      <div class="reveal"><b><span data-count="100">100</span><em>%</em></b><small>of check-in attempts logged</small></div>
       <div class="reveal"><b><span data-count="10">10</span></b><small>staff free, for ever</small></div>
       <div class="reveal"><b><span data-count="3">3</span></b><small>report formats: Excel, CSV, PDF</small></div>
     </div>
@@ -145,7 +145,7 @@
           <h3>With AttendPro</h3>
           <ul>
             <li>{% icon "check" 16 %} Everyone clocks in on their own phone, no queue</li>
-            <li>{% icon "check" 16 %} A QR code that expires in seconds, plus a GPS check</li>
+            <li>{% icon "check" 16 %} QR and GPS checks, so only people on site clock in</li>
             <li>{% icon "check" 16 %} Reports in Excel, CSV or PDF with one click</li>
             <li>{% icon "check" 16 %} A live dashboard and alerts the same morning</li>
           </ul>
@@ -176,9 +176,9 @@
       <div class="reveal">
         <span class="lp-kicker lp-kicker-light">Honest attendance</span>
         <h2>Proxy sign-ins stop here</h2>
-        <p class="lp-lead-light">A screenshot of yesterday's code won't work, and neither will clocking in from home.</p>
+        <p class="lp-lead-light">Clocking in for a colleague, or from home, doesn't work.</p>
         <ul class="lp-shield">
-          <li><span>{% icon "qr" 20 %}</span><div><b>A QR code that keeps changing</b><p>The code on the reception screen refreshes every 30 seconds, so a photo shared on WhatsApp stops working almost at once.</p></div></li>
+          <li><span>{% icon "qr" 20 %}</span><div><b>A QR code at your entrance</b><p>Staff scan the code on your reception screen or a printed sheet, and every scan is tied to their own account.</p></div></li>
           <li><span>{% icon "pin" 20 %}</span><div><b>GPS check at the door</b><p>The Clock in button only works within the distance you set from your premises. On Enterprise, QR scans are checked too.</p></div></li>
           <li><span>{% icon "activity" 20 %}</span><div><b>A record of every attempt</b><p>Every scan is logged with time, IP address and distance, including the ones that were refused.</p></div></li>
         </ul>
@@ -186,8 +186,7 @@
       <div class="lp-kiosk reveal" aria-hidden="true">
         <div class="lp-kiosk-top"><b>Main campus</b><span id="lp-clock">08:00</span></div>
         <div class="lp-qr" id="lp-qr"></div>
-        <div class="lp-kiosk-bar"><span id="lp-bar"></span></div>
-        <small>Code refreshes in <b id="lp-secs">30</b>s</small>
+        <small>Scan with the AttendPro app or your phone's camera</small>
       </div>
     </div>
   </section>
@@ -342,8 +341,8 @@
       <div class="lp-head reveal"><span class="lp-kicker">FAQ</span><h2>Questions people ask</h2></div>
       <div class="lp-faq reveal">
         <details><summary>Do staff need to install an app?</summary><p>No. AttendPro runs in the phone's browser. Staff sign in once with their ID and stay signed in for 30 days, so clocking in is a single tap.</p></details>
-        <details><summary>What do we need at the entrance?</summary><p>Any screen with a browser for the QR code: a TV, a monitor or a tablet. Or switch the code's refresh off and print it. On the free plan you don't need anything at the entrance: staff use the Clock in button, which checks their GPS location.</p></details>
-        <details><summary>Can someone clock in for a colleague?</summary><p>It's made very hard. The QR code changes every 30 seconds and the Clock in button only works on your premises. Every attempt, including refused ones, is logged.</p></details>
+        <details><summary>What do we need at the entrance?</summary><p>Any screen with a browser for the QR code (a TV, a monitor or a tablet), or simply print the code and put it up. On the free plan you don't need anything at the entrance: staff use the Clock in button, which checks their GPS location.</p></details>
+        <details><summary>Can someone clock in for a colleague?</summary><p>It's made very hard. Everyone signs in with their own ID, the Clock in button only works on your premises, and on Enterprise QR scans are GPS-checked too and can require a selfie. Every attempt, including refused ones, is logged.</p></details>
         <details><summary>What if a phone has no GPS or no data?</summary><p>If your plan includes it, they can scan the QR code at reception instead. Otherwise an administrator can mark the day as excused with a note. Clock-in and clock-out times themselves can only come from the person's own scan, so nobody can edit them.</p></details>
         <details><summary>Can we change plans later?</summary><p>Yes. Upgrade any time from Plan &amp; billing. If a paid plan runs out, you move to the free plan: nothing is deleted, and paid features come back as soon as you renew.</p></details>
         <details><summary>Is our data safe?</summary><p>Each organisation's data is kept separate, connections are encrypted, and the database is backed up every night. Location is only read at the moment someone clocks in. See our <a href="{% url 'privacy' %}">privacy policy</a>.</p></details>

@@ -1,4 +1,4 @@
-/* Landing page: scroll reveals, the clock-in demo on the phone, the live feed and the rotating QR.
+/* Landing page: scroll reveals, the clock-in demo on the phone, the live feed and the reception QR.
    Everything is decorative; the page reads fine with JavaScript off or reduced motion on. */
 (function () {
   const $ = id => document.getElementById(id);
@@ -139,8 +139,8 @@
   }
   if (!calm) setInterval(arrive, 3800);
 
-  // Kiosk: a QR-like pattern that changes every few seconds, with a countdown
-  const qr = $("lp-qr"), bar = $("lp-bar"), secs = $("lp-secs"), clock = $("lp-clock");
+  // Kiosk: a QR-like pattern, drawn once, with the live time
+  const qr = $("lp-qr"), clock = $("lp-clock");
   const N = 25, NS = "http://www.w3.org/2000/svg";
   function finder(svg, x, y) {
     [[7, "#0d1530"], [5, "#fff"], [3, "#0d1530"]].forEach(([s, c], i) => {
@@ -152,28 +152,20 @@
   function drawQr() {
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("viewBox", `0 0 ${N} ${N}`);
+    let seed = 7;                                   // fixed pattern: the same code every time
+    const rand = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
     for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
       const inFinder = (x < 8 && y < 8) || (x > N - 9 && y < 8) || (x < 8 && y > N - 9);
-      if (inFinder || Math.random() < .52) continue;
+      if (inFinder || rand() < .52) continue;
       const r = document.createElementNS(NS, "rect");
       r.setAttribute("x", x + .08); r.setAttribute("y", y + .08); r.setAttribute("width", .84); r.setAttribute("height", .84);
       r.setAttribute("rx", .25); r.setAttribute("fill", "#0d1530"); svg.appendChild(r);
     }
     finder(svg, 0, 0); finder(svg, N - 7, 0); finder(svg, 0, N - 7);
-    qr.classList.add("swap");
-    setTimeout(() => { qr.replaceChildren(svg); qr.classList.remove("swap"); }, 200);
+    qr.replaceChildren(svg);
   }
-  const ROT = 30;
-  let left = ROT;
   drawQr();
-  function tick() {
-    const t = new Date();
-    clock.textContent = t.toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
-    left -= 1;
-    if (left <= 0) { left = ROT; drawQr(); }
-    secs.textContent = left;
-    bar.style.width = (left / ROT * 100) + "%";
-  }
+  function tick() { clock.textContent = new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}); }
   tick();
   setInterval(tick, 1000);
 })();
