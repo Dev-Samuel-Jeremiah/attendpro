@@ -148,7 +148,12 @@ ATTENDPRO_PUBLIC_URL = config("ATTENDPRO_PUBLIC_URL", default="").rstrip("/")
 # Android / iPhone apps (mobile/). Raise APP_MIN_VERSION to make older installed apps show
 # "Update needed" with a link to the store. Website changes never need this.
 APP_MIN_VERSION = config("APP_MIN_VERSION", default="1.0.0")
-APP_ANDROID_URL = config("APP_ANDROID_URL", default="https://play.google.com/store/apps/details?id=cloud.attendpro.app")
+# Where people get the Android app: the newest signed APK built by .github/workflows/android-app.yml.
+# Switch APP_ANDROID_URL to the Play Store page once the app is published there.
+APP_ANDROID_DOWNLOAD_URL = config(
+    "APP_ANDROID_DOWNLOAD_URL",
+    default="https://github.com/Dev-Samuel-Jeremiah/attendpro/releases/latest/download/attendpro.apk")
+APP_ANDROID_URL = config("APP_ANDROID_URL", default="https://attendpro.cloud/app/get/")
 APP_IOS_URL = config("APP_IOS_URL", default="")
 
 # Paystack (online plan payments). Leave blank to switch online payment off.

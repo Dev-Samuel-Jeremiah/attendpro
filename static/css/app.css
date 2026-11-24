@@ -600,3 +600,4 @@ img.ap-logo { display: block; height: 36px; width: auto; max-width: none; object
 .in-app .af { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
 .in-app .main { padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
 .in-app .selfie { padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); }
+.in-app .get-app-link { display: none !important; }

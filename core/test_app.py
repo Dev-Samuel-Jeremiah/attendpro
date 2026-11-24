@@ -35,3 +35,17 @@ class MobileAppTests(TestCase):
         d = self.client.get(reverse("app_config"), HTTP_USER_AGENT=IOS).json()
         self.assertEqual((d["min_version"], d["ios_url"], d["signed_in"]), ("1.2.0", "https://apps.apple.com/app/id1", False))
         self.assertIn("no-cache", self.client.get(reverse("app_config"))["Cache-Control"])
+
+
+class GetAppPageTests(TestCase):
+    def test_page(self):
+        resp = self.client.get(reverse("get_app"), HTTP_USER_AGENT="Mozilla/5.0 (Linux; Android 14) Mobile")
+        self.assertContains(resp, "releases/latest/download/attendpro.apk")
+        self.assertContains(resp, "lp-get-card hot")              # Android card highlighted on Android
+        self.assertContains(resp, "Coming to the App Store")
+        self.assertContains(resp, "<svg")                          # QR code for computers
+        self.assertContains(self.client.get(reverse("login")), reverse("get_app"))
+
+    @override_settings(APP_IOS_URL="https://apps.apple.com/app/id123")
+    def test_ios_link_when_published(self):
+        self.assertContains(self.client.get(reverse("get_app")), "https://apps.apple.com/app/id123")

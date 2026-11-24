@@ -7,6 +7,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 const root = new URL("../", import.meta.url);
 const s = JSON.parse(readFileSync(new URL("app.settings.json", root)));
 const url = s.devUrl || s.siteUrl;
+// GitHub Actions passes its run number, so every build is newer than the last and phones accept it as an update.
+if (process.env.ATTENDPRO_BUILD_NUMBER) s.build = Number(process.env.ATTENDPRO_BUILD_NUMBER);
 
 writeFileSync(new URL("www/app-settings.js", root),
   `window.ATTENDPRO = ${JSON.stringify({ url, name: s.appName, version: s.version })};\n`);

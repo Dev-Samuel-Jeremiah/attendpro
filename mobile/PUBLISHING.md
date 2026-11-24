@@ -40,6 +40,29 @@ After changing it, run `npm run sync` in `mobile/`.
 
 ---
 
+## Android installer on GitHub (like Diction Masters)
+
+`.github/workflows/android-app.yml` builds the Android app on GitHub's computers. It runs by itself
+whenever anything in `mobile/` changes on `main`, or by hand: **GitHub → Actions → Android app → Run workflow**.
+
+Each run leaves `attendpro-test.apk`, `attendpro.apk` (signed) and `attendpro.aab` (for Google Play)
+under **Artifacts**, and publishes the signed `attendpro.apk` on the **Releases** page. This address
+always downloads the newest one, and the website's **Get the app** page (`/app/get/`) links to it:
+
+    https://github.com/Dev-Samuel-Jeremiah/attendpro/releases/latest/download/attendpro.apk
+
+Every build gets the run number as its build number, so phones accept it as an update over the
+installed app, and people stay signed in.
+
+**Signing key (once):** add these four repository secrets in GitHub (*Settings → Secrets and
+variables → Actions → New repository secret*): `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
+`ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. Their values come from the upload key made by
+`scripts/make-keystore.sh` (`base64 -w0 ~/attendpro-upload.jks` for the first, the rest from
+`android/keystore.properties`). Without them GitHub only makes the test APK and publishes nothing.
+
+To release a new app version: change `version` and `releaseNotes` in `app.settings.json`, push.
+(Website changes never need this; they reach the app on their own.)
+
 ## Android (Google Play)
 
 ### Test on a phone

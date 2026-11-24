@@ -1,0 +1,39 @@
+{% extends "public/_base.html" %}{% load ui static %}
+{% block title %}Get the AttendPro app{% endblock %}
+{% block public_head %}<meta name="description" content="Download AttendPro for Android. Clock in with one tap, scan the QR code and see your attendance on your phone.">
+<meta property="og:title" content="Get the AttendPro app">{% endblock %}
+{% block main %}
+<section class="lp-section lp-page">
+  <div class="lp-wrap lp-get">
+    <div class="lp-get-copy">
+      <span class="lp-kicker">The app</span>
+      <h1>AttendPro on your phone</h1>
+      <p class="lp-lead">Clock in with one tap, scan the reception QR code, request leave and see your attendance. Everything stays in step with the website, automatically.</p>
+
+      <div class="lp-get-cards">
+        <div class="lp-get-card{% if platform == 'android' %} hot{% endif %}">
+          <span class="lp-get-os">{% icon "phone" 22 %}</span>
+          <div><b>Android</b><small>Android 7 or newer</small></div>
+          <a class="lp-btn lp-btn-primary" href="{{ android_download }}">{% icon "download" 18 %} Download for Android</a>
+          <details class="lp-get-help"><summary>How to install</summary>
+            <ol><li>Tap <b>Download for Android</b> and open the file when it finishes.</li>
+              <li>If asked, allow your browser to <b>install unknown apps</b>, then tap <b>Install</b>.</li>
+              <li>Open AttendPro and sign in with your ID. Allow camera and location when asked.</li></ol>
+            <p>Updates: the app follows the website automatically. When a new version of the app itself is needed, it tells you.</p></details>
+        </div>
+        <div class="lp-get-card{% if platform == 'ios' %} hot{% endif %}">
+          <span class="lp-get-os ios">{% icon "phone" 22 %}</span>
+          <div><b>iPhone</b><small>{% if ios_url %}On the App Store{% else %}Coming to the App Store{% endif %}</small></div>
+          {% if ios_url %}<a class="lp-btn lp-btn-primary" href="{{ ios_url }}">{% icon "download" 18 %} Get it on the App Store</a>
+          {% else %}<p class="lp-get-note">Until then, open <a href="{% url 'login' %}">attendpro.cloud</a> in Safari, tap <b>Share</b>, then <b>Add to Home Screen</b>. It works just like the app.</p>{% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="lp-get-qr">
+      <div class="lp-get-qr-code">{{ page_qr|safe }}</div>
+      <b>On a computer?</b>
+      <small>Scan this with your phone's camera to open this page there.</small>
+    </div>
+  </div>
+</section>
+{% endblock %}

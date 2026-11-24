@@ -9,6 +9,7 @@ urlpatterns = [
     path("register/", views.register_org, name="register"),
     path("app/", app_views.start, name="app_start"),
     path("app/config/", app_views.config, name="app_config"),
+    path("app/get/", app_views.get_app, name="get_app"),
     path("register/check-code/", views.register_check_code, name="register_check_code"),
 
     # Scanning

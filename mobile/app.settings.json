@@ -3,13 +3,18 @@
   "appName": "AttendPro",
   "version": "1.0.0",
   "build": 1,
-
+  "releaseNotes": "First release of AttendPro for Android.",
   "siteUrl": "https://attendpro.cloud/app/",
   "devUrl": "",
-
-  "appHosts": ["attendpro.cloud", "www.attendpro.cloud"],
-  "paymentHosts": ["checkout.paystack.com", "*.paystack.com", "*.paystack.co"],
-
+  "appHosts": [
+    "attendpro.cloud",
+    "www.attendpro.cloud"
+  ],
+  "paymentHosts": [
+    "checkout.paystack.com",
+    "*.paystack.com",
+    "*.paystack.co"
+  ],
   "colors": {
     "brand": "#0d1530",
     "statusBar": "#0d1530",

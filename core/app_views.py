@@ -2,7 +2,8 @@
 deployed here reaches the apps on their next page load. These views are the few app-only extras."""
 from django.conf import settings
 from django.http import JsonResponse
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.views.decorators.cache import never_cache
 
 APP_UA = "AttendProApp/"
@@ -34,6 +35,24 @@ def config(request):
         "ios_url": settings.APP_IOS_URL,
         "signed_in": request.user.is_authenticated,
     })
+
+
+def get_app(request):
+    """The "Get the app" page: Android download, iPhone status, and a QR code for computers."""
+    from .views import _qr_svg
+    page = request.build_absolute_uri(reverse("get_app"))
+    return render(request, "public/get_app.html", {
+        "android_download": settings.APP_ANDROID_DOWNLOAD_URL, "ios_url": settings.APP_IOS_URL,
+        "page_qr": _qr_svg(page), "page_url": page, "platform": device(request)})
+
+
+def device(request):
+    ua = request.META.get("HTTP_USER_AGENT", "")
+    if "Android" in ua:
+        return "android"
+    if "iPhone" in ua or "iPad" in ua:
+        return "ios"
+    return "computer"
 
 
 def in_app(request):
