@@ -14,12 +14,40 @@ class MobileAppTests(TestCase):
                                               role=User.ROLE_ADMIN)
 
     def test_start_page(self):
+        self.client.cookies["ap_welcomed"] = "1"
         self.assertRedirects(self.client.get(reverse("app_start"), HTTP_USER_AGENT=ANDROID), reverse("login"))
         self.client.force_login(self.admin)
         self.assertRedirects(self.client.get(reverse("app_start"), HTTP_USER_AGENT=ANDROID), reverse("home"),
                              target_status_code=302)
 
+    def test_first_launch_shows_the_welcome_tour_once(self):
+        self.assertRedirects(self.client.get(reverse("app_start"), HTTP_USER_AGENT=ANDROID), reverse("app_welcome"))
+        page = self.client.get(reverse("app_welcome"), HTTP_USER_AGENT=ANDROID)
+        self.assertContains(page, "joining my team")
+        self.assertContains(page, "setting up my organisation")
+        self.assertContains(page, "<svg")                               # the real QR code picture
+        done = self.client.get(reverse("app_welcome_done") + "?to=register", HTTP_USER_AGENT=ANDROID)
+        self.assertRedirects(done, reverse("register"), fetch_redirect_response=False)
+        self.assertEqual(done.cookies["ap_welcomed"].value, "1")
+        self.assertTrue(done.cookies["ap_welcomed"]["httponly"])
+        # Seen it: straight to sign-in from now on (also from the home page)
+        self.assertRedirects(self.client.get(reverse("app_start"), HTTP_USER_AGENT=ANDROID), reverse("login"))
+        self.assertRedirects(self.client.get("/", HTTP_USER_AGENT=ANDROID), reverse("login"))
+
+    def test_welcome_choice_defaults_to_sign_in(self):
+        r = self.client.get(reverse("app_welcome_done") + "?to=https://evil.example", HTTP_USER_AGENT=IOS)
+        self.assertRedirects(r, reverse("login"), fetch_redirect_response=False)
+
+    def test_signed_in_people_skip_the_welcome(self):
+        self.client.force_login(self.admin)
+        self.assertRedirects(self.client.get(reverse("app_start"), HTTP_USER_AGENT=ANDROID), reverse("home"),
+                             target_status_code=302)
+
+    def test_browsers_never_see_the_welcome_redirect(self):
+        self.assertContains(self.client.get("/"), "Clock in with")
+
     def test_home_in_app_skips_the_marketing_page(self):
+        self.client.cookies["ap_welcomed"] = "1"
         self.assertRedirects(self.client.get("/", HTTP_USER_AGENT=IOS), reverse("login"))
         self.assertContains(self.client.get("/"), "Clock in with")              # browsers still get it
 

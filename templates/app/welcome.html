@@ -1,0 +1,172 @@
+{% extends "base.html" %}{% load static ui %}
+{% block title %}Welcome to AttendPro{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/welcome.css' %}">{% endblock %}
+{% block body_class %}wl-body{% endblock %}
+{% block body %}
+<div class="wl" id="wl">
+  <div class="wl-sky" aria-hidden="true"><i></i><i></i><i></i></div>
+
+  <header class="wl-top">
+    <img class="wl-mark" src="{% static 'brand/mark-wide-96.webp' %}" srcset="{% static 'brand/mark-wide-192.webp' %} 2x" alt="AttendPro">
+    <button type="button" class="wl-skip" id="wl-skip">Skip</button>
+  </header>
+
+  <main class="wl-track" id="wl-track" aria-roledescription="carousel" aria-label="Welcome to AttendPro">
+
+    <!-- 1. Welcome -->
+    <section class="wl-slide" aria-roledescription="slide" aria-label="1 of 5">
+      <div class="wl-art wl-art-hero" aria-hidden="true">
+        <div class="wl-orbit"><span></span><span></span><span></span></div>
+        <div class="wl-logo"><img src="{% static 'brand/mark-512.webp' %}" alt=""></div>
+        <div class="wl-float f1"><span class="ok">{% icon "check" 14 %}</span><div><b>Checked in</b><small>7:52 AM · On time</small></div></div>
+        <div class="wl-float f2"><span class="star">{% icon "star" 14 %}</span><div><b>12-day streak</b><small>Always on time</small></div></div>
+        <div class="wl-float f3"><span class="pin">{% icon "pin" 14 %}</span><div><b>At work</b><small>±12 m</small></div></div>
+      </div>
+      <div class="wl-copy">
+        <span class="wl-kicker">Welcome</span>
+        <h1>Attendance,<br><em>made effortless.</em></h1>
+        <p>AttendPro records who's in and when, for schools and organisations, right from your phone.</p>
+      </div>
+    </section>
+
+    <!-- 2. Clock in -->
+    <section class="wl-slide" aria-roledescription="slide" aria-label="2 of 5">
+      <div class="wl-art" aria-hidden="true">
+        <div class="wl-phone">
+          <div class="wl-phone-head"><small>Tuesday · 7:52 AM</small><b>Good morning, Amina</b></div>
+          <div class="wl-map">
+            <i class="wl-ring r1"></i><i class="wl-ring r2"></i>
+            <span class="wl-pin">{% icon "pin" 22 %}</span>
+            <span class="wl-map-tag">{% icon "check" 12 %} You're at work · ±12 m</span>
+          </div>
+          <div class="wl-btn">{% icon "pin" 16 %} Clock in</div>
+        </div>
+        <div class="wl-toast">{% icon "check" 14 %} <b>Checked in at 7:52 AM</b></div>
+      </div>
+      <div class="wl-copy">
+        <span class="wl-kicker">One tap</span>
+        <h2>Clock in with a single tap</h2>
+        <p>Your phone confirms you're at work using its location, then records the exact time. No registers, no queues.</p>
+      </div>
+    </section>
+
+    <!-- 3. QR -->
+    <section class="wl-slide" aria-roledescription="slide" aria-label="3 of 5">
+      <div class="wl-art" aria-hidden="true">
+        <div class="wl-scan">
+          <div class="wl-qr">{{ qr|safe }}</div>
+          <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+          <i class="wl-beam"></i>
+        </div>
+        <div class="wl-chip-row">
+          <span>{% icon "scan" 14 %} Scan</span><span>{% icon "check" 14 %} Done</span>
+        </div>
+      </div>
+      <div class="wl-copy">
+        <span class="wl-kicker">Or scan</span>
+        <h2>Scan the code at reception</h2>
+        <p>If your organisation uses a reception screen, point your camera at the code and you're checked in within seconds.</p>
+      </div>
+    </section>
+
+    <!-- 4. Everything -->
+    <section class="wl-slide" aria-roledescription="slide" aria-label="4 of 5">
+      <div class="wl-art" aria-hidden="true">
+        <div class="wl-stack">
+          <div class="wl-card wl-card-main">
+            <div class="wl-ringchart"><b>96%</b><small>this month</small></div>
+            <div class="wl-week">
+              <small>This week</small>
+              <div><i class="on"></i><i class="on"></i><i class="late"></i><i class="on"></i><i class="today"></i></div>
+              <span>{% icon "star" 12 %} 12-day streak</span>
+            </div>
+          </div>
+          <div class="wl-card wl-mini m1"><span class="lv">{% icon "leave" 16 %}</span><div><b>Leave approved</b><small>Mon 2 – Fri 6 Dec</small></div></div>
+          <div class="wl-card wl-mini m2"><span class="pay">{% icon "file" 16 %}</span><div><b>November payslip</b><small>Ready to download</small></div></div>
+        </div>
+      </div>
+      <div class="wl-copy">
+        <span class="wl-kicker">All in one place</span>
+        <h2>Your history, leave and payslips</h2>
+        <p>See every day you've worked, ask for leave and get your payslips. Administrators see the whole team, live.</p>
+      </div>
+    </section>
+
+    <!-- 5. Start -->
+    <section class="wl-slide wl-last" aria-roledescription="slide" aria-label="5 of 5">
+      <div class="wl-copy wl-copy-top">
+        <span class="wl-kicker">Let's begin</span>
+        <h2>How will you use AttendPro?</h2>
+        <p>Choose one to continue.</p>
+      </div>
+      <div class="wl-choices">
+        <a class="wl-choice" href="{% url 'app_welcome_done' %}?to=login">
+          <span class="wl-choice-ico">{% icon "users" 22 %}</span>
+          <div><b>I'm joining my team</b><small>Sign in with the ID and password your administrator gave you.</small></div>
+          {% icon "chevron-right" 20 %}
+        </a>
+        <a class="wl-choice alt" href="{% url 'app_welcome_done' %}?to=register">
+          <span class="wl-choice-ico">{% icon "plus" 22 %}</span>
+          <div><b>I'm setting up my organisation</b><small>Create a free account for your school or organisation. Free for up to 10 people.</small></div>
+          {% icon "chevron-right" 20 %}
+        </a>
+      </div>
+      <p class="wl-trust">{% icon "lock" 14 %} Your location is only checked when you clock in.</p>
+    </section>
+  </main>
+
+  <footer class="wl-foot">
+    <div class="wl-dots" id="wl-dots" role="tablist" aria-label="Choose a screen">
+      {% for i in "12345" %}<button type="button" role="tab" aria-label="Screen {{ i }}" data-i="{{ forloop.counter0 }}"{% if forloop.first %} aria-selected="true"{% endif %}></button>{% endfor %}
+    </div>
+    <button type="button" class="wl-next" id="wl-next"><span>Next</span>{% icon "chevron-right" 20 %}</button>
+    <a class="wl-signin" id="wl-signin" href="{% url 'app_welcome_done' %}?to=login" hidden>Already have an account? <b>Sign in</b></a>
+  </footer>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+  var track = document.getElementById("wl-track"), slides = track.children, n = slides.length;
+  var dots = document.querySelectorAll("#wl-dots button"), next = document.getElementById("wl-next");
+  var skip = document.getElementById("wl-skip"), signin = document.getElementById("wl-signin");
+  var wl = document.getElementById("wl"), current = 0;
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function go(i) {
+    i = Math.max(0, Math.min(n - 1, i));
+    track.scrollTo({ left: i * track.clientWidth, behavior: reduce ? "auto" : "smooth" });
+  }
+  function update() {
+    var i = Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+    if (i === current && wl.dataset.slide) return;
+    current = i;
+    wl.dataset.slide = String(i);
+    for (var k = 0; k < n; k++) {
+      slides[k].classList.toggle("is-active", k === i);
+      slides[k].setAttribute("aria-hidden", k === i ? "false" : "true");
+      dots[k].setAttribute("aria-selected", k === i ? "true" : "false");
+    }
+    var last = i === n - 1;
+    next.hidden = last; skip.style.visibility = last ? "hidden" : "visible"; signin.hidden = !last;
+    next.querySelector("span").textContent = i === 0 ? "Get started" : "Next";
+    if (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Haptics && wl.dataset.ready) {
+      Capacitor.Plugins.Haptics.selectionChanged().catch(function () {});
+    }
+  }
+  var t;
+  track.addEventListener("scroll", function () { clearTimeout(t); t = setTimeout(update, 60); }, { passive: true });
+  window.addEventListener("resize", function () { go(current); });
+  next.addEventListener("click", function () { go(current + 1); });
+  skip.addEventListener("click", function () { go(n - 1); });
+  Array.prototype.forEach.call(dots, function (d) { d.addEventListener("click", function () { go(+d.dataset.i); }); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight") go(current + 1);
+    if (e.key === "ArrowLeft") go(current - 1);
+  });
+  update();
+  setTimeout(function () { wl.dataset.ready = "1"; }, 300);
+})();
+</script>
+{% endblock %}

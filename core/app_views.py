@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.views.decorators.cache import never_cache
 
 APP_UA = "AttendProApp/"
+WELCOME_COOKIE = "ap_welcomed"
 
 
 def is_app(request):
@@ -20,10 +21,31 @@ def app_platform(request):
     return "ios" if f"{APP_UA}ios" in ua else "android"
 
 
+def signed_out_start(request):
+    """Where a signed-out person lands in the app: the welcome tour the first time, then sign-in."""
+    return redirect("app_welcome" if is_app(request) and not request.COOKIES.get(WELCOME_COOKIE) else "login")
+
+
 @never_cache
 def start(request):
-    """Where the app opens: the dashboard / portal if signed in, otherwise sign-in."""
-    return redirect("home" if request.user.is_authenticated else "login")
+    """Where the app opens: the dashboard / portal if signed in, otherwise welcome / sign-in."""
+    return redirect("home") if request.user.is_authenticated else signed_out_start(request)
+
+
+@never_cache
+def welcome(request):
+    """The first-launch tour in the app (also viewable in a browser)."""
+    from .views import _qr_svg
+    return render(request, "app/welcome.html", {"qr": _qr_svg("https://attendpro.cloud/app/"),
+                                                "platform": app_platform(request) or device(request)})
+
+
+def welcome_done(request):
+    """End of the tour: remember it was seen (2 years), then go to sign-in or sign-up."""
+    resp = redirect("register" if request.GET.get("to") == "register" else "login")
+    resp.set_cookie(WELCOME_COOKIE, "1", max_age=60 * 60 * 24 * 730, samesite="Lax",
+                    secure=request.is_secure(), httponly=True)
+    return resp
 
 
 @never_cache
