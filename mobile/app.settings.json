@@ -1,0 +1,20 @@
+{
+  "appId": "cloud.attendpro.app",
+  "appName": "AttendPro",
+  "version": "1.0.0",
+  "build": 1,
+
+  "siteUrl": "https://attendpro.cloud/app/",
+  "devUrl": "",
+
+  "appHosts": ["attendpro.cloud", "www.attendpro.cloud"],
+  "paymentHosts": ["checkout.paystack.com", "*.paystack.com", "*.paystack.co"],
+
+  "colors": {
+    "brand": "#0d1530",
+    "statusBar": "#0d1530",
+    "splashBackground": "#ffffff",
+    "splashBackgroundDark": "#0d1530"
+  },
+  "splashSeconds": 3
+}

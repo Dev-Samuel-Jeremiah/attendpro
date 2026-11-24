@@ -1,0 +1,71 @@
+# Cloud builds for the AttendPro apps on Codemagic (https://codemagic.io).
+# iPhone apps can only be built on a Mac; Codemagic lends one, so no Mac is needed.
+# Set-up steps: mobile/PUBLISHING.md. No secrets live in this file (the repo is public).
+workflows:
+  ios-release:
+    name: AttendPro iPhone → TestFlight / App Store
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      # The App Store Connect API key added in Codemagic → Team settings → Integrations, saved under this name.
+      app_store_connect: AttendPro App Store key
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: cloud.attendpro.app
+      node: 22
+      xcode: latest
+      vars:
+        ATTENDPRO_RELEASE: "1"
+    scripts:
+      - name: Install the app's packages
+        script: cd mobile && npm ci
+      - name: Apply app.settings.json and copy plugins into the iPhone project
+        script: cd mobile && node scripts/configure.mjs && npx cap sync ios
+      - name: Refuse a test build
+        script: |
+          if grep -q '"devUrl": "[^"]' mobile/app.settings.json; then echo "devUrl is set in app.settings.json"; exit 1; fi
+      - name: Signing
+        script: xcode-project use-profiles
+      - name: Build the iPhone app
+        script: |
+          xcode-project build-ipa \
+            --project "mobile/ios/App/App.xcodeproj" \
+            --scheme "App" \
+            --archive-xcargs "CURRENT_PROJECT_VERSION=$BUILD_NUMBER"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+
+  android-release:
+    name: AttendPro Android → Play Store bundle (optional; you can also build on your computer)
+    instance_type: linux_x2
+    max_build_duration: 45
+    environment:
+      android_signing:
+        - attendpro_upload        # the upload key from scripts/make-keystore.sh, uploaded to Codemagic under this name
+      node: 22
+      java: 21
+      vars:
+        ATTENDPRO_RELEASE: "1"
+    scripts:
+      - name: Install the app's packages
+        script: cd mobile && npm ci
+      - name: Apply app.settings.json and copy plugins into the Android project
+        script: cd mobile && node scripts/configure.mjs && npx cap sync android
+      - name: Signing details for Gradle
+        script: |
+          cat > mobile/android/keystore.properties <<PROPS
+          storeFile=$CM_KEYSTORE_PATH
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          keyPassword=$CM_KEY_PASSWORD
+          PROPS
+      - name: Build the Play Store bundle
+        script: cd mobile/android && ./gradlew bundleRelease
+    artifacts:
+      - mobile/android/app/build/outputs/bundle/release/*.aab

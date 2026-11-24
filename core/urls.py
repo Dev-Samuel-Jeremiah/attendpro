@@ -1,12 +1,14 @@
 from django.urls import path
 
-from . import analytics_views, branch_views, views
+from . import analytics_views, app_views, branch_views, views
 
 urlpatterns = [
     path("", views.home, name="home"),
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("register/", views.register_org, name="register"),
+    path("app/", app_views.start, name="app_start"),
+    path("app/config/", app_views.config, name="app_config"),
     path("register/check-code/", views.register_check_code, name="register_check_code"),
 
     # Scanning

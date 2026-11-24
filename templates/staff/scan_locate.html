@@ -29,6 +29,7 @@
   const csrf = document.querySelector("[name=csrfmiddlewaretoken]").value;
   const token = "{{ token|escapejs }}";
   function show(d) {
+    window.dispatchEvent(new CustomEvent("attendpro:result", {detail: d}));
     const kind = !d.ok ? "bad" : d.action === "check_out" ? "out" : d.action === "duplicate" ? "warn" : "ok";
     $("result").className = "result " + kind;
     $("r-icon").innerHTML = icons[kind];

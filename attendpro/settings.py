@@ -69,6 +69,7 @@ TEMPLATES = [
                 "core.context_processors.organisation",
                 "billing.context_processors.plan",
                 "billing.context_processors.site",
+                "core.app_views.in_app",
                 "notifications.context_processors.unread",
             ],
         },
@@ -143,6 +144,12 @@ SESSION_COOKIE_AGE = 60 * 60 * 24 * 30
 # Base URL encoded in the reception QR (e.g. "http://192.168.0.10:8000").
 # Leave blank to use whatever address the reception screen was opened with.
 ATTENDPRO_PUBLIC_URL = config("ATTENDPRO_PUBLIC_URL", default="").rstrip("/")
+
+# Android / iPhone apps (mobile/). Raise APP_MIN_VERSION to make older installed apps show
+# "Update needed" with a link to the store. Website changes never need this.
+APP_MIN_VERSION = config("APP_MIN_VERSION", default="1.0.0")
+APP_ANDROID_URL = config("APP_ANDROID_URL", default="https://play.google.com/store/apps/details?id=cloud.attendpro.app")
+APP_IOS_URL = config("APP_IOS_URL", default="")
 
 # Paystack (online plan payments). Leave blank to switch online payment off.
 PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY", default="")

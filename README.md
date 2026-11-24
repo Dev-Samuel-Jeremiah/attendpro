@@ -83,10 +83,14 @@ Production uses PostgreSQL (`DB_ENGINE=postgresql`); without a `.env` the app ru
 
 The full server setup (Gunicorn, Nginx, HTTPS, daily backups) is in [`deploy/DEPLOY.md`](deploy/DEPLOY.md).
 
+## Android & iPhone apps
+Native apps that open the live site, so every deploy reaches them instantly; see [`mobile/PUBLISHING.md`](mobile/PUBLISHING.md).
+
 ## Project layout
 ```
 attendpro/        settings, urls
 deploy/           Gunicorn, systemd, Nginx, backup and update scripts + DEPLOY.md
+mobile/           Android & iPhone apps (Capacitor shells around the live site) + PUBLISHING.md
 core/models.py    Organisation, User (ID login), Department, AttendanceRecord, ScanLog, SavedReport
 core/services.py  rotating QR tokens, check-in/out logic, report calculations, Excel/CSV export
 core/views.py     auth, kiosk, scanning, member portal, admin pages

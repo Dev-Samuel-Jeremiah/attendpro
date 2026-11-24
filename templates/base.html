@@ -1,5 +1,5 @@
 {% load static %}<!doctype html>
-<html lang="en">
+<html lang="en"{% if in_app %} class="in-app in-app-{{ app_platform }}"{% endif %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -43,6 +43,7 @@
   window.addEventListener("resize", function () { clearTimeout(timer); timer = setTimeout(fit, 120); });
 })();
 </script>
+{% if in_app %}<script src="{% static 'js/app-bridge.js' %}"></script>{% endif %}
 {% block scripts %}{% endblock %}
 </body>
 </html>

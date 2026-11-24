@@ -589,3 +589,14 @@ img.ap-logo { display: block; height: 36px; width: auto; max-width: none; object
 .brand-mark.has-logo img.ap-logo { height: 38px; width: auto; object-fit: contain; }
 .app-head .brand-mark.has-logo img.ap-logo { height: 34px; }
 .kiosk .brand-mark.has-logo img.ap-logo { height: 46px; }
+
+/* ---------- Inside the Android / iPhone app ---------- */
+.in-app body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+.in-app .mobile-head { padding-top: calc(14px + env(safe-area-inset-top)); }
+.in-app .app-head { padding-top: calc(18px + env(safe-area-inset-top)); }
+.in-app .sidebar { padding-top: calc(22px + env(safe-area-inset-top)); }
+.in-app .lp-nav { padding-top: env(safe-area-inset-top); }
+.in-app .au-shell { padding-top: env(safe-area-inset-top); }
+.in-app .af { padding-bottom: calc(40px + env(safe-area-inset-bottom)); }
+.in-app .main { padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
+.in-app .selfie { padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); }

@@ -109,6 +109,7 @@
           {lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy}, csrf,
           () => { label.textContent = "Taking a selfie…"; });
         show(d);
+        window.dispatchEvent(new CustomEvent("attendpro:result", {detail: d}));
         if (d.ok && d.action !== "duplicate") { setTimeout(() => location.reload(), 2500); return; }
       } catch (e) {
         show({ok: false, title: "No connection", message: "Couldn't reach the server. Check your Wi-Fi or data and try again."});

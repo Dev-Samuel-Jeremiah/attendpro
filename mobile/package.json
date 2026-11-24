@@ -1,0 +1,34 @@
+{
+  "name": "attendpro-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AttendPro for Android and iPhone: a native app that runs the live attendpro.cloud site, so website changes reach the apps instantly.",
+  "scripts": {
+    "configure": "node scripts/configure.mjs",
+    "sync": "npm run configure && cap sync",
+    "assets": "capacitor-assets generate --iconBackgroundColor '#ffffff' --iconBackgroundColorDark '#ffffff' --splashBackgroundColor '#ffffff' --splashBackgroundColorDark '#0d1530'",
+    "android": "npm run sync && cap open android",
+    "ios": "npm run sync && cap open ios",
+    "apk": "bash scripts/build-android.sh debug",
+    "release:android": "bash scripts/build-android.sh release"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/browser": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/filesystem": "^8.0.0",
+    "@capacitor/haptics": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
+    "@capacitor/share": "^8.0.0",
+    "@capacitor/splash-screen": "^8.0.0",
+    "@capacitor/status-bar": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
+    "@capacitor/cli": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

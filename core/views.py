@@ -136,7 +136,8 @@ def register_check_code(request):
 
 def home(request):
     if not request.user.is_authenticated:
-        return landing(request)
+        from .app_views import is_app
+        return redirect("login") if is_app(request) else landing(request)
     if request.user.is_superuser and not request.user.organisation_id:
         return redirect("platform")
     return _member_home(request)
