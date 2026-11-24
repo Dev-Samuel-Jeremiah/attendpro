@@ -531,3 +531,36 @@ input.switch::after { content: ""; position: absolute; top: 3px; left: 3px; widt
 input.switch:checked { background: var(--accent); }
 input.switch:checked::after { transform: translateX(20px); }
 input.switch:focus-visible { outline: 3px solid rgba(18,184,134,.35); outline-offset: 2px; }
+
+/* ---------- Tables that don't fit (phones, or very wide tables) become stacked cards ---------- */
+table.stacked, table.stacked tbody, table.stacked tr { display: block; width: 100%; }
+table.stacked thead { display: none; }
+table.stacked tr { border: 1px solid var(--line); border-radius: 14px; padding: 6px 14px; margin-bottom: 10px; background: #fff; }
+table.stacked tbody tr:hover { background: #fff; }
+table.stacked td { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 7px 0; border: 0; border-top: 1px solid #f0f2f7; text-align: right; min-width: 0; }
+table.stacked td::before { content: attr(data-label); color: var(--muted); font-size: .7rem; font-weight: 650;
+  text-transform: uppercase; letter-spacing: .05em; text-align: left; margin-right: auto; }
+table.stacked td[data-label=""]::before { display: none; }
+table.stacked td:first-child { display: block; text-align: left; border-top: 0; padding-top: 8px; }
+table.stacked td:first-child::before { display: none; }
+table.stacked td[colspan] { display: block; text-align: center; border: 0; }
+table.stacked td.hide-sm { display: none; }
+table.stacked td .input { width: auto; max-width: 62%; flex: 1 1 140px; min-width: 0 !important; }
+table.stacked td form { margin-left: auto; }
+table.stacked td > .btn:only-child, table.stacked td > form:only-child { margin-left: auto; }
+.table-wrap:has(table.stacked) { margin: 0; padding: 0; overflow: visible; }
+
+
+/* IDs never break across lines */
+.table .mono, .mono { white-space: nowrap; }
+/* Stat numbers shrink to fit narrow tiles instead of being cut off */
+@media (max-width: 640px) {
+  .stat .value { font-size: clamp(1.15rem, 5.6vw, 1.6rem); overflow-wrap: anywhere; }
+  .stat .label { font-size: .72rem; }
+}
+/* Tile text sits above the decorative corner circle */
+.stat > * { position: relative; z-index: 1; }
+@media (max-width: 640px) { .stat::after { width: 64px; height: 64px; right: -22px; top: -22px; } }
+/* Medium screens: slightly tighter table cells so ordinary tables still fit beside the sidebar */
+@media (max-width: 1200px) { .table th, .table td { padding-left: 7px; padding-right: 7px; } }

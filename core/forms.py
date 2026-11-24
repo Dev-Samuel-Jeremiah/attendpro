@@ -11,7 +11,7 @@ class StyledMixin:
     def _style(self):
         for f in self.fields.values():
             w = f.widget
-            if isinstance(w, (forms.CheckboxInput, forms.CheckboxSelectMultiple)):
+            if isinstance(w, (forms.CheckboxInput, forms.CheckboxSelectMultiple, forms.RadioSelect)):
                 continue
             w.attrs.setdefault("class", "input")
 
@@ -33,8 +33,9 @@ class LoginForm(StyledMixin, forms.Form):
         cd = super().clean()
         u, p = cd.get("username", "").strip(), cd.get("password")
         if u and p:
-            user = authenticate(self.request, username=u, password=p) or \
-                   authenticate(self.request, username=u.upper(), password=p)
+            # IDs aren't case-sensitive ("tmy-0001" = "TMY-0001"; "PLATFORMADMIN" = "platformadmin")
+            match = User.objects.filter(username__iexact=u).values_list("username", flat=True).first()
+            user = authenticate(self.request, username=match or u, password=p)
             if user is None:
                 raise forms.ValidationError("Incorrect ID or password.")
             if not user.is_active:

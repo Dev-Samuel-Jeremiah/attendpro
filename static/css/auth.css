@@ -239,7 +239,10 @@ html.js .af-next.hide, html.js .af-back.hide { visibility: hidden; }
 @media (max-width: 560px) {
   .af-row { grid-template-columns: 1fr; }
   .af-plans { grid-template-columns: 1fr; }
-  .af-plan-card { grid-template-columns: 1fr auto; }
+  .af-plan-card { grid-template-columns: 1fr auto; gap: 4px 12px; padding: 16px; }
+  .af-plan-card b { grid-column: 1; }
+  .af-plan-card .af-plan-price { grid-column: 2; grid-row: 1; text-align: right; font-size: 1.15rem; margin-right: 30px; }
+  .af-plan-card .af-plan-staff, .af-plan-card .af-plan-tag { grid-column: 1 / -1; }
   .af-steps li em { display: none; }
   .af-steps { grid-template-columns: repeat(4, auto); justify-content: space-between; }
   .af-review div { grid-template-columns: 1fr auto; }

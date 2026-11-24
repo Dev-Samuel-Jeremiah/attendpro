@@ -25,8 +25,8 @@
     <div class="card-head"><h2>Attendance rate by {{ chart_data.trend_unit }}</h2></div>
     <div class="viz" id="chart-trend">{% if not chart_data.trend %}<div class="empty">No working days in this period yet.</div>{% endif %}</div>
     <details class="viz-table"><summary>Show as table</summary>
-      <table class="table"><thead><tr><th>{{ chart_data.trend_unit|capfirst }}</th><th>Attendance</th></tr></thead>
-      <tbody>{% for p in chart_data.trend %}<tr><td>{{ p.label }}</td><td>{{ p.rate }}%</td></tr>{% endfor %}</tbody></table></details>
+      <div class="table-wrap"><table class="table"><thead><tr><th>{{ chart_data.trend_unit|capfirst }}</th><th>Attendance</th></tr></thead>
+      <tbody>{% for p in chart_data.trend %}<tr><td>{{ p.label }}</td><td>{{ p.rate }}%</td></tr>{% endfor %}</tbody></table></div></details>
   </div>
 
   <div class="card">
@@ -34,8 +34,8 @@
       <div class="viz-legend"><span><i style="background:#119e72"></i>On time</span><span><i style="background:#c98300"></i>Late</span><span><i style="background:#de4450"></i>Absent</span></div></div>
     <div class="viz" id="chart-weekdays">{% if not chart_data.weekdays %}<div class="empty">No data yet.</div>{% endif %}</div>
     <details class="viz-table"><summary>Show as table</summary>
-      <table class="table"><thead><tr><th>Day</th><th>On time</th><th>Late</th><th>Absent</th><th>Expected days</th></tr></thead>
-      <tbody>{% for w in chart_data.weekdays %}<tr><td>{{ w.label }}</td><td>{{ w.on_time }}%</td><td>{{ w.late }}%</td><td>{{ w.absent }}%</td><td>{{ w.n }}</td></tr>{% endfor %}</tbody></table></details>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Day</th><th>On time</th><th>Late</th><th>Absent</th><th>Expected days</th></tr></thead>
+      <tbody>{% for w in chart_data.weekdays %}<tr><td>{{ w.label }}</td><td>{{ w.on_time }}%</td><td>{{ w.late }}%</td><td>{{ w.absent }}%</td><td>{{ w.n }}</td></tr>{% endfor %}</tbody></table></div></details>
   </div>
 
   <div class="card viz-wide">
@@ -44,8 +44,8 @@
     <div class="viz" id="chart-arrivals">{% if not a.kpis.arrival_min %}<div class="empty">No arrivals recorded in this period.</div>{% endif %}</div>
     <p class="muted" style="font-size:.82rem;margin:6px 0 0">Work starts {{ chart_data.histogram.start }}. 15-minute groups.{% if chart_data.histogram.early %} {{ chart_data.histogram.early }} arrived more than an hour early.{% endif %}{% if chart_data.histogram.later %} {{ chart_data.histogram.later }} arrived more than two hours after start.{% endif %}</p>
     <details class="viz-table"><summary>Show as table</summary>
-      <table class="table"><thead><tr><th>Arrival time</th><th>People</th></tr></thead>
-      <tbody>{% for b in chart_data.histogram.buckets %}<tr><td>{{ b.label }}{% if b.late %} · late{% endif %}</td><td>{{ b.n }}</td></tr>{% endfor %}</tbody></table></details>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Arrival time</th><th>People</th></tr></thead>
+      <tbody>{% for b in chart_data.histogram.buckets %}<tr><td>{{ b.label }}{% if b.late %} · late{% endif %}</td><td>{{ b.n }}</td></tr>{% endfor %}</tbody></table></div></details>
   </div>
 </div>
 

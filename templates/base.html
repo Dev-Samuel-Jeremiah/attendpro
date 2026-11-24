@@ -11,6 +11,33 @@
 </head>
 <body class="{% block body_class %}{% endblock %}">
 {% block body %}{% endblock %}
+<script>
+/* Tables that don't fit their space (phones, or wide tables on tablets) become stacked cards,
+   each cell labelled with its column heading. Re-checked when the screen is resized or rotated. */
+(function () {
+  var tables = Array.prototype.filter.call(document.querySelectorAll("table.table"), function (t) {
+    return !t.classList.contains("no-stack") && !t.classList.contains("register") && t.querySelector("thead th");
+  });
+  tables.forEach(function (t) {
+    var heads = Array.prototype.map.call(t.querySelectorAll("thead th"), function (th) { return th.textContent.trim(); });
+    t.querySelectorAll("tbody tr").forEach(function (tr) {
+      Array.prototype.forEach.call(tr.children, function (td, i) {
+        if (!td.hasAttribute("data-label")) td.setAttribute("data-label", td.hasAttribute("colspan") ? "" : (heads[i] || ""));
+      });
+    });
+  });
+  function fit() {
+    tables.forEach(function (t) {
+      t.classList.remove("stacked");
+      var box = t.parentElement;
+      if (window.innerWidth <= 640 || box.scrollWidth > box.clientWidth + 1) t.classList.add("stacked");
+    });
+  }
+  fit();
+  var timer;
+  window.addEventListener("resize", function () { clearTimeout(timer); timer = setTimeout(fit, 120); });
+})();
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>
