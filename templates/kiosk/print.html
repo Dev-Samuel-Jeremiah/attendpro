@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Attendance QR · {{ where }}{% endblock %}
+{% block body %}
+<div class="qr-print">
+  <div class="qr-print-sheet">
+    <p class="qr-print-org">{{ org.name }}</p>
+    <h1>Scan to record your attendance</h1>
+    {% if branch %}<p class="qr-print-where">{{ where }}</p>{% else %}<p class="qr-print-where">&nbsp;</p>{% endif %}
+    <div class="qr-print-code">{{ svg|safe }}</div>
+    <ol>
+      <li>Open your phone's camera or the AttendPro app</li>
+      <li>Point it at this code and tap the link</li>
+      <li>Scan again when you leave to check out</li>
+    </ol>
+    <p class="qr-print-foot">AttendPro · if this code stops working, ask your administrator for the new one</p>
+  </div>
+  <button class="btn btn-accent qr-print-btn" onclick="window.print()">Print</button>
+</div>
+<style>
+  .qr-print { min-height: 100vh; display: grid; place-items: center; padding: 24px; gap: 16px; background: var(--bg); }
+  .qr-print-sheet { background: #fff; width: min(560px, 100%); border-radius: 20px; padding: 40px 36px; text-align: center; box-shadow: var(--shadow); }
+  .qr-print-org { color: var(--accent-ink); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; font-size: .85rem; margin: 0; }
+  .qr-print h1 { font-size: 1.9rem; margin: 8px 0 4px; }
+  .qr-print-where { color: var(--muted); margin: 0 0 22px; }
+  .qr-print-code svg { width: 100%; max-width: 380px; height: auto; }
+  .qr-print ol { text-align: left; max-width: 360px; margin: 22px auto 0; padding-left: 20px; line-height: 1.8; }
+  .qr-print-foot { color: var(--muted); font-size: .8rem; margin: 24px 0 0; }
+  @media print { .qr-print { background: #fff; padding: 0; } .qr-print-sheet { box-shadow: none; } .qr-print-btn { display: none; } }
+</style>
+{% endblock %}

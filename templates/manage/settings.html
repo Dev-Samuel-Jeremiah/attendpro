@@ -25,7 +25,7 @@
           <span class="method-card">
             <span class="method-ico">{% if radio.data.value == 'button' %}{% icon "pin" 22 %}{% elif radio.data.value == 'qr' %}{% icon "qr" 22 %}{% else %}{% icon "layers" 22 %}{% endif %}</span>
             <b>{% if radio.data.value == 'button' %}Clock-in button{% elif radio.data.value == 'qr' %}QR code at reception{% else %}Both{% endif %}</b>
-            <small>{% if radio.data.value == 'button' %}Staff tap Clock in on their phone. Only works inside your location's allowed distance. No screen needed.{% elif radio.data.value == 'qr' %}Staff scan the live code on a screen at the entrance. The code changes every {{ org.qr_rotation_seconds }} seconds.{% else %}Staff can use either way. Handy while you switch over, or with several entrances.{% endif %}</small>
+            <small>{% if radio.data.value == 'button' %}Staff tap Clock in on their phone. Only works inside your location's allowed distance. No screen needed.{% elif radio.data.value == 'qr' %}Staff scan the live code on a screen at the entrance. {% if org.qr_rotate %}The code changes every {{ org.qr_rotation_seconds }} seconds.{% else %}The code is fixed, so you can print it.{% endif %}{% else %}Staff can use either way. Handy while you switch over, or with several entrances.{% endif %}</small>
           </span>
         </label>
         {% endfor %}
@@ -40,6 +40,7 @@
         {% include "partials/field.html" with f=form.checkout_gap_minutes %}
         {% include "partials/field.html" with f=form.working_days_choice cls="full" %}
         {% include "partials/field.html" with f=form.qr_rotation_seconds %}
+        {% include "partials/field.html" with f=form.qr_rotate %}
       </div>
       {% if 'notify_late' in form.fields %}
       <hr><h2 id="notifications">{% icon "bell" 18 %} Notifications</h2>
@@ -84,10 +85,13 @@
     {% if uses_qr %}
     <div class="card">
       <h2>{% icon "monitor" 18 %} Reception QR screen</h2>
-      <p class="muted">Open this link on the computer or TV at the entrance and leave it full-screen. The code changes every {{ org.qr_rotation_seconds }} seconds, so a photo of it stops working quickly.</p>
+      {% if org.qr_rotate %}<p class="muted">Open this link on the computer or TV at the entrance and leave it full-screen. The code changes every {{ org.qr_rotation_seconds }} seconds, so a photo of it stops working quickly.</p>
+      {% else %}<p class="muted">Refresh is off, so the code stays the same. Show it on a screen, or <a href="{% url 'qr_print' %}" target="_blank">print it</a> and put it at the entrance.</p>
+      <div class="alert alert-warning" style="font-size:.85rem;margin-bottom:10px">A fixed code can be photographed and shared. Pair it with GPS{% if 'face_verification' in features %} or face checks{% endif %}, and use <b>New link</b> to replace it if it leaks.</div>{% endif %}
       <input class="input mono" value="{{ kiosk_url }}" readonly onclick="this.select()" style="font-size:.8rem">
       <div class="btn-row" style="margin-top:12px">
         <a class="btn" href="{{ kiosk_url }}" target="_blank">Open screen</a>
+        {% if not org.qr_rotate %}<a class="btn btn-ghost" href="{% url 'qr_print' %}" target="_blank">{% icon "print" %} Print code</a>{% endif %}
         <form method="post" onsubmit="return confirm('Change the link? The old reception link will stop working.')">{% csrf_token %}<button class="btn btn-ghost" name="rotate_key" value="1">New link</button></form>
       </div>
     </div>

@@ -43,6 +43,10 @@ class Organisation(models.Model):
     # Reception QR
     kiosk_key = models.CharField(max_length=40, unique=True, default=_kiosk_key)
     qr_rotation_seconds = models.PositiveIntegerField(default=30)
+    qr_rotate = models.BooleanField(
+        "Refresh the QR code automatically", default=True,
+        help_text="Off = one fixed code you can print. It can be photographed and shared, so pair it with GPS or "
+                  "face checks, and use “New link” to replace it if it leaks.")
 
     # Where members may use the clock-in button
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)

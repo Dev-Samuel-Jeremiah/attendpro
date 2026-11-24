@@ -25,7 +25,8 @@
       <div><b>{% if r.b.has_location %}{{ r.b.radius_m }} m{% else %}—{% endif %}</b><small>radius</small></div></div>
     {% if not r.b.has_location %}<div class="alert alert-warning" style="font-size:.85rem">No location set: staff of this branch can't use the Clock in button yet.</div>{% endif %}
     <div class="btn-row">
-      {% if r.b.is_active %}<a class="btn btn-ghost btn-sm" href="{{ r.kiosk_url }}" target="_blank">{% icon "monitor" %} Reception screen</a>{% endif %}
+      {% if r.b.is_active %}<a class="btn btn-ghost btn-sm" href="{{ r.kiosk_url }}" target="_blank">{% icon "monitor" %} Reception screen</a>
+      {% if not org.qr_rotate and uses_qr %}<a class="btn btn-ghost btn-sm" href="{% url 'qr_print' %}?branch={{ r.b.pk }}" target="_blank">{% icon "print" %} Print code</a>{% endif %}{% endif %}
       {% if r.b.has_location %}<a class="btn btn-ghost btn-sm" href="https://www.google.com/maps?q={{ r.b.latitude }},{{ r.b.longitude }}" target="_blank" rel="noopener">{% icon "pin" %} Map</a>{% endif %}
       <a class="btn btn-ghost btn-sm" href="{% url 'members' %}?branch={{ r.b.pk }}">{% icon "users" %} Staff</a>
     </div>

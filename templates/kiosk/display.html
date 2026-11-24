@@ -41,7 +41,7 @@
     <div class="kiosk-qr">
       <div id="qr" class="qr-fade" style="aspect-ratio:1/1;display:grid;place-items:center;color:#999">Loading…</div>
       <div class="countdown"><span id="bar" style="width:100%"></span></div>
-      <div class="cap">Code refreshes in <b id="secs">–</b>s · <span id="net">online</span></div>
+      <div class="cap"><span id="cap-rot">Code refreshes in <b id="secs">–</b>s</span><span id="cap-fixed" hidden>Fixed code</span> · <span id="net">online</span></div>
     </div>
   </section>
 </div>
@@ -70,6 +70,8 @@
       qr.style.opacity = .2;
       setTimeout(() => { qr.innerHTML = d.svg; qr.style.opacity = 1; }, 150);
       remaining = d.remaining; rotation = d.rotation;
+      $("cap-rot").hidden = d.fixed; $("cap-fixed").hidden = !d.fixed;
+      document.querySelector(".countdown").style.visibility = d.fixed ? "hidden" : "";
       $("present").textContent = d.present; $("total").textContent = d.total;
       $("feed").innerHTML = d.recent.map(x =>
         `<div><span class="avatar">${esc(x.initials)}</span>${esc(x.name)} · ${x.action} ${x.time}</div>`).join("") ||

@@ -22,7 +22,7 @@ from .models import AttendanceRecord, Branch, Organisation, ScanLog, User
 # --------------------------------------------------------------------------- #
 # Rotating QR tokens
 # --------------------------------------------------------------------------- #
-def _sign(org: Organisation, window: int, branch: Branch | None = None) -> str:
+def _sign(org: Organisation, window, branch: Branch | None = None) -> str:
     msg = (f"{org.id}:{org.kiosk_key}:{window}" if branch is None
            else f"{org.id}:b{branch.id}:{branch.kiosk_key}:{window}")
     return hmac.new(settings.SECRET_KEY.encode(), msg.encode(), hashlib.sha256).hexdigest()[:16]
@@ -32,13 +32,20 @@ def current_window(org: Organisation, now: float | None = None) -> int:
     return int((now or time.time()) // max(org.qr_rotation_seconds, 10))
 
 
-def make_token(org: Organisation, branch: Branch | None = None) -> tuple[str, int]:
-    """Returns (token, seconds_until_rotation). Branch reception screens get their own codes."""
+FIXED = "f"  # in place of a time window: the code doesn't change (refresh switched off)
+
+
+def make_token(org: Organisation, branch: Branch | None = None) -> tuple[str, int | None]:
+    """Returns (token, seconds_until_rotation). Branch reception screens get their own codes.
+    With refresh off the code is fixed (None seconds) until refresh is switched back on or the
+    reception link is changed."""
+    who = f"{org.id}" if branch is None else f"{org.id}-{branch.id}"
+    if not org.qr_rotate:
+        return f"{who}.{FIXED}.{_sign(org, FIXED, branch)}", None
     now = time.time()
     rot = max(org.qr_rotation_seconds, 10)
     w = current_window(org, now)
     remaining = int(rot - (now % rot))
-    who = f"{org.id}" if branch is None else f"{org.id}-{branch.id}"
     return f"{who}.{w}.{_sign(org, w, branch)}", remaining
 
 
@@ -51,6 +58,9 @@ def parse_token(token: str) -> tuple[Organisation | None, Branch | None]:
         org_id, _, branch_id = who.partition("-")
         org = Organisation.objects.get(pk=int(org_id))
         branch = org.branches.get(pk=int(branch_id), is_active=True) if branch_id else None
+        if w == FIXED:
+            ok = not org.qr_rotate and hmac.compare_digest(sig, _sign(org, FIXED, branch))
+            return (org, branch) if ok else (None, None)
         w = int(w)
     except (ValueError, Organisation.DoesNotExist, Branch.DoesNotExist):
         return None, None

@@ -263,6 +263,32 @@ def api_clock(request):
 # =========================================================================== #
 # Reception kiosk (public URL protected by secret key)
 # =========================================================================== #
+def _qr_svg(data):
+    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=1,
+                       image_factory=qrcode.image.svg.SvgPathImage)
+    qr.add_data(data)
+    qr.make(fit=True)
+    return qr.make_image().to_string(encoding="unicode")
+
+
+@org_admin_required
+def qr_print(request):
+    """A printable fixed QR code (refresh switched off), for the main location or a branch."""
+    org = request.user.organisation
+    if not org.uses_qr:
+        messages.info(request, "Your organisation doesn't use QR attendance.")
+        return redirect("org_settings")
+    if org.qr_rotate:
+        messages.info(request, "Switch “Refresh the QR code automatically” off to get a code you can print.")
+        return redirect("org_settings")
+    branch = None
+    if request.GET.get("branch") and org.has_feature(catalog.MULTI_BRANCH):
+        branch = get_object_or_404(Branch, pk=request.GET["branch"], organisation=org, is_active=True)
+    token, _ = services.make_token(org, branch)
+    return render(request, "kiosk/print.html", {"svg": _qr_svg(services.scan_url(request, token)),
+                                                "where": branch.name if branch else org.name, "branch": branch})
+
+
 def _kiosk_site(key):
     """(organisation, branch or None) for a reception screen link."""
     org = Organisation.objects.filter(kiosk_key=key).first()
@@ -287,12 +313,7 @@ def kiosk_token(request, key):
     if not org.uses_qr:
         return JsonResponse({"error": "QR attendance is not in use for this organisation."}, status=403)
     token, remaining = services.make_token(org, branch)
-    url = services.scan_url(request, token)
-    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=10, border=1,
-                       image_factory=qrcode.image.svg.SvgPathImage)
-    qr.add_data(url)
-    qr.make(fit=True)
-    svg = qr.make_image().to_string(encoding="unicode")
+    svg = _qr_svg(services.scan_url(request, token))
 
     today = timezone.localdate()
     logs = ScanLog.objects.filter(organisation=org, timestamp__date=today, action__in=["check_in", "check_out"])
@@ -302,7 +323,7 @@ def kiosk_token(request, key):
         logs, present, members = logs.filter(branch=branch), present.filter(branch=branch), members.filter(branch=branch)
     recent = logs.select_related("user")[:6]
     resp = JsonResponse({
-        "svg": svg, "remaining": remaining, "rotation": org.qr_rotation_seconds,
+        "svg": svg, "fixed": remaining is None, "remaining": remaining or 60, "rotation": org.qr_rotation_seconds,
         "present": present.count(), "total": members.count(),
         "recent": [{"name": l.user.first_name or l.user.username, "initials": l.user.initials,
                     "action": "In" if l.action == "check_in" else "Out",

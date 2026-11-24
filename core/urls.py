@@ -45,6 +45,7 @@ urlpatterns = [
     path("manage/reports/saved/<int:pk>/download/", views.saved_report_download, name="saved_report_download"),
     path("manage/reports/saved/<int:pk>/delete/", views.saved_report_delete, name="saved_report_delete"),
     path("manage/settings/", views.org_settings, name="org_settings"),
+    path("manage/settings/qr-print/", views.qr_print, name="qr_print"),
     path("manage/analytics/", analytics_views.analytics_page, name="analytics"),
     path("manage/branches/", branch_views.branches, name="branches"),
     path("manage/branches/add/", branch_views.branch_edit, name="branch_add"),

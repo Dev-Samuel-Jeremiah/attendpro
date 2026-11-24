@@ -83,3 +83,69 @@ class AttendanceMethodTests(TestCase):
         self.assertEqual(resp.status_code, 302, resp.context["form"].errors if resp.context else "")
         self.org.refresh_from_db()
         self.assertEqual(self.org.attendance_method, "qr")
+
+
+class EnterpriseMethodTests(AttendanceMethodTests):
+    """Everything above, on the Enterprise plan (face checks off: these tests are about the method)."""
+    def setUp(self):
+        super().setUp()
+        self.org.plan = Plan.objects.get(slug="enterprise")
+        self.org.face_required = False
+        self.org.latitude, self.org.longitude = HQ
+        self.org.save()
+        self.org.forget_plan()
+
+    def qr(self):  # Enterprise checks location on QR scans too
+        with mock.patch("django.utils.timezone.now", return_value=self.at9):
+            return services.mark_attendance(self.staff, "", self.rf, verified_org=self.org,
+                                            location={"lat": HQ[0], "lng": HQ[1], "accuracy": 10})
+
+
+class FixedQrTests(TestCase):
+    def setUp(self):
+        self.org = Organisation.objects.create(code="FQ", name="Fixed QR", plan=Plan.objects.get(slug="professional"))
+        self.admin = User.objects.create_user(username="FQ-0001", password="x", organisation=self.org, role=User.ROLE_ADMIN)
+
+    def test_refresh_on_by_default(self):
+        token, remaining = services.make_token(self.org)
+        self.assertIsNotNone(remaining)
+        with mock.patch("time.time", return_value=__import__("time").time() + 3600):
+            self.assertEqual(services.parse_token(token), (None, None))       # old rotating code expired
+
+    def test_fixed_code_never_expires_until_turned_back_on_or_replaced(self):
+        self.org.qr_rotate = False
+        self.org.save()
+        token, remaining = services.make_token(self.org)
+        self.assertIsNone(remaining)
+        self.assertEqual(token, services.make_token(self.org)[0])             # same code every time
+        with mock.patch("time.time", return_value=__import__("time").time() + 86400 * 30):
+            self.assertEqual(services.parse_token(token), (self.org, None))
+        self.org.qr_rotate = True
+        self.org.save()
+        self.assertEqual(services.parse_token(token), (None, None))           # refresh back on: dead
+        self.org.qr_rotate = False
+        self.org.save()
+        self.assertEqual(services.parse_token(token), (self.org, None))
+        self.org.rotate_kiosk_key()
+        self.assertEqual(services.parse_token(token), (None, None))           # New link: dead
+
+    def test_branch_fixed_code(self):
+        from core.models import Branch
+        self.org.qr_rotate = False
+        self.org.save()
+        b = Branch.objects.create(organisation=self.org, name="North")
+        token, _ = services.make_token(self.org, b)
+        self.assertEqual(services.parse_token(token), (self.org, b))
+        self.assertNotEqual(token, services.make_token(self.org)[0])
+
+    def test_kiosk_and_print_page(self):
+        self.client.force_login(self.admin)
+        self.assertRedirects(self.client.get(reverse("qr_print")), reverse("org_settings"))
+        self.assertFalse(self.client.get(reverse("kiosk_token", args=[self.org.kiosk_key])).json()["fixed"])
+        self.org.qr_rotate = False
+        self.org.save()
+        self.assertTrue(self.client.get(reverse("kiosk_token", args=[self.org.kiosk_key])).json()["fixed"])
+        page = self.client.get(reverse("qr_print"))
+        self.assertContains(page, "Scan to record your attendance")
+        self.assertContains(page, "<svg")
+        self.assertContains(self.client.get(reverse("org_settings")), "Print code")

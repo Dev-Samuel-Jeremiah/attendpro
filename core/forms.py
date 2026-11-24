@@ -157,7 +157,7 @@ class OrgSettingsForm(StyledMixin, forms.ModelForm):
     class Meta:
         model = Organisation
         fields = ["name", "org_type", "address", "email", "phone", "logo", "work_start", "work_end",
-                  "grace_minutes", "checkout_gap_minutes", "qr_rotation_seconds",
+                  "grace_minutes", "checkout_gap_minutes", "qr_rotation_seconds", "qr_rotate",
                   "latitude", "longitude", "location_radius_m",
                   "notify_late", "notify_absent", "notify_checkout", "email_notifications",
                   "face_required", "face_auto_enrol", "attendance_method"]
@@ -189,6 +189,7 @@ class OrgSettingsForm(StyledMixin, forms.ModelForm):
                 del self.fields[f]
         self.fields["working_days_choice"].initial = [str(d) for d in self.instance.working_day_list()]
         self.fields["qr_rotation_seconds"].min_value = 10
+        self.fields["qr_rotate"].widget.attrs.update({"class": "switch", "role": "switch"})
         self.fields["location_radius_m"].min_value = 20
         self.fields["location_radius_m"].max_value = 5000
         for f in ("latitude", "longitude"):
