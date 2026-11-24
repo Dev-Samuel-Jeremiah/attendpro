@@ -1,0 +1,68 @@
+{% extends "public/_base.html" %}{% load ui %}
+{% block title %}Delete your account · AttendPro{% endblock %}
+{% block public_head %}<meta name="description" content="How to delete your AttendPro account and the data that goes with it.">
+<meta property="og:title" content="Delete your AttendPro account">{% endblock %}
+{% block main %}
+<section class="lp-section lp-page">
+  <div class="lp-wrap lp-contact-page">
+    <div class="lp-doc">
+      <span class="lp-kicker">Your data</span>
+      <h1>Delete your AttendPro account</h1>
+      <p class="lp-lead">AttendPro is made by {{ site.company_name }}. You can ask us to delete your account, or your whole organisation, at any time, from the AttendPro app or this page.</p>
+
+      <h2>How it works</h2>
+      <ol>
+        <li>Fill in the form on this page (in the app: <b>Change password → Delete my account</b>).</li>
+        <li>We confirm the request with you, and for staff and students, with your organisation's administrator, because your organisation controls its attendance records.</li>
+        <li>We delete the data within <b>30 days</b> and let you know when it's done.</li>
+      </ol>
+      <p>Staff and students can also ask their administrator, who can remove their account straight away from <b>Members</b>.</p>
+
+      <h2>What we delete</h2>
+      <ul>
+        <li><b>Your account:</b> your name, sign-in ID, password, email, phone, photo and profile details.</li>
+        <li><b>Your attendance data:</b> check-in and check-out times, location readings, scan records, check-in selfies and your reference face, leave requests and notifications.</li>
+        <li><b>Your payroll data</b> (if used): pay rates, bank details and payslips.</li>
+        <li><b>For a whole organisation:</b> all of the above for every member, plus departments, branches, settings, reports and backups.</li>
+      </ul>
+
+      <h2>What we keep, and for how long</h2>
+      <ul>
+        <li><b>Payment records</b> for an organisation's plan (amount, date, reference): kept as long as tax and accounting law requires. They contain no card details.</li>
+        <li><b>Server backups:</b> deleted data can remain in our encrypted nightly backups for up to 14 days, until they expire.</li>
+        <li>Anything the law requires us to keep, only for as long as it requires.</li>
+      </ul>
+      <p>See our <a href="{% url 'privacy' %}">privacy policy</a> for more.</p>
+    </div>
+
+    <div class="lp-form-card">
+      {% include "partials/messages.html" %}
+      <h2>Request deletion</h2>
+      <form method="post" novalidate>{% csrf_token %}
+        {% for e in form.non_field_errors %}<div class="alert alert-error" style="margin-bottom:12px">{{ e }}</div>{% endfor %}
+        <div class="field full">
+          <label>{{ form.scope.label }}</label>
+          <div class="del-scope">{% for r in form.scope %}<label class="del-opt">{{ r.tag }}<span>{{ r.choice_label }}</span></label>{% endfor %}</div>
+        </div>
+        <div class="form-grid">
+          {% include "partials/field.html" with f=form.name %}
+          {% include "partials/field.html" with f=form.sign_in_id %}
+          {% include "partials/field.html" with f=form.organisation cls="full" %}
+          {% include "partials/field.html" with f=form.email %}
+          {% include "partials/field.html" with f=form.phone %}
+          {% include "partials/field.html" with f=form.reason cls="full" %}
+        </div>
+        <div class="lp-trap" aria-hidden="true">{{ form.website }}</div>
+        <p class="lp-form-note">We use these details only to confirm and carry out your request.</p>
+        <button class="lp-btn lp-btn-primary lp-btn-lg" type="submit">Send deletion request {% icon "chevron-right" 18 %}</button>
+      </form>
+    </div>
+  </div>
+</section>
+<style>
+.del-scope { display: grid; gap: 8px; margin-top: 6px; }
+.del-opt { display: flex; align-items: center; gap: 10px; padding: 11px 13px; border: 1px solid var(--line, #e5e9f2); border-radius: 12px; cursor: pointer; font-weight: 500; }
+.del-opt:has(input:checked) { border-color: #12b886; background: #e3f8f0; }
+.del-opt input { accent-color: #12b886; margin: 0; }
+</style>
+{% endblock %}

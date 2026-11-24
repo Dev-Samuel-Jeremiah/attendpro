@@ -52,7 +52,7 @@
 <p>All connections use HTTPS. Each organisation's data is kept separate. Passwords are hashed. Face photos and backups are stored privately and only shown to that organisation's administrators. Clock-in and clock-out times can't be edited, which protects staff as well as employers.</p>
 
 <h2>Your rights</h2>
-<p>You can ask to see, correct, export or delete your personal data, object to its use, or withdraw consent where we rely on it. If you are staff or a student, please ask your organisation first, as it controls your records; we will help it respond. You can also complain to the Nigeria Data Protection Commission.</p>
+<p>You can ask to see, correct, export or delete your personal data, object to its use, or withdraw consent where we rely on it. If you are staff or a student, please ask your organisation first, as it controls your records; we will help it respond. To delete your account, use <a href="{% url 'delete_account' %}">this page</a> (in the app: Change password → Delete my account). You can also complain to the Nigeria Data Protection Commission.</p>
 
 <h2>Contact</h2>
 <p>For anything about privacy, contact {{ site.company_name }}{% if site.contact_email %} at <a href="mailto:{{ site.contact_email }}">{{ site.contact_email }}</a>{% endif %}{% if site.address %}, {{ site.address }}{% endif %}, or use our <a href="{% url 'contact' %}">contact form</a>.</p>

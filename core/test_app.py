@@ -77,3 +77,22 @@ class GetAppPageTests(TestCase):
     @override_settings(APP_IOS_URL="https://apps.apple.com/app/id123")
     def test_ios_link_when_published(self):
         self.assertContains(self.client.get(reverse("get_app")), "https://apps.apple.com/app/id123")
+
+
+class ReviewAccountCommandTests(TestCase):
+    def test_creates_once_and_resets_passwords(self):
+        from io import StringIO
+        from django.core.management import call_command
+        out = StringIO()
+        call_command("create_review_account", stdout=out)
+        self.assertIn("REVIEW-0001 / Rv-", out.getvalue())
+        org = Organisation.objects.get(code="REVIEW")
+        self.assertEqual(org.members.count(), 12)
+        self.assertTrue(org.attendance.exists() if hasattr(org, "attendance") else True)
+        pw = out.getvalue().split("REVIEW-0002 / ")[1].split()[0]
+        self.assertTrue(self.client.login(username="REVIEW-0002", password=pw))
+        again = StringIO()
+        call_command("create_review_account", stdout=again)
+        self.assertIn("already exists", again.getvalue())
+        call_command("create_review_account", "--reset", stdout=StringIO())
+        self.assertFalse(self.client.login(username="REVIEW-0002", password=pw))

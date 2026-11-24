@@ -385,3 +385,23 @@ class AuthPagesTests(TestCase):
     def test_pages_render(self):
         self.assertContains(self.client.get(reverse("login")), "Keep me signed in")
         self.assertContains(self.client.get(reverse("register")), "af-steps")
+
+
+class DeleteAccountPageTests(TestCase):
+    def test_public_page_and_request(self):
+        from django.urls import reverse
+        from billing.models import ContactMessage
+        page = self.client.get(reverse("delete_account"))
+        self.assertContains(page, "What we delete")
+        self.assertContains(page, "What we keep")
+        r = self.client.post(reverse("delete_account"), {"scope": "me", "name": "Ada Obi", "organisation": "Org",
+                                                          "sign_in_id": "ORG-0004", "email": "ada@example.com"})
+        self.assertRedirects(r, reverse("delete_account"))
+        msg = ContactMessage.objects.get()
+        self.assertIn("ACCOUNT DELETION REQUEST", msg.message)
+        self.assertIn("ORG-0004", msg.message)
+
+    def test_needs_a_way_to_reply(self):
+        from django.urls import reverse
+        r = self.client.post(reverse("delete_account"), {"scope": "org", "name": "A", "organisation": "Org"})
+        self.assertContains(r, "Leave an email address or a phone number")

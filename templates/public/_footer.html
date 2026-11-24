@@ -10,6 +10,6 @@
         {% if site.address %}<li>{{ site.address }}</li>{% endif %}
       </ul></div>
     <nav aria-label="Footer"><a href="/#how">How it works</a><a href="/#features">Features</a><a href="{% url 'pricing' %}">Pricing</a><a href="{% url 'get_app' %}" class="get-app-link">Get the app</a><a href="{% url 'contact' %}">Contact</a><a href="{% url 'privacy' %}">Privacy</a><a href="{% url 'terms' %}">Terms</a><a href="{% url 'login' %}">Sign in</a></nav>
-    <small>© {% now "Y" %} {{ site.company_name }} · <a href="{% url 'privacy' %}">Privacy policy</a> · <a href="{% url 'terms' %}">Terms of service</a></small>
+    <small>© {% now "Y" %} {{ site.company_name }} · <a href="{% url 'privacy' %}">Privacy policy</a> · <a href="{% url 'terms' %}">Terms of service</a> · <a href="{% url 'delete_account' %}">Delete your account</a></small>
   </div>
 </footer>

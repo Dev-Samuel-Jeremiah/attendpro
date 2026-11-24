@@ -8,6 +8,7 @@ urlpatterns = [
     path("contact/", site_views.contact, name="contact"),
     path("privacy/", site_views.privacy, name="privacy"),
     path("terms/", site_views.terms, name="terms"),
+    path("account/delete/", site_views.delete_account, name="delete_account"),
     path("manage/billing/", views.billing, name="billing"),
     path("manage/billing/checkout/<slug:slug>/", views.checkout, name="checkout"),
     path("manage/billing/callback/", views.paystack_callback, name="paystack_callback"),
