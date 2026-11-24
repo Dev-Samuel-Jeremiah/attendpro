@@ -108,3 +108,72 @@ def feature_delete(request, pk):
 def payments(request):
     return render(request, "platform/payments.html", {
         "payments": Payment.objects.select_related("organisation", "plan", "created_by")[:300]})
+
+
+# --------------------------------------------------------------------------- #
+# Website: contact details, messages, customer quotes
+# --------------------------------------------------------------------------- #
+from django import forms as _forms  # noqa: E402
+
+from core.forms import StyledMixin  # noqa: E402
+
+from .models import ContactMessage, SiteSettings, Testimonial  # noqa: E402
+
+
+class SiteSettingsForm(StyledMixin, _forms.ModelForm):
+    class Meta:
+        model = SiteSettings
+        fields = ["company_name", "sales_email", "contact_email", "whatsapp", "phone", "address", "hours"]
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self._style()
+
+
+class TestimonialForm(StyledMixin, _forms.ModelForm):
+    class Meta:
+        model = Testimonial
+        fields = ["quote", "name", "role", "organisation", "logo", "is_published", "sort_order"]
+        widgets = {"quote": _forms.Textarea(attrs={"rows": 3})}
+
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
+        self._style()
+
+
+@superuser_required
+def site_settings(request):
+    form = SiteSettingsForm(request.POST or None, instance=SiteSettings.load())
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Contact details saved. They now show on the website.")
+        return redirect("platform_site")
+    return render(request, "platform/site.html", {"form": form})
+
+
+@superuser_required
+def contact_messages(request):
+    if request.method == "POST":
+        ContactMessage.objects.filter(pk=request.POST.get("pk")).update(handled=request.POST.get("handled") == "1")
+        return redirect("platform_messages")
+    return render(request, "platform/messages.html", {"items": ContactMessage.objects.all()[:200]})
+
+
+@superuser_required
+def testimonials(request):
+    return render(request, "platform/testimonials.html", {"items": Testimonial.objects.all()})
+
+
+@superuser_required
+def testimonial_edit(request, pk=None):
+    obj = get_object_or_404(Testimonial, pk=pk) if pk else None
+    if request.method == "POST" and obj and "delete" in request.POST:
+        obj.delete()
+        messages.success(request, "Quote deleted.")
+        return redirect("platform_testimonials")
+    form = TestimonialForm(request.POST or None, request.FILES or None, instance=obj)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Quote saved.")
+        return redirect("platform_testimonials")
+    return render(request, "platform/testimonial_form.html", {"form": form, "obj": obj})

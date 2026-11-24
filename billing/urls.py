@@ -1,10 +1,13 @@
 from django.urls import path
 
 from . import platform_views as pv
-from . import views
+from . import site_views, views
 
 urlpatterns = [
     path("pricing/", views.pricing, name="pricing"),
+    path("contact/", site_views.contact, name="contact"),
+    path("privacy/", site_views.privacy, name="privacy"),
+    path("terms/", site_views.terms, name="terms"),
     path("manage/billing/", views.billing, name="billing"),
     path("manage/billing/checkout/<slug:slug>/", views.checkout, name="checkout"),
     path("manage/billing/callback/", views.paystack_callback, name="paystack_callback"),
@@ -20,4 +23,9 @@ urlpatterns = [
     path("platform/features/<int:pk>/", pv.feature_edit, name="platform_feature_edit"),
     path("platform/features/<int:pk>/delete/", pv.feature_delete, name="platform_feature_delete"),
     path("platform/payments/", pv.payments, name="platform_payments"),
+    path("platform/site/", pv.site_settings, name="platform_site"),
+    path("platform/messages/", pv.contact_messages, name="platform_messages"),
+    path("platform/testimonials/", pv.testimonials, name="platform_testimonials"),
+    path("platform/testimonials/add/", pv.testimonial_edit, name="platform_testimonial_add"),
+    path("platform/testimonials/<int:pk>/", pv.testimonial_edit, name="platform_testimonial_edit"),
 ]

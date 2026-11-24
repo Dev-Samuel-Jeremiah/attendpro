@@ -24,3 +24,11 @@ def plan(request):
         "features": current.feature_codes() if current else set(),
         "plan_notice": notice,
     }
+
+
+def site(request):
+    """Public contact details for every page (Platform → Site settings)."""
+    from .models import SiteSettings
+    if not hasattr(request, "_site_settings"):
+        request._site_settings = SiteSettings.load()
+    return {"site": request._site_settings}

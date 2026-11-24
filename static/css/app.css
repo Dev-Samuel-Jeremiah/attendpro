@@ -564,3 +564,4 @@ table.stacked td > .btn:only-child, table.stacked td > form:only-child { margin-
 @media (max-width: 640px) { .stat::after { width: 64px; height: 64px; right: -22px; top: -22px; } }
 /* Medium screens: slightly tighter table cells so ordinary tables still fit beside the sidebar */
 @media (max-width: 1200px) { .table th, .table td { padding-left: 7px; padding-right: 7px; } }
+.msg.done { opacity: .65; }

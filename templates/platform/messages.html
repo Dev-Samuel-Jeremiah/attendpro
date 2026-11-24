@@ -1,0 +1,17 @@
+{% extends "platform/_shell.html" %}{% load ui %}
+{% block title %}Messages{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Messages</h1><p>Sent from the website's contact form, newest first.</p></div></div>
+<div class="stack">
+  {% for m in items %}
+  <div class="card msg{% if m.handled %} done{% endif %}">
+    <div class="card-head"><div><b>{{ m.name }}</b>{% if m.organisation %} · {{ m.organisation }}{% endif %}{% if m.staff_count %} <span class="badge b-leave">{{ m.staff_count }} staff</span>{% endif %}
+      <br><small class="muted">{{ m.created_at|date:"D j M Y, g:i A" }}{% if m.email %} · <a href="mailto:{{ m.email }}">{{ m.email }}</a>{% endif %}{% if m.phone %} · <a href="tel:{{ m.phone }}">{{ m.phone }}</a>{% endif %}</small></div>
+      <form method="post">{% csrf_token %}<input type="hidden" name="pk" value="{{ m.pk }}">
+        {% if m.handled %}<button class="btn btn-ghost btn-sm" name="handled" value="0">Mark as new</button>
+        {% else %}<button class="btn btn-accent btn-sm" name="handled" value="1">{% icon "check" %} Mark handled</button>{% endif %}</form></div>
+    <p style="margin:0;white-space:pre-wrap">{{ m.message }}</p>
+  </div>
+  {% empty %}<div class="card empty">No messages yet.</div>{% endfor %}
+</div>
+{% endblock %}

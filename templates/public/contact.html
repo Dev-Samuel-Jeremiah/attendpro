@@ -1,0 +1,41 @@
+{% extends "public/_base.html" %}{% load ui %}
+{% block title %}Contact AttendPro{% endblock %}
+{% block public_head %}<meta name="description" content="Talk to the AttendPro team about attendance for your school or organisation.">
+<meta property="og:title" content="Contact AttendPro">{% endblock %}
+{% block main %}
+<section class="lp-section lp-page">
+  <div class="lp-wrap lp-contact-page">
+    <div>
+      <span class="lp-kicker">Contact</span>
+      <h1>Let's talk about your attendance</h1>
+      <p class="lp-lead">Tell us about your school or organisation and we'll help you get set up, import your staff list and choose the right plan.</p>
+      <ul class="lp-contact-list">
+        {% if site.whatsapp %}<li><span class="wa">{% icon "chat" 18 %}</span><div><b>WhatsApp</b><a href="https://wa.me/{{ site.whatsapp_digits }}" target="_blank" rel="noopener">{{ site.whatsapp }}</a></div></li>{% endif %}
+        {% if site.sales_email %}<li><span>{% icon "mail" 18 %}</span><div><b>Sales</b><a href="mailto:{{ site.sales_email }}">{{ site.sales_email }}</a></div></li>{% endif %}
+        {% if site.contact_email %}<li><span>{% icon "mail" 18 %}</span><div><b>Support</b><a href="mailto:{{ site.contact_email }}">{{ site.contact_email }}</a></div></li>{% endif %}
+        {% if site.phone %}<li><span>{% icon "phone" 18 %}</span><div><b>Phone</b><a href="tel:{{ site.phone }}">{{ site.phone }}</a></div></li>{% endif %}
+        {% if site.address %}<li><span>{% icon "pin" 18 %}</span><div><b>Office</b>{{ site.address }}</div></li>{% endif %}
+        {% if site.hours %}<li><span>{% icon "clock" 18 %}</span><div><b>Hours</b>{{ site.hours }}</div></li>{% endif %}
+      </ul>
+    </div>
+    <div class="lp-form-card">
+      {% include "partials/messages.html" %}
+      <h2>Send us a message</h2>
+      <form method="post" novalidate>{% csrf_token %}
+        {% for e in form.non_field_errors %}<div class="alert alert-error" style="margin-bottom:12px">{{ e }}</div>{% endfor %}
+        <div class="form-grid">
+          {% include "partials/field.html" with f=form.name %}
+          {% include "partials/field.html" with f=form.organisation %}
+          {% include "partials/field.html" with f=form.email %}
+          {% include "partials/field.html" with f=form.phone %}
+          {% include "partials/field.html" with f=form.staff_count cls="full" %}
+          {% include "partials/field.html" with f=form.message cls="full" %}
+        </div>
+        <div class="lp-trap" aria-hidden="true">{{ form.website }}</div>
+        <p class="lp-form-note">We only use these details to reply to you. See our <a href="{% url 'privacy' %}">privacy policy</a>.</p>
+        <button class="lp-btn lp-btn-primary lp-btn-lg" type="submit">Send message {% icon "chevron-right" 18 %}</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

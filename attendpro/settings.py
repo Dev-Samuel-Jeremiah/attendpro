@@ -68,6 +68,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.organisation",
                 "billing.context_processors.plan",
+                "billing.context_processors.site",
                 "notifications.context_processors.unread",
             ],
         },

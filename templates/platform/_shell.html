@@ -15,6 +15,10 @@
       <a href="{% url 'platform_plans' %}" class="{% active 'platform_plans' 'platform_plan_edit' 'platform_plan_add' %}">{% icon "star" %} Plans &amp; prices</a>
       <a href="{% url 'platform_features' %}" class="{% active 'platform_features' 'platform_feature_edit' 'platform_feature_add' %}">{% icon "list" %} Features</a>
       <a href="{% url 'pricing' %}" target="_blank">{% icon "monitor" %} Public pricing page</a>
+      <div class="nav-label">Website</div>
+      <a href="{% url 'platform_site' %}" class="{% active 'platform_site' %}">{% icon "home" %} Site settings</a>
+      <a href="{% url 'platform_messages' %}" class="{% active 'platform_messages' %}">{% icon "bell" %} Messages</a>
+      <a href="{% url 'platform_testimonials' %}" class="{% active 'platform_testimonials' 'platform_testimonial_add' 'platform_testimonial_edit' %}">{% icon "star" %} Customer quotes</a>
       <div class="nav-label">System</div>
       <a href="{% url 'admin:index' %}">{% icon "settings" %} Django admin</a>
     </nav>

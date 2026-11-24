@@ -142,7 +142,9 @@ def home(request):
 def landing(request):
     """Public home page for visitors who aren't signed in."""
     from billing.views import _public_plans, plan_cards
-    return render(request, "landing.html", {"cards": plan_cards(_public_plans())})
+    from billing.models import Testimonial
+    return render(request, "landing.html", {"cards": plan_cards(_public_plans()),
+                                            "testimonials": Testimonial.objects.filter(is_published=True)[:6]})
 
 
 @member_required

@@ -1,0 +1,63 @@
+{% extends "public/_base.html" %}
+{% block title %}Privacy policy · AttendPro{% endblock %}
+{% block main %}
+<article class="lp-section lp-page"><div class="lp-wrap lp-doc">
+<span class="lp-kicker">Legal</span>
+<h1>Privacy policy</h1>
+<p class="lp-doc-meta">Effective {{ effective }} · {{ site.company_name }}</p>
+
+<p>AttendPro is an attendance service run by {{ site.company_name }} ("we"). This policy explains what personal data AttendPro handles, why, and the choices you have. We follow the Nigeria Data Protection Act 2023.</p>
+
+<h2>Who is responsible for your data</h2>
+<p>Each school or organisation that uses AttendPro (the "organisation") decides whose attendance is recorded and how it is used, so it is the <b>data controller</b> for its staff and students' records. We process that data on the organisation's behalf, as its <b>data processor</b>. For the account details of the organisation's administrators, billing, and messages sent to us through this website, we are the controller.</p>
+
+<h2>What we collect</h2>
+<ul>
+  <li><b>Account details:</b> name, sign-in ID, password (stored only as a secure hash), and optionally email, phone, job title or class, department, branch and photo, as entered by the organisation.</li>
+  <li><b>Attendance records:</b> clock-in and clock-out times, lateness, hours, leave and absence entries, and comments.</li>
+  <li><b>Scan records:</b> for every attendance attempt, the time, result, IP address and browser type, so organisations can check for misuse.</li>
+  <li><b>Location:</b> when someone uses the Clock in button (or, on Enterprise, scans a QR code), their phone shares its GPS position and accuracy at that moment only. We keep the position and the distance from the organisation's premises with the scan record. We do not track location at any other time.</li>
+  <li><b>Face data (Enterprise, if switched on):</b> a selfie at check-in and a reference face made of numbers describing it. Faces are compared on our own server; photos are never sent to other companies. Organisations can switch this off.</li>
+  <li><b>Payroll data (Enterprise, if used):</b> pay rates, bank name and account number, and the payslips worked out from attendance.</li>
+  <li><b>Billing:</b> the plan, amount and payment reference. Card and bank details are handled by Paystack; we never see or store them.</li>
+  <li><b>Messages to us:</b> whatever you send through the contact form, plus your IP address to prevent abuse.</li>
+</ul>
+
+<h2>Why we use it</h2>
+<ul>
+  <li>To provide the service the organisation signed up for: recording attendance, reports, leave, alerts, payroll and backups.</li>
+  <li>To keep it secure and prevent attendance fraud, for example refusing scans from outside the premises.</li>
+  <li>To take payments and keep accounting records.</li>
+  <li>To reply to messages and give support.</li>
+</ul>
+<p>We don't sell personal data, use it for advertising, or use it to train AI models.</p>
+
+<h2>Who we share it with</h2>
+<ul>
+  <li><b>The organisation</b> that holds the account, through its administrators.</li>
+  <li><b>Paystack</b>, to process payments.</li>
+  <li><b>Our hosting and email providers</b>, who store and send data for us under contract. Our servers may be outside Nigeria; where they are, we rely on the safeguards the Act allows.</li>
+  <li><b>Authorities</b>, only where the law requires it.</li>
+</ul>
+
+<h2>How long we keep it</h2>
+<ul>
+  <li>Check-in selfies: 90 days. Read notifications: 90 days.</li>
+  <li>Deleted departments, branches and leave or absence entries: kept 30 days so they can be restored, then removed.</li>
+  <li>Attendance, leave and payroll records: for as long as the organisation keeps its account, so it can meet its own record-keeping duties. The organisation can export or ask us to delete them.</li>
+  <li>Backups: nightly server backups are kept for 14 days; weekly organisation backups (Enterprise) for 8 weeks.</li>
+</ul>
+
+<h2>How we protect it</h2>
+<p>All connections use HTTPS. Each organisation's data is kept separate. Passwords are hashed. Face photos and backups are stored privately and only shown to that organisation's administrators. Clock-in and clock-out times can't be edited, which protects staff as well as employers.</p>
+
+<h2>Your rights</h2>
+<p>You can ask to see, correct, export or delete your personal data, object to its use, or withdraw consent where we rely on it. If you are staff or a student, please ask your organisation first, as it controls your records; we will help it respond. You can also complain to the Nigeria Data Protection Commission.</p>
+
+<h2>Contact</h2>
+<p>For anything about privacy, contact {{ site.company_name }}{% if site.contact_email %} at <a href="mailto:{{ site.contact_email }}">{{ site.contact_email }}</a>{% endif %}{% if site.address %}, {{ site.address }}{% endif %}, or use our <a href="{% url 'contact' %}">contact form</a>.</p>
+
+<h2>Changes</h2>
+<p>If we change this policy, we'll update the date at the top and tell organisations' administrators about important changes before they take effect.</p>
+</div></article>
+{% endblock %}

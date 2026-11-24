@@ -253,3 +253,6 @@ html.js .af-next.hide, html.js .af-back.hide { visibility: hidden; }
   .au *, .au *::before, .au *::after { animation: none !important; transition: none !important; }
 }
 .af-code .input::placeholder { text-transform: none; letter-spacing: 0; font-family: var(--font); }
+html.js .af-terms { display: none; }
+html.js .af-step[data-step="4"].on ~ .af-terms, .af-terms.show { display: flex; }
+.af-link-plain a { color: var(--muted); }

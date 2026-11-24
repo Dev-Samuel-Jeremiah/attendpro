@@ -1,0 +1,14 @@
+{% extends "platform/_shell.html" %}{% load ui %}
+{% block title %}Customer quotes{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Customer quotes</h1><p>Real quotes from your customers. Published ones appear on the home page; the section stays hidden until there's at least one.</p></div>
+  <a class="btn btn-accent" href="{% url 'platform_testimonial_add' %}">{% icon "plus" %} Add quote</a></div>
+<div class="card"><div class="table-wrap"><table class="table">
+  <thead><tr><th>Quote</th><th>From</th><th>Status</th><th></th></tr></thead>
+  <tbody>{% for t in items %}
+    <tr><td>“{{ t.quote|truncatechars:90 }}”</td><td><b>{{ t.name }}</b><br><small class="muted">{{ t.role }}{% if t.role %}, {% endif %}{{ t.organisation }}</small></td>
+      <td>{% if t.is_published %}<span class="badge b-present">On the website</span>{% else %}<span class="badge b-muted">Hidden</span>{% endif %}</td>
+      <td><a class="btn btn-ghost btn-sm" href="{% url 'platform_testimonial_edit' t.pk %}">{% icon "edit" %} Edit</a></td></tr>
+  {% empty %}<tr><td colspan="4" class="empty">No quotes yet. Ask a happy school or organisation for a sentence you can use.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% endblock %}

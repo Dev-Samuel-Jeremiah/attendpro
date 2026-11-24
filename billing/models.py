@@ -89,3 +89,64 @@ class Payment(models.Model):
     @property
     def amount(self):
         return self.amount_kobo // 100
+
+
+class SiteSettings(models.Model):
+    """Public contact details shown on the website (one row, edited in Platform → Site settings)."""
+    company_name = models.CharField(max_length=120, default="Techmiary Technology Concepts")
+    contact_email = models.EmailField("Support email", blank=True)
+    sales_email = models.EmailField("Sales email", blank=True)
+    phone = models.CharField(max_length=30, blank=True)
+    whatsapp = models.CharField("WhatsApp number", max_length=30, blank=True,
+                                help_text="International format, e.g. +234 803 000 0000")
+    address = models.CharField(max_length=255, blank=True)
+    hours = models.CharField("Support hours", max_length=120, blank=True, help_text="e.g. Mon–Fri, 8am–6pm WAT")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "site settings"
+
+    @classmethod
+    def load(cls):
+        return cls.objects.first() or cls.objects.create()
+
+    @property
+    def whatsapp_digits(self):
+        return "".join(ch for ch in self.whatsapp if ch.isdigit())
+
+    @property
+    def has_contact(self):
+        return any([self.contact_email, self.sales_email, self.phone, self.whatsapp, self.address])
+
+
+class Testimonial(models.Model):
+    """A real customer quote. Only published ones appear on the website."""
+    quote = models.TextField(max_length=400)
+    name = models.CharField(max_length=80)
+    role = models.CharField(max_length=80, blank=True, help_text="e.g. Principal")
+    organisation = models.CharField(max_length=120)
+    logo = models.ImageField(upload_to="logos/site/", blank=True, null=True)
+    is_published = models.BooleanField("Show on the website", default=False,
+                                       help_text="Only publish quotes you have permission to use.")
+    sort_order = models.PositiveIntegerField(default=100)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.name}, {self.organisation}"
+
+
+class ContactMessage(models.Model):
+    name = models.CharField(max_length=120)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=30, blank=True)
+    organisation = models.CharField(max_length=160, blank=True)
+    staff_count = models.CharField("Number of staff", max_length=20, blank=True)
+    message = models.TextField(max_length=2000)
+    created_at = models.DateTimeField(auto_now_add=True)
+    handled = models.BooleanField(default=False)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]

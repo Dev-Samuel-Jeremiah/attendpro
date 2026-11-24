@@ -1,8 +1,8 @@
 {% extends "base.html" %}{% load ui static %}
-{% block title %}AttendPro: attendance your team clocks in one tap{% endblock %}
+{% block title %}AttendPro: clock in with one tap, know who's in live{% endblock %}
 {% block head %}
 <meta name="description" content="AttendPro records staff and student attendance in one tap: a rotating QR code at the entrance or a GPS-checked clock-in button. Live dashboard, leave, reports and alerts. Free for up to 10 staff.">
-<meta property="og:title" content="AttendPro: attendance in one tap">
+<meta property="og:title" content="AttendPro: clock in with one tap, know who's in live">
 <meta property="og:description" content="Clock in by QR or GPS, see who's in live, and export reports. Free for up to 10 staff.">
 <meta property="og:type" content="website">
 <link rel="stylesheet" href="{% static 'css/landing.css' %}">
@@ -10,21 +10,7 @@
 {% block body_class %}lp{% endblock %}
 {% block body %}
 <div class="lp-progress" aria-hidden="true"><span id="lp-progress"></span></div>
-<header class="lp-nav" id="top">
-  <div class="lp-wrap lp-nav-in">
-    <a href="/" class="lp-brand" aria-label="AttendPro home">
-      <span class="lp-mark"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
-      AttendPro
-    </a>
-    <nav class="lp-links" aria-label="Sections">
-      <a href="#how">How it works</a><a href="#features">Features</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a>
-    </nav>
-    <div class="lp-nav-cta">
-      <a href="{% url 'login' %}" class="lp-btn lp-btn-quiet">Sign in</a>
-      <a href="{% url 'register' %}?plan=basic" class="lp-btn lp-btn-primary">Start free</a>
-    </div>
-  </div>
-</header>
+{% include "public/_nav.html" %}
 
 <main>
   <!-- Hero -->
@@ -119,11 +105,11 @@
   <section class="lp-for" aria-label="Who uses AttendPro">
     <p>Made for places where people show up</p>
     <div class="lp-marquee"><div class="lp-marquee-track">
-      {% for _ in "ab"|make_list %}<ul{% if forloop.last %} aria-hidden="true"{% endif %}>
+      <ul>
         <li>{% icon "users" 18 %} Schools</li><li>{% icon "grid" 18 %} Offices</li><li>{% icon "activity" 18 %} Clinics &amp; hospitals</li>
         <li>{% icon "settings" 18 %} Factories &amp; sites</li><li>{% icon "home" 18 %} Churches &amp; NGOs</li><li>{% icon "pin" 18 %} Multi-branch teams</li>
         <li>{% icon "card" 18 %} Banks &amp; shops</li><li>{% icon "calendar" 18 %} Hotels &amp; restaurants</li>
-      </ul>{% endfor %}
+      </ul>
     </div></div>
   </section>
 
@@ -249,8 +235,8 @@
       </div>
       <div class="lp-bento">
         <article class="lp-cell lp-cell-wide reveal">
-          <div class="lp-cell-copy"><span class="lp-ico">{% icon "pin" 20 %}</span><h3>GPS clock-in with a geofence</h3>
-            <p>Draw a circle around your premises. The Clock in button only works inside it, and every branch can have its own.</p></div>
+          <div class="lp-cell-copy"><span class="lp-ico">{% icon "pin" 20 %}</span><h3>GPS clock-in, on every plan</h3>
+            <p>Draw a circle around your premises and the Clock in button only works inside it. Enterprise adds a circle for every branch and checks GPS on QR scans too.</p></div>
           <div class="lp-geo" aria-hidden="true">
             <div class="lp-geo-map"><i class="road r1"></i><i class="road r2"></i><i class="road r3"></i>
               <span class="lp-fence"><span class="lp-fence-pulse"></span></span>
@@ -315,6 +301,24 @@
     </div>
   </section>
 
+  {% if testimonials %}
+  <!-- Customer quotes (real, published from Platform) -->
+  <section class="lp-section" id="customers">
+    <div class="lp-wrap">
+      <div class="lp-head reveal"><span class="lp-kicker">Customers</span><h2>What schools and organisations say</h2></div>
+      <div class="lp-quotes">
+        {% for t in testimonials %}
+        <figure class="lp-quote reveal">
+          <blockquote>“{{ t.quote }}”</blockquote>
+          <figcaption>{% if t.logo %}<img src="{{ t.logo.url }}" alt="{{ t.organisation }} logo">{% else %}<span class="lp-av">{{ t.organisation|slice:":2"|upper }}</span>{% endif %}
+            <span><b>{{ t.name }}</b><small>{% if t.role %}{{ t.role }}, {% endif %}{{ t.organisation }}</small></span></figcaption>
+        </figure>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
   <!-- Pricing -->
   <section class="lp-section" id="pricing">
     <div class="lp-wrap">
@@ -336,12 +340,30 @@
       <div class="lp-head reveal"><span class="lp-kicker">FAQ</span><h2>Questions people ask</h2></div>
       <div class="lp-faq reveal">
         <details><summary>Do staff need to install an app?</summary><p>No. AttendPro runs in the phone's browser. Staff sign in once with their ID and stay signed in for 30 days, so clocking in is a single tap.</p></details>
-        <details><summary>What do we need at the entrance?</summary><p>Any screen with a browser for the QR code: a TV, a monitor or a tablet. On the free plan you don't need a screen at all: staff use the GPS Clock in button.</p></details>
+        <details><summary>What do we need at the entrance?</summary><p>Any screen with a browser for the QR code: a TV, a monitor or a tablet. Or switch the code's refresh off and print it. On the free plan you don't need anything at the entrance: staff use the Clock in button, which checks their GPS location.</p></details>
         <details><summary>Can someone clock in for a colleague?</summary><p>It's made very hard. The QR code changes every 30 seconds and the Clock in button only works on your premises. Every attempt, including refused ones, is logged.</p></details>
-        <details><summary>What if a phone has no GPS or no data?</summary><p>An administrator can add or correct any entry by hand from the daily register, with a note.</p></details>
+        <details><summary>What if a phone has no GPS or no data?</summary><p>If your plan includes it, they can scan the QR code at reception instead. Otherwise an administrator can mark the day as excused with a note. Clock-in and clock-out times themselves can only come from the person's own scan, so nobody can edit them.</p></details>
         <details><summary>Can we change plans later?</summary><p>Yes. Upgrade any time from Plan &amp; billing. If a paid plan runs out, you move to the free plan: nothing is deleted, and paid features come back as soon as you renew.</p></details>
-        <details><summary>Is our data safe?</summary><p>Each organisation's data is kept separate, connections are encrypted, and the database is backed up every night.</p></details>
+        <details><summary>Is our data safe?</summary><p>Each organisation's data is kept separate, connections are encrypted, and the database is backed up every night. Location is only read at the moment someone clocks in. See our <a href="{% url 'privacy' %}">privacy policy</a>.</p></details>
+        <details><summary>How do we pay, and can we get a refund?</summary><p>Paid plans are paid monthly through Paystack (card, bank transfer or USSD) and never renew automatically. If you're not happy, ask for a full refund within 7 days of paying for a new plan. <a href="{% url 'pricing' %}#billing-faq">More about billing</a></p></details>
+        <details><summary>How do we reach you?</summary><p>{% if site.whatsapp %}WhatsApp <a href="https://wa.me/{{ site.whatsapp_digits }}" target="_blank" rel="noopener">{{ site.whatsapp }}</a>, {% endif %}{% if site.sales_email %}email <a href="mailto:{{ site.sales_email }}">{{ site.sales_email }}</a>, {% endif %}or <a href="{% url 'contact' %}">send us a message</a> and we'll get back to you.</p></details>
       </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section class="lp-section" id="contact">
+    <div class="lp-wrap">
+      <div class="lp-head reveal"><span class="lp-kicker">Talk to us</span><h2>Questions before you start?</h2>
+        <p>We'll help you set up, import your staff list and choose the right plan.</p></div>
+      <div class="lp-contact reveal">
+        {% if site.whatsapp %}<a class="lp-contact-card" href="https://wa.me/{{ site.whatsapp_digits }}?text={{ "Hello, I'd like to know more about AttendPro."|urlencode }}" target="_blank" rel="noopener">
+          <span class="wa">{% icon "chat" 22 %}</span><b>WhatsApp</b><small>{{ site.whatsapp }}</small></a>{% endif %}
+        {% if site.sales_email %}<a class="lp-contact-card" href="mailto:{{ site.sales_email }}"><span>{% icon "mail" 22 %}</span><b>Email sales</b><small>{{ site.sales_email }}</small></a>{% endif %}
+        {% if site.phone %}<a class="lp-contact-card" href="tel:{{ site.phone }}"><span>{% icon "phone" 22 %}</span><b>Call us</b><small>{{ site.phone }}</small></a>{% endif %}
+        <a class="lp-contact-card" href="{% url 'contact' %}"><span>{% icon "edit" 22 %}</span><b>Send a message</b><small>We'll reply as soon as we can</small></a>
+      </div>
+      {% if site.address or site.hours %}<p class="lp-center lp-contact-meta">{% if site.address %}{% icon "pin" 14 %} {{ site.address }}{% endif %}{% if site.address and site.hours %} · {% endif %}{{ site.hours }}</p>{% endif %}
     </div>
   </section>
 
@@ -358,13 +380,6 @@
   </section>
 </main>
 
-<footer class="lp-foot">
-  <div class="lp-wrap lp-foot-in">
-    <div><a href="/" class="lp-brand"><span class="lp-mark"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>AttendPro</a>
-      <p>Attendance in one tap, by Techmiary Technology Concepts.</p></div>
-    <nav aria-label="Footer"><a href="#how">How it works</a><a href="#features">Features</a><a href="{% url 'pricing' %}">Pricing</a><a href="{% url 'login' %}">Sign in</a><a href="{% url 'register' %}">Create account</a></nav>
-    <small>© {% now "Y" %} Techmiary Technology Concepts · techmiary.tech</small>
-  </div>
-</footer>
+{% include "public/_footer.html" %}
 {% endblock %}
 {% block scripts %}<script src="{% static 'js/landing.js' %}"></script>{% endblock %}

@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% load static %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/landing.css' %}">{% block public_head %}{% endblock %}{% endblock %}
+{% block body_class %}lp{% endblock %}
+{% block body %}
+{% include "public/_nav.html" %}
+<main>{% block main %}{% endblock %}</main>
+{% include "public/_footer.html" %}
+{% endblock %}

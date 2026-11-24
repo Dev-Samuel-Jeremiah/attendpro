@@ -4,6 +4,14 @@
   const $ = id => document.getElementById(id);
   const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  // The "made for" band is written once in the page; a copy makes the scroll seamless
+  const track = document.querySelector(".lp-marquee-track");
+  if (track && track.firstElementChild) {
+    const copy = track.firstElementChild.cloneNode(true);
+    copy.setAttribute("aria-hidden", "true");
+    track.appendChild(copy);
+  }
+
   // Reveal sections as they scroll in
   const items = document.querySelectorAll(".reveal");
   if ("IntersectionObserver" in window && !calm) {
@@ -102,7 +110,7 @@
   // Reading progress + highlight the section in view
   const progress = $("lp-progress");
   const links = [...document.querySelectorAll(".lp-links a")];
-  const sections = links.map(a => document.querySelector(a.getAttribute("href")));
+  const sections = links.map(a => (a.pathname === location.pathname && a.hash) ? document.querySelector(a.hash) : null);
   function onScrollMore() {
     const h = document.documentElement.scrollHeight - window.innerHeight;
     progress.style.width = (h > 0 ? window.scrollY / h * 100 : 0) + "%";

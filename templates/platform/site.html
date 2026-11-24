@@ -1,0 +1,20 @@
+{% extends "platform/_shell.html" %}{% load ui %}
+{% block title %}Site settings{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>Site settings</h1><p>Contact details shown on the website's contact section, contact page, footer, privacy policy and terms.</p></div>
+  <a class="btn btn-ghost" href="{% url 'contact' %}" target="_blank">{% icon "monitor" %} View contact page</a></div>
+<div class="card" style="max-width:760px">
+  <form method="post">{% csrf_token %}
+    <div class="form-grid">
+      {% include "partials/field.html" with f=form.company_name cls="full" %}
+      {% include "partials/field.html" with f=form.sales_email %}
+      {% include "partials/field.html" with f=form.contact_email %}
+      {% include "partials/field.html" with f=form.whatsapp %}
+      {% include "partials/field.html" with f=form.phone %}
+      {% include "partials/field.html" with f=form.address cls="full" %}
+      {% include "partials/field.html" with f=form.hours cls="full" %}
+    </div>
+    <button class="btn btn-accent">{% icon "save" %} Save</button>
+  </form>
+</div>
+{% endblock %}

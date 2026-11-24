@@ -1,0 +1,21 @@
+{% extends "platform/_shell.html" %}{% load ui %}
+{% block title %}{% if obj %}Edit quote{% else %}Add quote{% endif %}{% endblock %}
+{% block content %}
+<div class="topbar"><div><h1>{% if obj %}Edit quote{% else %}Add quote{% endif %}</h1><p>Only publish quotes and logos you have permission to use.</p></div>
+  <a class="btn btn-ghost" href="{% url 'platform_testimonials' %}">{% icon "chevron-left" %} Quotes</a></div>
+<div class="card" style="max-width:720px">
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    {% include "partials/field.html" with f=form.quote %}
+    <div class="form-grid">
+      {% include "partials/field.html" with f=form.name %}
+      {% include "partials/field.html" with f=form.role %}
+      {% include "partials/field.html" with f=form.organisation %}
+      {% include "partials/field.html" with f=form.logo %}
+      {% include "partials/field.html" with f=form.sort_order %}
+      {% include "partials/field.html" with f=form.is_published %}
+    </div>
+    <div class="btn-row"><button class="btn btn-accent">{% icon "save" %} Save</button>
+      {% if obj %}<button class="btn btn-danger" name="delete" value="1" onclick="return confirm('Delete this quote?')">Delete</button>{% endif %}</div>
+  </form>
+</div>
+{% endblock %}
