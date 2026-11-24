@@ -1,4 +1,4 @@
-{% extends "base.html" %}{% load ui %}
+{% extends "base.html" %}{% load ui static %}
 {% block title %}Reception · {{ kiosk_org.name }}{% endblock %}
 {% block body %}
 {% if not qr_allowed %}
@@ -15,7 +15,7 @@
 <div class="kiosk">
   <section>
     <div class="brand" style="padding:0 0 30px">
-      <span class="brand-mark">{% if kiosk_org.logo and show_logo %}<img src="{{ kiosk_org.logo.url }}" alt="">{% else %}<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{% endif %}</span>
+      <span class="brand-mark{% if not kiosk_org.logo or not show_logo %} has-logo{% endif %}">{% if kiosk_org.logo and show_logo %}<img src="{{ kiosk_org.logo.url }}" alt="">{% else %}<img class="ap-logo" src="{% static 'brand/mark-wide-96.webp' %}" srcset="{% static 'brand/mark-wide-192.webp' %} 2x" alt="AttendPro">{% endif %}</span>
       <div><b>{{ kiosk_org.name }}</b><small>{% if kiosk_branch %}{{ kiosk_branch.name }} · {% endif %}Attendance check-in</small></div>
     </div>
     <div class="kiosk-clock" id="clock">--:--</div>
