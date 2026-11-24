@@ -1,97 +1,268 @@
-{% extends "manage/_shell.html" %}{% load ui %}
+{% extends "manage/_shell.html" %}{% load ui static %}
 {% block title %}Dashboard{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">{% endblock %}
 {% block content %}
-<div class="topbar">
-  <div><h1>Good {% now "A" as ampm %}{% if ampm == "AM" %}morning{% else %}day{% endif %}, {{ request.user.first_name|default:"Admin" }}</h1>
-    <p>{{ today|date:"l, j F Y" }}{% if not is_working_day %} · <b>Non-working day</b>{% endif %}</p></div>
-  <div class="btn-row">
-    <a href="{% url 'kiosk' org.kiosk_key %}" target="_blank" class="btn btn-ghost">{% icon "monitor" %} Open reception QR</a>
-    <a href="{% url 'reports' %}?export=xlsx" class="btn">{% icon "download" %} This month (Excel)</a>
-  </div>
-</div>
+<div class="dash">
 
-<div class="grid grid-4">
-  <div class="card stat t-green"><div class="label">Present today</div><div class="value"><span id="present-count">{{ present }}</span><small class="muted" style="font-size:1rem"> / {{ total }}</small></div><div class="sub">{{ rate }}% attendance</div></div>
-  <div class="card stat t-amber"><div class="label">Late arrivals</div><div class="value">{{ late }}</div><div class="sub">after {{ org.work_start|time:"g:i A" }} + {{ org.grace_minutes }}m</div></div>
-  <div class="card stat t-red"><div class="label">Not in yet</div><div class="value">{{ absent }}</div><div class="sub">{{ leave }} excused / on leave</div></div>
-  <div class="card stat t-blue"><div class="label">On site now</div><div class="value">{{ on_site }}</div><div class="sub">checked in, not out</div></div>
-</div>
+  <!-- Header -->
+  <header class="dh">
+    <div class="dh-text">
+      <p class="dh-date">{{ today|date:"l, j F Y" }} · <time id="dh-clock">{{ now|date:"g:i A" }}</time></p>
+      <h1>Good {{ greeting }}, {{ request.user.first_name|default:"Admin" }}</h1>
+      <span class="dh-chip is-{{ chip.kind }}"><i></i>{{ chip.text }}</span>
+    </div>
+    <div class="dh-actions">
+      {% if uses_qr %}<a href="{% url 'kiosk' org.kiosk_key %}" target="_blank" class="btn btn-ghost">{% icon "monitor" %} Reception QR</a>{% endif %}
+      <a href="{% url 'member_add' %}" class="btn btn-ghost">{% icon "plus" %} Add member</a>
+      <a href="{% url 'reports' %}?export=xlsx" class="btn">{% icon "download" %} Export month</a>
+    </div>
+  </header>
 
-<div class="grid grid-main" style="margin-top:18px">
-  <div class="stack">
+  {% if setup %}
+  <!-- First steps -->
+  <section class="card dsetup">
+    <div class="dsetup-head">
+      <div><h2>Get AttendPro ready</h2><p class="muted">{{ setup.done }} of {{ setup.total }} done</p></div>
+      <div class="dsetup-bar"><span style="width:{{ setup.pct }}%"></span></div>
+    </div>
+    <ol class="dsetup-steps">
+      {% for s in setup.steps %}
+      <li class="{% if s.done %}done{% endif %}">
+        <span class="dsetup-tick">{% if s.done %}{% icon "check" 14 %}{% else %}{{ forloop.counter }}{% endif %}</span>
+        <div><b>{{ s.title }}</b><small>{{ s.text }}</small></div>
+        {% if not s.done %}<a href="{{ s.url }}" class="btn btn-sm btn-accent">Start</a>{% endif %}
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+
+  {% if attention %}
+  <!-- Needs attention -->
+  <section class="dattn" aria-label="Needs your attention">
+    {% for a in attention %}
+    {% if a.url %}<a href="{{ a.url }}" class="dattn-item t-{{ a.tone }}">{% else %}<div class="dattn-item t-{{ a.tone }}">{% endif %}
+      <span class="dattn-ico">{% icon a.icon 18 %}</span>
+      <span><b>{{ a.n }}</b> {{ a.text }}</span>
+      {% if a.url %}{% icon "chevron-right" 16 %}</a>{% else %}</div>{% endif %}
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <!-- Key numbers -->
+  <section class="dkpis">
+    <div class="dkpi t-green">
+      <div class="dkpi-top"><span class="dkpi-ico">{% icon "check" 18 %}</span><span class="dkpi-label">Present today</span></div>
+      <div class="dkpi-value"><span id="present-count">{{ present }}</span><small>/ {{ total }}</small></div>
+      <div class="dkpi-meter" title="{{ rate }}% attendance"><span style="width:{{ rate }}%"></span></div>
+      <div class="dkpi-foot"><b>{{ rate }}%</b> attendance
+        {% if present_delta and present_delta.diff %}<span class="ddelta {% if present_delta.up %}good{% else %}bad{% endif %}">{% if present_delta.up %}▲{% else %}▼{% endif %} {{ present_delta.abs }} {{ present_delta.label }}</span>{% endif %}</div>
+    </div>
+    <div class="dkpi t-amber">
+      <div class="dkpi-top"><span class="dkpi-ico">{% icon "clock" 18 %}</span><span class="dkpi-label">Late arrivals</span></div>
+      <div class="dkpi-value">{{ late }}</div>
+      <div class="dkpi-foot">after {{ org.work_start|time:"g:i A" }} + {{ org.grace_minutes }} min
+        {% if late_delta and late_delta.diff %}<span class="ddelta {% if late_delta.up %}bad{% else %}good{% endif %}">{% if late_delta.up %}▲{% else %}▼{% endif %} {{ late_delta.abs }} {{ late_delta.label }}</span>{% endif %}</div>
+    </div>
+    <div class="dkpi t-red">
+      <div class="dkpi-top"><span class="dkpi-ico">{% icon "x" 18 %}</span><span class="dkpi-label">Not in yet</span></div>
+      <div class="dkpi-value">{{ not_in }}</div>
+      <div class="dkpi-foot">{% if leave %}{{ leave }} on leave or excused{% else %}no one on leave today{% endif %}</div>
+    </div>
+    <div class="dkpi t-blue">
+      <div class="dkpi-top"><span class="dkpi-ico">{% icon "pin" 18 %}</span><span class="dkpi-label">On site now</span></div>
+      <div class="dkpi-value">{{ on_site }}</div>
+      <div class="dkpi-foot">checked in, not out yet</div>
+    </div>
+  </section>
+
+  <!-- Trend + today -->
+  <section class="dgrid">
+    <div class="card dspan-2">
+      <div class="card-head">
+        <div><h2>Attendance, last 14 days</h2>
+          {% if trend_avg is not None %}<p class="dsub">Average <b>{{ trend_avg }}%</b> on working days</p>{% endif %}</div>
+        <div class="legend"><span><i style="background:var(--accent)"></i>On time</span><span><i style="background:var(--late)"></i>Late</span></div>
+      </div>
+      <div class="dchart">
+        <div class="dchart-y" aria-hidden="true"><span>{{ trend_scale }}</span><span></span><span>0</span></div>
+        <div class="dchart-plot">
+          <div class="dchart-grid" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+          {% for t in trend %}
+          <div class="dcol{% if not t.working %} off{% endif %}{% if t.today %} today{% endif %}" tabindex="0"
+               aria-label="{{ t.date|date:'l j M' }}: {{ t.on_time }} on time, {{ t.late }} late">
+            <div class="dcol-bar"><span class="seg-late" style="height:{{ t.late_pct }}%"></span><span class="seg-on" style="height:{{ t.on_time_pct }}%"></span></div>
+            <div class="dtip"><b>{{ t.date|date:"D j M" }}</b>{% if t.working %}<span><i class="sw on"></i>{{ t.on_time }} on time</span><span><i class="sw late"></i>{{ t.late }} late</span>{% if t.leave %}<span><i class="sw lv"></i>{{ t.leave }} on leave</span>{% endif %}<span class="dtip-rate">{{ t.rate }}% attendance</span>{% else %}<span>Non-working day</span>{% endif %}</div>
+            <small>{{ t.date|date:"j" }}<em>{{ t.date|date:"D"|slice:":1" }}</em></small>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% if trend_summary %}
+      <div class="dtrend-foot">
+        <div><small>Best day</small><b>{{ trend_summary.best.rate }}%</b><span>{{ trend_summary.best.date|date:"D j M" }}</span></div>
+        <div><small>Lowest day</small><b>{{ trend_summary.low.rate }}%</b><span>{{ trend_summary.low.date|date:"D j M" }}</span></div>
+        <div><small>Arrived on time</small><b>{{ trend_summary.on_time_pct }}%</b><span>of all check-ins</span></div>
+        <div><small>Late arrivals</small><b>{{ trend_summary.late }}</b><span>in 14 days</span></div>
+      </div>
+      {% endif %}
+    </div>
+
     <div class="card">
-      <div class="card-head"><h2>Last 14 days</h2>
-        <div class="legend"><span><i style="background:var(--accent)"></i>On time</span><span><i style="background:var(--late)"></i>Late</span></div></div>
-      <div class="bars">
-        {% for t in trend %}
-        <div class="bar-col {% if not t.working %}off{% endif %}" title="{{ t.date|date:'D j M' }}: {{ t.on_time }} on time, {{ t.late }} late">
-          <div class="bar"><div class="seg-on" style="height:{{ t.on_time_pct }}%"></div><div class="seg-late" style="height:{{ t.late_pct }}%"></div></div>
-          <small>{{ t.date|date:"j" }}</small>
+      <div class="card-head"><h2>Today at a glance</h2></div>
+      {% if total %}
+      <div class="ddonut-wrap">
+        <div class="ddonut" style="background:conic-gradient({% for d in donut %}{{ d.color }} {{ d.from }}% {{ d.to }}%{% if not forloop.last %}, {% endif %}{% endfor %})">
+          <div><b>{{ rate }}%</b><small>present</small></div>
+        </div>
+        <ul class="dlegend">
+          {% for d in donut %}<li><i style="background:{{ d.color }}"></i><span>{{ d.label }}</span><b>{{ d.n }}</b><small>{{ d.pct }}%</small></li>{% endfor %}
+        </ul>
+      </div>
+      {% else %}<p class="empty">Add members to see today's attendance.</p>{% endif %}
+    </div>
+  </section>
+
+  <!-- Who's in + live -->
+  <section class="dgrid">
+    <div class="card dspan-2 dwho">
+      <div class="card-head">
+        <h2>Who's in today</h2>
+        <label class="dsearch">{% icon "users" 16 %}<input type="search" id="who-q" placeholder="Find someone…" aria-label="Find someone"></label>
+      </div>
+      <div class="dtabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="in">In <span>{{ present }}</span></button>
+        <button role="tab" aria-selected="false" data-tab="late">Late <span>{{ late }}</span></button>
+        <button role="tab" aria-selected="false" data-tab="out">Not in <span>{{ not_in }}</span></button>
+        <button role="tab" aria-selected="false" data-tab="leave">On leave <span>{{ leave }}</span></button>
+      </div>
+      {% for key, people in tabs.items %}
+      <ul class="dpeople" data-panel="{{ key }}" {% if key != "in" %}hidden{% endif %}>
+        {% for p in people %}
+        <li data-q="{{ p.q }}">
+          <div class="person">{% avatar p.user %}<div><b>{{ p.user.display_name }}</b><small class="muted">{{ p.user.username }} · {{ p.user.department|default:"No department" }}</small></div></div>
+          {% if p.rec %}
+            <span class="badge b-{{ p.rec.status }}">{% if p.rec.status == "late" %}{{ p.rec.late_by_minutes }} min late{% else %}{{ p.rec.get_status_display }}{% endif %}</span>
+            <span class="dtimes">{% if p.rec.check_in %}<span>{% icon "clock" 13 %} {{ p.rec.check_in|localtime_fmt }}</span>{% endif %}{% if p.rec.check_out %}<span>{% icon "out" 13 %} {{ p.rec.check_out|localtime_fmt }}</span>{% elif p.rec.check_in %}<span class="on">on site</span>{% endif %}</span>
+          {% else %}
+            <a class="btn btn-sm btn-ghost" href="{% url 'record_add' %}?user={{ p.user.pk }}&date={{ today|date:'Y-m-d' }}">Mark</a>
+          {% endif %}
+        </li>
+        {% empty %}
+        <li class="dpeople-empty">{% if key == "in" %}No one has checked in yet today.{% elif key == "late" %}No late arrivals today.{% elif key == "out" %}Everyone is accounted for 🎉{% else %}No one is on leave today.{% endif %}</li>
+        {% endfor %}
+      </ul>
+      {% endfor %}
+      <p class="dpeople-none" hidden>No one matches that search.</p>
+      <a class="dmore" href="{% url 'attendance' %}">Open daily attendance {% icon "chevron-right" 14 %}</a>
+    </div>
+
+    <div class="card dlive">
+      <div class="card-head"><h2><span class="pulse"></span>Live activity</h2>{% if 'audit_trail' in features %}<a href="{% url 'scan_logs' %}">Audit trail →</a>{% endif %}</div>
+      <ul class="feed" id="feed"><li class="muted">Loading…</li></ul>
+    </div>
+  </section>
+
+  <!-- Patterns -->
+  <section class="dgrid">
+    <div class="card dspan-2">
+      <div class="card-head">
+        <div><h2>Arrival times</h2><p class="dsub">Check-ins over the last 30 days</p></div>
+        {% if arrivals %}<div class="dstats"><div><small>Average arrival</small><b>{{ arrivals.avg }}</b></div><div><small>On time</small><b>{{ arrivals.on_time_pct }}%</b></div></div>{% endif %}
+      </div>
+      {% if arrivals %}
+      <div class="darr">
+        {% for b in arrivals.buckets %}
+        <div class="darr-col{% if b.late %} late{% endif %}{% if b.start %} start{% endif %}" title="{{ b.n }} check-in{{ b.n|pluralize }}">
+          <span class="darr-n">{% if b.n %}{{ b.n }}{% endif %}</span>
+          <div class="darr-bar"><span style="height:{{ b.h }}%"></span></div>
+          <small>{{ b.label }}</small>
         </div>
         {% endfor %}
       </div>
+      <div class="legend darr-legend"><span><i style="background:var(--accent)"></i>On time</span><span><i style="background:var(--late)"></i>Late (after {{ org.work_start|time:"g:i" }} + {{ org.grace_minutes }} min)</span></div>
+      {% else %}<p class="empty">Arrival patterns appear here after the first check-ins.</p>{% endif %}
     </div>
 
     <div class="card">
-      <div class="card-head"><h2>Today's check-ins</h2><a href="{% url 'attendance' %}">View all →</a></div>
-      <div class="table-wrap"><table class="table">
-        <thead><tr><th>Member</th><th>Status</th><th>In</th><th>Out</th><th class="hide-sm">Hours</th></tr></thead>
-        <tbody>
-        {% for r in recs %}
-          <tr><td><div class="person">{% avatar r.user %}<div><b>{{ r.user.display_name }}</b><small class="muted">{{ r.user.username }} · {{ r.user.department|default:"—" }}</small></div></div></td>
-            <td><span class="badge b-{{ r.status }}">{{ r.get_status_display }}</span></td>
-            <td>{{ r.check_in|localtime_fmt }}</td><td>{{ r.check_out|localtime_fmt }}</td><td class="hide-sm">{{ r.worked_display }}</td></tr>
-        {% empty %}<tr><td colspan="5" class="empty">No one has checked in yet today.</td></tr>{% endfor %}
-        </tbody>
-      </table></div>
+      <div class="card-head"><h2>{% if branches %}By branch{% else %}By department{% endif %}</h2>
+        {% if branches and depts %}<div class="dseg" role="tablist"><button data-seg="b" aria-selected="true">Branch</button><button data-seg="d" aria-selected="false">Department</button></div>{% endif %}</div>
+      {% if branches %}
+      <div data-segpanel="b">{% for d in branches %}{% include "manage/_dash_meter.html" %}{% endfor %}</div>
+      {% endif %}
+      {% if depts %}
+      <div data-segpanel="d" {% if branches %}hidden{% endif %}>{% for d in depts %}{% include "manage/_dash_meter.html" %}{% endfor %}</div>
+      {% endif %}
+      {% if not branches and not depts %}<p class="empty">Put people into departments to compare them here. <a href="{% url 'members' %}">Members →</a></p>{% endif %}
     </div>
-  </div>
+  </section>
 
-  <div class="stack">
-    <div class="card">
-      <div class="card-head"><h2><span class="pulse"></span>Live scans</h2>{% if 'audit_trail' in features %}<a href="{% url 'scan_logs' %}">Audit trail →</a>{% endif %}</div>
-      <ul class="feed" id="feed"><li class="muted">Loading…</li></ul>
-    </div>
-    {% if branch_rows %}
-    <div class="card">
-      <div class="card-head"><h2>By branch</h2><a href="{% url 'branches' %}">Branches →</a></div>
-      {% for d in branch_rows %}
-      <div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;font-size:.88rem"><b>{{ d.name }}</b><span class="muted">{{ d.present }}/{{ d.total }}</span></div>
-        <div class="progress"><span style="width:{{ d.pct }}%"></span></div>
+  {% if punctuality %}
+  <section class="card">
+    <div class="card-head"><div><h2>Punctuality this month</h2><p class="dsub">Since {{ punctuality.month|date:"j F" }}</p></div>
+      {% if 'advanced_analytics' in features %}<a href="{% url 'analytics' %}">Analytics →</a>{% endif %}</div>
+    <div class="dpunct">
+      <div>
+        <h3>{% icon "star" 15 %} Most punctual</h3>
+        <ol class="drank">
+          {% for r in punctuality.best %}
+          <li><span class="drank-n">{{ forloop.counter }}</span><div class="person">{% avatar r.person %}<div><b>{{ r.person.display_name }}</b><small class="muted">{{ r.on_time }} of {{ r.days }} days on time</small></div></div><span class="drank-v good">{{ r.pct }}%</span></li>
+          {% endfor %}
+        </ol>
       </div>
-      {% endfor %}
-    </div>
-    {% endif %}
-    {% if depts %}
-    <div class="card">
-      <div class="card-head"><h2>By department</h2></div>
-      {% for d in depts %}
-      <div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;font-size:.88rem"><b>{{ d.name }}</b><span class="muted">{{ d.present }}/{{ d.total }}</span></div>
-        <div class="progress"><span style="width:{{ d.pct }}%"></span></div>
+      <div>
+        <h3>{% icon "clock" 15 %} Most often late</h3>
+        <ol class="drank">
+          {% for r in punctuality.late %}
+          <li><span class="drank-n">{{ forloop.counter }}</span><div class="person">{% avatar r.person %}<div><b>{{ r.person.display_name }}</b><small class="muted">{{ r.person.department|default:r.person.username }}</small></div></div><span class="drank-v bad">{{ r.late }} day{{ r.late|pluralize }}</span></li>
+          {% empty %}<li class="dpeople-empty">No late arrivals this month 🎉</li>{% endfor %}
+        </ol>
       </div>
-      {% endfor %}
     </div>
-    {% endif %}
-    <div class="card">
-      <div class="card-head"><h2>Not checked in</h2></div>
-      <ul class="feed">
-        {% for m in absent_members|slice:":8" %}
-          <li>{% avatar m %}<div><b style="font-size:.9rem">{{ m.display_name }}</b><br><small class="muted">{{ m.department|default:m.username }}</small></div>
-            <a class="time" href="{% url 'record_add' %}?user={{ m.pk }}&date={{ today|date:'Y-m-d' }}">Mark</a></li>
-        {% empty %}<li class="muted">Everyone is accounted for 🎉</li>{% endfor %}
-      </ul>
-      {% if absent_members|length > 8 %}<a href="{% url 'attendance' %}">+ {{ absent_members|length|add:"-8" }} more</a>{% endif %}
-    </div>
-  </div>
+  </section>
+  {% endif %}
 </div>
 {% endblock %}
 {% block scripts %}
 <script>
 (function () {
+  "use strict";
+  // Clock
+  const clock = document.getElementById("dh-clock");
+  function tick() { clock.textContent = new Date().toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}); }
+  setInterval(tick, 15000);
+
+  // Who's in: tabs + search
+  const tabs = document.querySelectorAll(".dtabs [data-tab]"), q = document.getElementById("who-q");
+  const none = document.querySelector(".dpeople-none");
+  let current = "in";
+  function filter() {
+    const term = q.value.trim().toLowerCase();
+    const panel = document.querySelector('.dpeople[data-panel="' + current + '"]');
+    let shown = 0;
+    panel.querySelectorAll("li[data-q]").forEach(li => {
+      const ok = !term || li.dataset.q.indexOf(term) !== -1;
+      li.hidden = !ok; if (ok) shown++;
+    });
+    none.hidden = !(term && shown === 0);
+  }
+  tabs.forEach(b => b.addEventListener("click", () => {
+    current = b.dataset.tab;
+    tabs.forEach(t => t.setAttribute("aria-selected", t === b ? "true" : "false"));
+    document.querySelectorAll(".dpeople").forEach(p => { p.hidden = p.dataset.panel !== current; });
+    filter();
+  }));
+  q.addEventListener("input", filter);
+
+  // Branch / department switch
+  document.querySelectorAll("[data-seg]").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll("[data-seg]").forEach(t => t.setAttribute("aria-selected", t === b ? "true" : "false"));
+    document.querySelectorAll("[data-segpanel]").forEach(p => { p.hidden = p.dataset.segpanel !== b.dataset.seg; });
+  }));
+
+  // Live activity
   const feed = document.getElementById("feed");
-  const labels = {check_in: ["In", "b-present"], check_out: ["Out", "b-leave"], duplicate: ["Repeat", "b-muted"], rejected: ["Rejected", "b-absent"]};
+  const labels = {check_in: ["Checked in", "b-present"], check_out: ["Checked out", "b-leave"], duplicate: ["Repeat scan", "b-muted"], rejected: ["Refused", "b-absent"]};
   let seen = null;
   function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
   async function load() {
@@ -102,8 +273,8 @@
       feed.innerHTML = d.logs.slice(0, 8).map((l, i) => {
         const [t, c] = labels[l.action] || [l.action, "b-muted"];
         return `<li class="${seen !== null && i === 0 && first !== seen ? "new" : ""}"><span class="avatar">${esc(l.initials)}</span>
-          <div><b style="font-size:.9rem">${esc(l.name)}</b><br><span class="badge ${c}">${t}</span></div><span class="time">${l.time}</span></li>`;
-      }).join("") || '<li class="muted">No scans yet today.</li>';
+          <div><b style="font-size:.9rem">${esc(l.name)}</b><br><span class="badge ${c}">${t}</span></div><span class="time">${esc(l.time)}</span></li>`;
+      }).join("") || '<li class="dfeed-empty">No activity yet today.<br><small>Check-ins appear here as they happen.</small></li>';
       seen = first;
     } catch (e) {}
   }

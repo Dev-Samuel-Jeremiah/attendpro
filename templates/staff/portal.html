@@ -1,20 +1,23 @@
 {% extends layout %}{% load ui static %}
 {% block title %}My attendance{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/portal.css' %}">{% endblock %}
 {% block content %}
-<div class="stack" style="max-width:640px">
+<div class="stack me">
   <div class="card today-card">
-    <div style="display:flex;align-items:center;gap:14px">
+    <div class="me-top">
       {% avatar request.user "lg" %}
-      <div>
-        <small>{{ today|date:"l, j F Y" }}</small>
-        <h2 style="margin:2px 0 0;font-size:1.3rem">Hello, {{ request.user.first_name|default:request.user.username }}</h2>
+      <div class="me-hello">
+        <small>{{ today|date:"l, j F" }} · <time id="me-clock">{{ now|date:"g:i A" }}</time></small>
+        <h2>Good {{ greeting }}, {{ request.user.first_name|default:request.user.username }}</h2>
         <small class="mono">{{ request.user.username }}{% if request.user.department %} · {{ request.user.department }}{% endif %}</small>
       </div>
     </div>
+    {% if not closed %}<span class="dh-chip me-chip is-{{ chip.kind }}"><i></i>{{ chip.text }}</span>{% endif %}
     <div class="times">
       <div><small>Check in</small><b>{{ rec.check_in|localtime_fmt }}</b></div>
       <div><small>Check out</small><b>{{ rec.check_out|localtime_fmt }}</b></div>
-      <div><small>Status</small><b>{% if rec %}{{ rec.get_status_display }}{% elif is_working_day %}Not in{% else %}Off day{% endif %}</b></div>
+      <div><small>{% if on_site_since %}On site{% elif rec.check_out %}Worked{% else %}Status{% endif %}</small>
+        <b {% if on_site_since %}id="me-onsite" data-since="{{ on_site_since|date:'c' }}"{% endif %}>{% if on_site_since %}…{% elif rec.check_out %}{{ rec.worked_display }}{% elif rec %}{{ rec.get_status_display }}{% elif is_working_day %}Not in{% else %}Off day{% endif %}</b></div>
     </div>
     {% if closed %}
       <div class="clock-note">{% icon "clock" 16 %} Check-in closed at {{ org.work_end|time:"g:i A" }}. You can check in again tomorrow.</div>
@@ -33,7 +36,7 @@
           {% if not rec or not rec.check_in %}Scan QR to check in{% else %}Scan QR to check out{% endif %}</a>
       {% endif %}
     {% endif %}
-    <p style="margin:12px 0 0;text-align:center;font-size:.82rem;color:#aeb8d6">Start time {{ org.work_start|time:"g:i A" }} · {{ org.grace_minutes }} min grace · closes {{ org.work_end|time:"g:i A" }}</p>
+    <p class="me-hours">Start {{ org.work_start|time:"g:i A" }} · {{ org.grace_minutes }} min grace · closes {{ org.work_end|time:"g:i A" }}</p>
   </div>
 
   <div class="card" id="clock-result" hidden>
@@ -45,36 +48,90 @@
   </div>
 
   <div class="card">
-    <div class="card-head"><h2>This month</h2><a href="{% url 'my_history' %}">Full history →</a></div>
-    <div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap">
-      <div class="ring" style="--p:{{ summary.rate }}"><div><div><b>{{ summary.rate|floatformat:0 }}%</b><small class="muted">attendance</small></div></div></div>
-      <div class="mini-stats">
-        <div><small class="muted">On time</small><div style="font-size:1.4rem;font-weight:700;color:var(--accent-ink)">{{ summary.present }}</div></div>
-        <div><small class="muted">Late</small><div style="font-size:1.4rem;font-weight:700;color:#b06d00">{{ summary.late }}</div></div>
-        <div><small class="muted">Absent</small><div style="font-size:1.4rem;font-weight:700;color:var(--absent)">{{ summary.absent }}</div></div>
-        <div><small class="muted">Hours</small><div style="font-size:1.4rem;font-weight:700">{{ summary.hours|floatformat:1 }}</div></div>
-      </div>
-    </div>
+    <div class="card-head"><h2>This week</h2><span class="muted me-small">{{ week.0.date|date:"j M" }} – {{ week.6.date|date:"j M" }}</span></div>
+    <ol class="me-week">
+      {% for d in week %}
+      <li class="s-{{ d.state }}{% if d.today %} today{% endif %}" title="{{ d.date|date:'l j M' }}{% if d.rec.check_in %}: in {{ d.rec.check_in|localtime_fmt }}{% endif %}">
+        <small>{{ d.date|date:"D" }}</small>
+        <span class="me-dot">{% if d.state == "present" %}{% icon "check" 14 %}{% elif d.state == "late" %}{% icon "clock" 14 %}{% elif d.state == "absent" %}{% icon "x" 14 %}{% elif d.state == "leave" %}{% icon "leave" 14 %}{% else %}{{ d.date|date:"j" }}{% endif %}</span>
+        <em>{% if d.state == "present" %}On time{% elif d.state == "late" %}Late{% elif d.state == "absent" %}Absent{% elif d.state == "leave" %}Leave{% elif d.state == "off" %}Off{% elif d.state == "pending" %}Today{% else %}&nbsp;{% endif %}</em>
+      </li>
+      {% endfor %}
+    </ol>
   </div>
 
   <div class="card">
-    <div class="card-head"><h2>Recent days</h2></div>
+    <div class="card-head"><h2>This month</h2><a href="{% url 'my_history' %}">Full history →</a></div>
+    <div class="me-month">
+      <div class="ring" style="--p:{{ summary.rate }}"><div><div><b>{{ summary.rate|floatformat:0 }}%</b><small class="muted">attendance</small></div></div></div>
+      <div class="me-stats">
+        <div class="t-green"><small>On time</small><b>{{ summary.present }}</b></div>
+        <div class="t-amber"><small>Late</small><b>{{ summary.late }}</b></div>
+        <div class="t-red"><small>Absent</small><b>{{ summary.absent }}</b></div>
+        <div><small>Hours</small><b>{{ summary.hours|floatformat:1 }}</b></div>
+      </div>
+    </div>
+    <div class="me-badges">
+      <div class="me-badge{% if streak >= 3 %} hot{% endif %}"><span>{% icon "star" 16 %}</span><div><b>{{ streak }} day{{ streak|pluralize }}</b><small>on-time streak</small></div></div>
+      <div class="me-badge"><span>{% icon "clock" 16 %}</span><div><b>{{ avg_arrival|default:"—" }}</b><small>average arrival</small></div></div>
+    </div>
+  </div>
+
+  {% if 'leave_management' in features %}
+  <div class="card">
+    <div class="card-head"><h2>My leave</h2><a href="{% url 'my_leave' %}">Request leave →</a></div>
+    {% if upcoming_leave %}
+    <ul class="me-leave">
+      {% for l in upcoming_leave %}
+      <li><span class="me-leave-ico">{% icon "leave" 16 %}</span>
+        <div><b>{{ l.leave_type.name }}</b><small class="muted">{{ l.start_date|date:"j M" }}{% if l.end_date != l.start_date %} – {{ l.end_date|date:"j M" }}{% endif %} · {{ l.days }} day{{ l.days|pluralize }}</small></div>
+        <span class="badge {% if l.status == 'approved' %}b-present{% else %}b-late{% endif %}">{{ l.get_status_display }}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted me-small" style="margin:0">No upcoming leave.</p>{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-head"><h2>Recent days</h2><a href="{% url 'my_history' %}">See all →</a></div>
     {% if recent %}
-    <ul class="feed">
+    <ul class="me-days">
       {% for r in recent %}
       <li>
-        <div style="width:44px;text-align:center"><b style="font-size:1.1rem;display:block;line-height:1">{{ r.date|date:"j" }}</b><small class="muted">{{ r.date|date:"D" }}</small></div>
-        <div><span class="badge b-{{ r.status }}">{{ r.get_status_display }}</span><div><small class="muted">{{ r.check_in|localtime_fmt }} → {{ r.check_out|localtime_fmt }}</small></div></div>
-        <span class="time">{{ r.worked_display }}</span>
+        <div class="me-date"><b>{{ r.date|date:"j" }}</b><small>{{ r.date|date:"D" }}</small></div>
+        <div class="me-day-main"><span class="badge b-{{ r.status }}">{{ r.get_status_display }}</span>
+          <small class="muted">{{ r.check_in|localtime_fmt }} → {{ r.check_out|localtime_fmt }}</small></div>
+        <span class="me-worked">{{ r.worked_display }}</span>
       </li>
       {% endfor %}
     </ul>
     {% else %}<div class="empty">No attendance yet.</div>{% endif %}
   </div>
-  <p style="text-align:center">{% if 'payroll' in features %}<a href="{% url 'my_payslips' %}" class="muted">{% icon "file" 14 %} My payslips</a> · {% endif %}<a href="{% url 'change_password' %}" class="muted">{% icon "key" 14 %} Change password</a></p>
+
+  <nav class="me-links" aria-label="More">
+    <a href="{% url 'my_history' %}"><span>{% icon "calendar" 18 %}</span>History</a>
+    {% if 'leave_management' in features %}<a href="{% url 'my_leave' %}"><span>{% icon "leave" 18 %}</span>Leave</a>{% endif %}
+    {% if 'payroll' in features %}<a href="{% url 'my_payslips' %}"><span>{% icon "file" 18 %}</span>Payslips</a>{% endif %}
+    {% if 'notifications' in features %}<a href="{% url 'notifications' %}"><span>{% icon "bell" 18 %}</span>Alerts</a>{% endif %}
+    <a href="{% url 'change_password' %}"><span>{% icon "key" 18 %}</span>Password</a>
+  </nav>
 </div>
 {% endblock %}
 {% block scripts %}{% csrf_token %}
+<script>
+(function () {
+  // Live clock and "time on site" counter
+  const clock = document.getElementById("me-clock"), onsite = document.getElementById("me-onsite");
+  function tick() {
+    if (clock) clock.textContent = new Date().toLocaleTimeString([], {hour: "numeric", minute: "2-digit"});
+    if (onsite) {
+      const mins = Math.max(0, Math.floor((Date.now() - new Date(onsite.dataset.since)) / 60000));
+      onsite.textContent = Math.floor(mins / 60) + "h " + String(mins % 60).padStart(2, "0") + "m";
+    }
+  }
+  tick(); setInterval(tick, 20000);
+})();
+</script>
 <script src="{% static 'js/locate.js' %}"></script>
 <script src="{% static 'js/selfie.js' %}"></script>
 <script>

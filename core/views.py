@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.core.files.base import ContentFile
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Q
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -353,7 +353,8 @@ def portal(request):
     report = services.build_report(org, month_start, today, members=[u])
     summary = report["rows"][0]
     recent = AttendanceRecord.objects.filter(user=u).order_by("-date")[:7]
-    return render(request, "staff/portal.html", {
+    from .dashboard import staff_home
+    return render(request, "staff/portal.html", {**staff_home(u, rec),
         "rec": rec, "summary": summary, "recent": recent, "today": today,
         "is_working_day": org.is_working_day(today),
         "closed": (not rec or not rec.check_in) and services.check_in_closed(org, timezone.localtime()),
@@ -400,53 +401,8 @@ def change_password(request):
 # =========================================================================== #
 @org_admin_required
 def dashboard(request):
-    org = request.user.organisation
-    today = timezone.localdate()
-    members = org.members.filter(is_active=True)
-    total = members.count()
-    recs = AttendanceRecord.objects.filter(organisation=org, date=today).select_related("user", "user__department")
-    present = recs.filter(status__in=["present", "late"]).count()
-    late = recs.filter(status="late").count()
-    leave = recs.filter(status="leave").count()
-    on_site = recs.filter(check_in__isnull=False, check_out__isnull=True).count()
-    absent_members = members.exclude(attendance__date=today).select_related("department")[:50]
-
-    # 14-day trend
-    trend = []
-    for i in range(13, -1, -1):
-        d = today - timedelta(days=i)
-        agg = AttendanceRecord.objects.filter(organisation=org, date=d).aggregate(
-            on_time=Count("id", filter=Q(status="present")), late=Count("id", filter=Q(status="late")))
-        trend.append({"date": d, "on_time": agg["on_time"], "late": agg["late"],
-                      "working": org.is_working_day(d)})
-    peak = max([t["on_time"] + t["late"] for t in trend] + [total, 1])
-    for t in trend:
-        t["on_time_pct"] = round(t["on_time"] * 100 / peak, 1)
-        t["late_pct"] = round(t["late"] * 100 / peak, 1)
-
-    # Department breakdown today
-    depts = []
-    for dpt in org.departments.annotate(n=Count("members", filter=Q(members__is_active=True))):
-        p = recs.filter(user__department=dpt, status__in=["present", "late"]).count()
-        depts.append({"name": dpt.name, "total": dpt.n, "present": p,
-                      "pct": round(p * 100 / dpt.n) if dpt.n else 0})
-
-    branch_rows = []
-    if org.has_feature(catalog.MULTI_BRANCH) and org.branches.exists():
-        groups = [(b.name, members.filter(branch=b), recs.filter(user__branch=b)) for b in org.branches.filter(is_active=True)]
-        groups.insert(0, ("Main location", members.filter(branch__isnull=True), recs.filter(user__branch__isnull=True)))
-        for name, people, their_recs in groups:
-            n, p = people.count(), their_recs.filter(status__in=["present", "late"]).count()
-            if n:
-                branch_rows.append({"name": name, "total": n, "present": p, "pct": round(p * 100 / n)})
-
-    return render(request, "manage/dashboard.html", {
-        "today": today, "total": total, "present": present, "late": late, "leave": leave,
-        "absent": max(total - present - leave, 0), "on_site": on_site,
-        "rate": round(present * 100 / total) if total else 0,
-        "recs": recs.order_by("-check_in")[:12], "absent_members": absent_members,
-        "trend": trend, "depts": depts, "branch_rows": branch_rows, "is_working_day": org.is_working_day(today),
-    })
+    from .dashboard import admin_dashboard
+    return render(request, "manage/dashboard.html", admin_dashboard(request.user.organisation, request.user))
 
 
 @org_admin_required

@@ -1,19 +1,85 @@
-{% extends "platform/_shell.html" %}{% load ui humanize %}
+{% extends "platform/_shell.html" %}{% load ui humanize static %}
 {% block title %}Organisations{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">{% endblock %}
 {% block content %}
-<div class="topbar"><div><h1>Organisations</h1><p>Everyone using AttendPro, their plan and usage.</p></div></div>
-<div class="grid grid-3" style="margin-bottom:22px">
-  <div class="card stat t-blue"><div class="label">Organisations</div><div class="value">{{ org_count }}</div></div>
-  <div class="card stat t-green"><div class="label">On a paid plan now</div><div class="value">{{ paying }}</div></div>
-  <div class="card stat t-amber"><div class="label">Revenue (all time)</div><div class="value">₦{{ revenue|intcomma }}</div></div>
-</div>
+<div class="dash">
+<div class="topbar" style="margin-bottom:0"><div><h1>Organisations</h1><p>Everyone using AttendPro, their plan and usage.</p></div></div>
+
+<section class="dkpis">
+  <div class="dkpi t-blue">
+    <div class="dkpi-top"><span class="dkpi-ico">{% icon "users" 18 %}</span><span class="dkpi-label">Organisations</span></div>
+    <div class="dkpi-value">{{ org_count }}</div>
+    <div class="dkpi-foot">{% if new_this_month %}<span class="ddelta good">▲ {{ new_this_month }} new</span> this month{% else %}none new this month{% endif %}</div>
+  </div>
+  <div class="dkpi t-green">
+    <div class="dkpi-top"><span class="dkpi-ico">{% icon "star" 18 %}</span><span class="dkpi-label">On a paid plan</span></div>
+    <div class="dkpi-value">{{ paying }}</div>
+    <div class="dkpi-meter"><span style="width:{{ paying_pct }}%"></span></div>
+    <div class="dkpi-foot"><b>{{ paying_pct }}%</b> of organisations</div>
+  </div>
+  <div class="dkpi t-amber">
+    <div class="dkpi-top"><span class="dkpi-ico">{% icon "card" 18 %}</span><span class="dkpi-label">Revenue this month</span></div>
+    <div class="dkpi-value">₦{{ revenue_month|intcomma }}</div>
+    <div class="dkpi-foot">{% if revenue_change %}<span class="ddelta {% if revenue_change > 0 %}good{% else %}bad{% endif %}">{% if revenue_change > 0 %}▲{% else %}▼{% endif %} ₦{{ revenue_change_abs|intcomma }}</span> vs last month{% else %}same as last month{% endif %}</div>
+  </div>
+  <div class="dkpi t-red">
+    <div class="dkpi-top"><span class="dkpi-ico">{% icon "activity" 18 %}</span><span class="dkpi-label">Active today</span></div>
+    <div class="dkpi-value">{{ active_today }}</div>
+    <div class="dkpi-foot">organisations recorded attendance · ₦{{ revenue|intcomma }} all time</div>
+  </div>
+</section>
+
+<section class="dgrid">
+  <div class="card dspan-2">
+    <div class="card-head"><div><h2>Revenue, last 6 months</h2><p class="dsub">Successful Paystack payments · <b>₦{{ revenue|intcomma }}</b> all time</p></div>
+      <a href="{% url 'platform_payments' %}">All payments →</a></div>
+    <div class="darr prev">
+      {% for m in revenue_months %}
+      <div class="darr-col{% if m.current %} start{% endif %}" title="₦{{ m.amount|intcomma }}">
+        <span class="darr-n">{% if m.amount %}₦{{ m.amount|intcomma }}{% endif %}</span>
+        <div class="darr-bar"><span style="height:{{ m.h }}%"></span></div>
+        <small>{{ m.label }}</small>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Plan mix</h2><a href="{% url 'platform_plans' %}">Plans →</a></div>
+    {% for d in plan_mix %}
+    <div class="dmeter"><div class="dmeter-top"><b>{{ d.name }}</b><span><b>{{ d.n }}</b> · {{ d.pct }}%</span></div>
+      <div class="dmeter-bar"><span style="width:{{ d.pct }}%"></span></div></div>
+    {% empty %}<p class="empty">No organisations yet.</p>{% endfor %}
+  </div>
+</section>
+
+<section class="dgrid">
+  <div class="card">
+    <div class="card-head"><h2>Renewals due in 7 days</h2></div>
+    <ul class="feed">
+      {% for o in expiring %}
+      <li><span class="avatar">{{ o.name|slice:":2"|upper }}</span><div><b style="font-size:.9rem">{{ o.name }}</b><br><small class="muted">{{ o.plan.name }} · ends {{ o.plan_expires_at|date:"j M" }}</small></div>
+        <a class="time" href="{% url 'platform_org' o.pk %}">Open</a></li>
+      {% empty %}<li class="dfeed-empty">No paid plans end this week.</li>{% endfor %}
+    </ul>
+  </div>
+  <div class="card dspan-2">
+    <div class="card-head"><h2>Recent payments</h2><a href="{% url 'platform_payments' %}">All payments →</a></div>
+    <ul class="feed">
+      {% for p in recent_payments %}
+      <li><span class="avatar">{% icon "card" 16 %}</span><div><b style="font-size:.9rem">{{ p.organisation.name }}</b><br><small class="muted">{{ p.plan.name }} · {{ p.get_cycle_display }}{% if p.channel %} · {{ p.channel }}{% endif %}</small></div>
+        <span class="time"><b style="color:var(--text)">₦{{ p.amount|intcomma }}</b><br>{{ p.paid_at|default:p.created_at|date:"j M Y" }}</span></li>
+      {% empty %}<li class="dfeed-empty">No payments yet.</li>{% endfor %}
+    </ul>
+  </div>
+</section>
+
 <div class="card">
   <form class="filters" method="get" style="margin-bottom:16px">
     <input class="input" name="q" value="{{ q }}" placeholder="Search name, code, email…" style="min-width:240px">
     <button class="btn btn-sm">Search</button>
   </form>
   <div class="table-wrap"><table class="table">
-    <thead><tr><th>Organisation</th><th>Plan</th><th>Staff</th><th class="hide-sm">Joined</th><th></th></tr></thead>
+    <thead><tr><th>Organisation</th><th>Plan</th><th>Staff</th><th class="hide-sm">Last activity</th><th class="hide-sm">Joined</th><th></th></tr></thead>
     <tbody>
     {% for o in orgs %}{% with cp=o.current_plan %}
       <tr>
@@ -21,11 +87,13 @@
         <td><span class="badge {% if cp and not cp.is_free %}b-present{% else %}b-muted{% endif %}">{{ cp.name|default:"—" }}</span>
           <br><small class="muted">{% if o.plan_is_expired %}{{ o.plan.name }} expired {{ o.plan_expires_at|date:"j M Y" }}{% elif o.plan_expires_at %}until {{ o.plan_expires_at|date:"j M Y" }}{% elif o.plan and not o.plan.is_free %}no expiry{% endif %}</small></td>
         <td>{{ o.active }}{% if cp.staff_limit %} / {{ cp.staff_limit }}{% endif %}</td>
+        <td class="hide-sm">{% if o.active_today %}<span class="badge b-present">Today</span>{% elif o.last_seen %}{{ o.last_seen|date:"j M Y" }}{% else %}<span class="muted">Never</span>{% endif %}</td>
         <td class="hide-sm">{{ o.created_at|date:"j M Y" }}</td>
         <td style="text-align:right"><a class="btn btn-ghost btn-sm" href="{% url 'platform_org' o.pk %}">{% icon "edit" %} Plan</a></td>
       </tr>
-    {% endwith %}{% empty %}<tr><td colspan="5" class="empty">No organisations yet.</td></tr>{% endfor %}
+    {% endwith %}{% empty %}<tr><td colspan="6" class="empty">No organisations yet.</td></tr>{% endfor %}
     </tbody>
   </table></div>
+</div>
 </div>
 {% endblock %}

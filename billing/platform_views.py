@@ -4,6 +4,7 @@ from functools import wraps
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
+from django.db.models import Max as models_max
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -35,11 +36,68 @@ def overview(request):
         o._current_plan = o.plan if o.plan_id and not o.plan_is_expired else default
     q = request.GET.get("q", "").strip().lower()
     orgs = [o for o in all_orgs if not q or q in o.name.lower() or q in o.code.lower() or q in o.email.lower()]
-    return render(request, "platform/overview.html", {
-        "orgs": orgs, "q": q, "org_count": len(all_orgs),
-        "paying": sum(1 for o in all_orgs if o._current_plan and not o._current_plan.is_free),
-        "revenue": sum(p.amount_kobo for p in Payment.objects.filter(status=Payment.STATUS_SUCCESS)) // 100,
-    })
+    return render(request, "platform/overview.html", {"orgs": orgs, "q": q, **_platform_numbers(all_orgs)})
+
+
+def _platform_numbers(all_orgs):
+    """Headline numbers, revenue by month, plan mix, renewals due and recent payments."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from core.models import AttendanceRecord
+
+    now = timezone.now()
+    today = timezone.localdate()
+    month_start = today.replace(day=1)
+    paid = Payment.objects.filter(status=Payment.STATUS_SUCCESS)
+
+    # Revenue for the last 6 months (by payment date)
+    months = []
+    y, m = month_start.year, month_start.month
+    for _ in range(6):
+        months.insert(0, (y, m))
+        y, m = (y - 1, 12) if m == 1 else (y, m - 1)
+    by_month = {}
+    for amt, when in paid.filter(paid_at__isnull=False).values_list("amount_kobo", "paid_at"):
+        lt = timezone.localtime(when)
+        by_month[(lt.year, lt.month)] = by_month.get((lt.year, lt.month), 0) + amt // 100
+    from datetime import date
+    peak = max([by_month.get(k, 0) for k in months] + [1])
+    revenue_months = [{"label": date(yy, mm, 1).strftime("%b"), "amount": by_month.get((yy, mm), 0),
+                       "h": round(by_month.get((yy, mm), 0) * 100 / peak, 1), "current": (yy, mm) == months[-1]}
+                      for yy, mm in months]
+    this_month, last_month = revenue_months[-1]["amount"], revenue_months[-2]["amount"]
+
+    # Plan mix
+    mix = {}
+    for o in all_orgs:
+        name = o._current_plan.name if o._current_plan else "None"
+        mix[name] = mix.get(name, 0) + 1
+    total = len(all_orgs) or 1
+    plan_mix = [{"name": k, "n": v, "pct": round(v * 100 / total)} for k, v in sorted(mix.items(), key=lambda kv: -kv[1])]
+
+    active_today = set(AttendanceRecord.objects.filter(date=today).values_list("organisation", flat=True).distinct())
+    last_seen = dict(AttendanceRecord.objects.values("organisation").annotate(d=models_max("date"))
+                     .values_list("organisation", "d"))
+    for o in all_orgs:
+        o.last_seen = last_seen.get(o.pk)
+        o.active_today = o.pk in active_today
+
+    soon = now + timedelta(days=7)
+    expiring = sorted((o for o in all_orgs if o.plan_id and o.plan_expires_at and now < o.plan_expires_at <= soon),
+                      key=lambda o: o.plan_expires_at)
+    paying = sum(1 for o in all_orgs if o._current_plan and not o._current_plan.is_free)
+    return {
+        "org_count": len(all_orgs), "paying": paying, "paying_pct": round(paying * 100 / total),
+        "new_this_month": sum(1 for o in all_orgs if timezone.localtime(o.created_at).date() >= month_start),
+        "active_today": len(active_today),
+        "revenue": sum(paid.values_list("amount_kobo", flat=True)) // 100,
+        "revenue_month": this_month, "revenue_last_month": last_month,
+        "revenue_change": this_month - last_month, "revenue_change_abs": abs(this_month - last_month),
+        "revenue_months": revenue_months, "plan_mix": plan_mix, "expiring": expiring[:6],
+        "recent_payments": paid.select_related("organisation", "plan").order_by("-paid_at", "-created_at")[:6],
+    }
 
 
 @superuser_required
