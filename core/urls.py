@@ -7,6 +7,7 @@ urlpatterns = [
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("register/", views.register_org, name="register"),
+    path("register/check-code/", views.register_check_code, name="register_check_code"),
 
     # Scanning
     path("scan/", views.scan, name="scan"),

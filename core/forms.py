@@ -21,6 +21,7 @@ class LoginForm(StyledMixin, forms.Form):
         "placeholder": "e.g. TMY-0001", "autocomplete": "username", "autocapitalize": "characters"}))
     password = forms.CharField(widget=forms.PasswordInput(attrs={
         "placeholder": "Password", "autocomplete": "current-password"}))
+    remember = forms.BooleanField(label="Keep me signed in on this device", required=False, initial=True)
 
     def __init__(self, request=None, *a, **kw):
         self.request = request
@@ -42,6 +43,27 @@ class LoginForm(StyledMixin, forms.Form):
         return cd
 
 
+_CODE_SKIP = {"and", "of", "the", "for", "&", "ltd", "limited", "plc", "inc", "nig", "nigeria"}
+
+
+def suggest_code(name: str) -> str:
+    """A short ID prefix from an organisation name: "Techmiary Technology Concepts" → "TTC".
+    Adds a number if that's taken."""
+    words = [w for w in "".join(ch if ch.isalnum() else " " for ch in (name or "")).split() if w.lower() not in _CODE_SKIP]
+    if not words:
+        return ""
+    base = "".join(w[0] for w in words).upper()[:6] if len(words) > 1 else words[0][:4].upper()
+    if len(base) < 2:
+        base = (words[0][:3]).upper()
+    if len(base) < 2:
+        return ""
+    code, n = base, 2
+    while Organisation.objects.filter(code=code).exists():
+        code = f"{base[:5]}{n}"[:6]
+        n += 1
+    return code
+
+
 class OrgRegisterForm(StyledMixin, forms.Form):
     plan = forms.ModelChoiceField(queryset=Plan.objects.none(), widget=forms.RadioSelect, empty_label=None,
                                   error_messages={"required": "Choose a plan to continue.",
@@ -59,6 +81,12 @@ class OrgRegisterForm(StyledMixin, forms.Form):
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         self.fields["plan"].queryset = Plan.objects.filter(is_public=True).order_by("sort_order", "price")
+        hints = {"org_name": ("organization", "e.g. Techmiary Technology Concepts"), "code": ("off", "e.g. TTC"),
+                 "first_name": ("given-name", ""), "last_name": ("family-name", ""), "email": ("email", "you@example.com"),
+                 "password1": ("new-password", "At least 6 characters"), "password2": ("new-password", "Type it again")}
+        for name, (auto, placeholder) in hints.items():
+            self.fields[name].widget.attrs.update({"autocomplete": auto, "placeholder": placeholder})
+        self.fields["code"].widget.attrs.update({"maxlength": 6, "autocapitalize": "characters", "spellcheck": "false"})
         self._style()
 
     def clean_code(self):
@@ -66,7 +94,8 @@ class OrgRegisterForm(StyledMixin, forms.Form):
         if not code.isalnum():
             raise forms.ValidationError("Use letters and numbers only.")
         if Organisation.objects.filter(code=code).exists():
-            raise forms.ValidationError("This code is already in use.")
+            alt = suggest_code(code)
+            raise forms.ValidationError(f"{code} is already taken." + (f" Try {alt}." if alt else ""))
         return code
 
     def clean(self):

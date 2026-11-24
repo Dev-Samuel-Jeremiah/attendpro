@@ -26,7 +26,7 @@ from billing.services import (PaystackError, feature_required, paystack_enabled,
 from . import services
 from .decorators import member_required, org_admin_required
 from .forms import (ChangePasswordForm, DepartmentForm, ImportForm, LoginForm, MemberForm,
-                    OrgRegisterForm, OrgSettingsForm, RecordCommentForm, RecordForm)
+                    OrgRegisterForm, OrgSettingsForm, RecordCommentForm, RecordForm, suggest_code)
 from .models import AttendanceRecord, Branch, Department, Organisation, SavedReport, ScanLog, User
 
 
@@ -66,6 +66,8 @@ def login_view(request):
     form = LoginForm(request, data=request.POST or None)
     if request.method == "POST" and form.is_valid():
         login(request, form.user)
+        if not form.cleaned_data.get("remember"):
+            request.session.set_expiry(0)  # ends when the browser closes
         if nxt and url_has_allowed_host_and_scheme(nxt, {request.get_host()}):
             return redirect(nxt)
         return redirect("home")
@@ -108,7 +110,25 @@ def register_org(request):
             messages.warning(request, f"Your account is ready, but the payment couldn't start ({e}). "
                                       f"Use the {plan.name} button below to try again.")
             return redirect("billing")
-    return render(request, "auth/register.html", {"form": form, "plans": form.fields["plan"].queryset})
+    steps = [("plan",), ("org_name", "org_type", "code"), ("first_name", "last_name", "email", "password1", "password2")]
+    error_step = next((i + 1 for i, names in enumerate(steps) if any(n in form.errors for n in names)),
+                      4 if form.non_field_errors() else 1)
+    return render(request, "auth/register.html", {"form": form, "plans": form.fields["plan"].queryset,
+                                                  "error_step": error_step if form.errors else 1})
+
+
+def register_check_code(request):
+    """Live check for the register wizard: is this ID prefix free, and what would we suggest?"""
+    code = "".join(ch for ch in request.GET.get("code", "").upper() if ch.isalnum())[:6]
+    name = request.GET.get("name", "")[:160]
+    suggestion = suggest_code(name) if name else ""
+    if not code:
+        return JsonResponse({"code": "", "ok": False, "suggestion": suggestion, "message": ""})
+    if len(code) < 2:
+        return JsonResponse({"code": code, "ok": False, "suggestion": suggestion, "message": "At least 2 characters."})
+    taken = Organisation.objects.filter(code=code).exists()
+    return JsonResponse({"code": code, "ok": not taken, "suggestion": suggest_code(code) if taken else suggestion,
+                         "message": f"{code} is already taken." if taken else f"{code} is available."})
 
 
 def home(request):

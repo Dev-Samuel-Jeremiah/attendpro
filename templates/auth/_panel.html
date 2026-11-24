@@ -1,0 +1,35 @@
+{% load ui %}
+<aside class="ap" aria-label="AttendPro">
+  <div class="ap-aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="ap-grid" aria-hidden="true"></div>
+  <a href="/" class="ap-brand"><span class="ap-mark"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>AttendPro</a>
+
+  <div class="ap-body">
+    <h2 class="ap-title">{{ panel_title|safe }}</h2>
+    <p class="ap-sub">{{ panel_sub }}</p>
+
+    <div class="ap-clock" aria-hidden="true">
+      <span class="ap-clock-time" id="ap-time">--:--</span>
+      <span class="ap-clock-date" id="ap-date"></span>
+    </div>
+
+    {% if show_plan %}
+    <div class="ap-plan" id="ap-plan" hidden>
+      <small>Your plan</small>
+      <div class="ap-plan-row"><b id="ap-plan-name">—</b><span id="ap-plan-price">—</span></div>
+      <span id="ap-plan-staff" class="ap-plan-staff"></span>
+      <p id="ap-plan-next"></p>
+    </div>
+    {% endif %}
+
+    <ul class="ap-points" id="ap-points">
+      <li class="on">{% icon "qr" 18 %}<span><b>A QR code that keeps changing</b> A photo of it stops working within seconds.</span></li>
+      <li>{% icon "pin" 18 %}<span><b>GPS clock-in</b> The button only works on your premises.</span></li>
+      <li>{% icon "bell" 18 %}<span><b>Alerts the same morning</b> Late arrivals and absences, as they happen.</span></li>
+      <li>{% icon "file" 18 %}<span><b>Reports in one click</b> Excel, CSV and PDF for any period.</span></li>
+    </ul>
+  </div>
+
+  <div class="ap-toast" aria-hidden="true"><span class="ap-toast-av">AY</span><div><b>Amina Yusuf checked in</b><small>7:52 AM · on time</small></div><span class="ap-toast-ok">{% icon "check" 14 %}</span></div>
+  <footer class="ap-foot"><span>© {% now "Y" %} Techmiary Technology Concepts</span><span><a href="/">Home</a> · <a href="{% url 'pricing' %}">Pricing</a></span></footer>
+</aside>

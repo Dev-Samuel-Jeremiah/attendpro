@@ -1,46 +1,129 @@
-{% extends "base.html" %}{% load humanize %}
-{% block title %}Create organisation{% endblock %}
+{% extends "base.html" %}{% load ui static humanize %}
+{% block title %}Create your organisation{% endblock %}
+{% block head %}<script>document.documentElement.classList.add("js")</script><link rel="stylesheet" href="{% static 'css/auth.css' %}">{% endblock %}
+{% block body_class %}au{% endblock %}
 {% block body %}
-<div class="auth">
-  {% include "auth/_art.html" %}
-  <section class="auth-form">
-    <div class="inner" style="max-width:460px">
-      <h2>Create your organisation</h2>
-      <p class="muted" style="margin-top:0">You'll be the administrator. Next you'll register your staff or students.</p>
-      <form method="post" novalidate>
+<div class="au-shell">
+  {% include "auth/_panel.html" with panel_title="Set up attendance <span>in minutes.</span>" panel_sub="Create your organisation, then add your team. Your plan can change at any time." show_plan=True %}
+
+  <main class="af af-wide">
+    <div class="af-inner">
+      <h1>Create your organisation</h1>
+      <p class="af-lead">You'll be the administrator. Already registered? <a href="{% url 'login' %}">Sign in</a></p>
+      {% include "partials/messages.html" %}
+
+      <ol class="af-steps" id="af-steps" aria-label="Progress">
+        <li data-go="1"><span>1</span><em>Plan</em></li>
+        <li data-go="2"><span>2</span><em>Organisation</em></li>
+        <li data-go="3"><span>3</span><em>Your account</em></li>
+        <li data-go="4"><span>4</span><em>Review</em></li>
+      </ol>
+      <div class="af-progress" aria-hidden="true"><i id="af-progress"></i></div>
+
+      <form method="post" novalidate id="af-reg" class="af-form" data-error-step="{{ error_step }}"
+            data-check-url="{% url 'register_check_code' %}">
         {% csrf_token %}
-        <fieldset class="plan-pick{% if form.plan.errors %} has-error{% endif %}">
-          <legend>1. Choose your plan</legend>
-          {% for p in plans %}
-          <label class="plan-opt">
-            <input type="radio" name="plan" value="{{ p.pk }}" required {% if form.plan.value|stringformat:"s" == p.pk|stringformat:"s" %}checked{% endif %}>
-            <span class="plan-opt-body">
-              <span class="plan-opt-top"><b>{{ p.name }}</b>{% if p.highlight %}<span class="soon">Popular</span>{% endif %}</span>
-              <span class="plan-opt-price">{% if p.is_free %}Free{% else %}₦{{ p.price|intcomma }}<small>/{{ p.period_label }}</small>{% endif %}</span>
-              <small>{% if p.staff_limit %}Up to {{ p.staff_limit }} staff{% else %}Unlimited staff{% endif %}</small>
-            </span>
-          </label>
-          {% endfor %}
-          {% for e in form.plan.errors %}<div class="err">{{ e }}</div>{% endfor %}
-          <div class="help">Paid plans: you'll pay securely with Paystack straight after this step.
-            <a href="{% url 'pricing' %}" target="_blank">Compare what each plan includes</a></div>
+        {% for e in form.non_field_errors %}<div class="af-note af-note-error af-shake" role="alert">{% icon "alert" 18 %}<span>{{ e }}</span></div>{% endfor %}
+
+        <!-- 1. Plan -->
+        <fieldset class="af-step" data-step="1">
+          <legend>Choose your plan</legend>
+          <div class="af-plans">
+            {% for p in plans %}
+            <label class="af-plan{% if p.highlight %} hot{% endif %}">
+              <input type="radio" name="plan" value="{{ p.pk }}" required {% if form.plan.value|stringformat:"s" == p.pk|stringformat:"s" %}checked{% endif %}
+                     data-name="{{ p.name }}" data-price="{% if p.is_free %}Free{% else %}₦{{ p.price|intcomma }} / {{ p.period_label }}{% endif %}"
+                     data-staff="{% if p.staff_limit %}Up to {{ p.staff_limit }} staff{% else %}Unlimited staff{% endif %}" data-free="{{ p.is_free|yesno:'1,0' }}">
+              <span class="af-plan-card">
+                {% if p.highlight %}<span class="af-plan-flag">Popular</span>{% endif %}
+                <span class="af-plan-check">{% icon "check" 14 %}</span>
+                <b>{{ p.name }}</b>
+                <span class="af-plan-price">{% if p.is_free %}Free{% else %}₦{{ p.price|intcomma }}<small>/{{ p.period_label }}</small>{% endif %}</span>
+                <small class="af-plan-staff">{% icon "users" 14 %} {% if p.staff_limit %}Up to {{ p.staff_limit }} staff{% else %}Unlimited staff{% endif %}</small>
+                <small class="af-plan-tag">{{ p.tagline }}</small>
+              </span>
+            </label>
+            {% endfor %}
+          </div>
+          {% for e in form.plan.errors %}<div class="af-err">{{ e }}</div>{% endfor %}
+          <p class="af-hint">{% icon "card" 14 %} Paid plans: you'll pay securely with Paystack straight after creating your account. <a href="{% url 'pricing' %}" target="_blank">Compare features</a></p>
         </fieldset>
-        <div class="plan-step">2. Your organisation and admin account</div>
-        <div class="form-grid">
-          {% include "partials/field.html" with f=form.org_name cls="full" %}
-          {% include "partials/field.html" with f=form.org_type %}
-          {% include "partials/field.html" with f=form.code %}
-          {% include "partials/field.html" with f=form.first_name %}
-          {% include "partials/field.html" with f=form.last_name %}
-          {% include "partials/field.html" with f=form.email cls="full" %}
-          {% include "partials/field.html" with f=form.password1 %}
-          {% include "partials/field.html" with f=form.password2 %}
+
+        <!-- 2. Organisation -->
+        <fieldset class="af-step" data-step="2">
+          <legend>About your organisation</legend>
+          <div class="af-field">
+            <label for="{{ form.org_name.id_for_label }}">Organisation name</label>
+            <div class="af-control">{% icon "home" 18 %}{{ form.org_name }}</div>
+            {% for e in form.org_name.errors %}<div class="af-err">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="af-row">
+            <div class="af-field">
+              <label for="{{ form.org_type.id_for_label }}">Type</label>
+              <div class="af-control">{% icon "grid" 18 %}{{ form.org_type }}</div>
+            </div>
+            <div class="af-field">
+              <label for="{{ form.code.id_for_label }}">Short code</label>
+              <div class="af-control af-code">{% icon "key" 18 %}{{ form.code }}<span class="af-code-state" id="af-code-state" aria-hidden="true"></span></div>
+              <div class="af-code-msg" id="af-code-msg" aria-live="polite">{% for e in form.code.errors %}<span class="bad">{{ e }}</span>{% empty %}2–6 letters or numbers{% endfor %}</div>
+            </div>
+          </div>
+          <div class="af-ids" id="af-ids" hidden>
+            <small>Everyone's sign-in ID will look like this</small>
+            <div><span class="af-id you" id="af-id1">TTC-0001</span><span class="af-id" id="af-id2">TTC-0002</span><span class="af-id" id="af-id3">TTC-0003</span><span class="af-id more">…</span></div>
+            <small class="af-ids-you">The first one, <b id="af-id-you">TTC-0001</b>, is yours.</small>
+          </div>
+        </fieldset>
+
+        <!-- 3. Account -->
+        <fieldset class="af-step" data-step="3">
+          <legend>Your administrator account</legend>
+          <div class="af-row">
+            <div class="af-field"><label for="{{ form.first_name.id_for_label }}">First name</label>
+              <div class="af-control">{% icon "users" 18 %}{{ form.first_name }}</div>{% for e in form.first_name.errors %}<div class="af-err">{{ e }}</div>{% endfor %}</div>
+            <div class="af-field"><label for="{{ form.last_name.id_for_label }}">Last name</label>
+              <div class="af-control">{% icon "users" 18 %}{{ form.last_name }}</div>{% for e in form.last_name.errors %}<div class="af-err">{{ e }}</div>{% endfor %}</div>
+          </div>
+          <div class="af-field"><label for="{{ form.email.id_for_label }}">Email</label>
+            <div class="af-control">{% icon "bell" 18 %}{{ form.email }}</div>{% for e in form.email.errors %}<div class="af-err">{{ e }}</div>{% endfor %}
+            <div class="af-hint-sm">For receipts and important notices. You'll sign in with your ID.</div></div>
+          <div class="af-row">
+            <div class="af-field"><label for="{{ form.password1.id_for_label }}">Password</label>
+              <div class="af-control">{% icon "key" 18 %}{{ form.password1 }}
+                <button type="button" class="af-eye" data-eye="{{ form.password1.id_for_label }}" aria-label="Show password" aria-pressed="false">
+                  <svg class="eye-on" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="eye-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.4 5.2A9.8 9.8 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.1 6.1C3.6 7.8 2 12 2 12s3.5 7 10 7a9.6 9.6 0 0 0 4.4-1"/></svg>
+                </button></div>
+              <div class="af-meter" aria-hidden="true"><i id="af-meter"></i></div>
+              <div class="af-meter-text" id="af-meter-text" aria-live="polite">At least 6 characters</div>
+              {% for e in form.password1.errors %}<div class="af-err">{{ e }}</div>{% endfor %}</div>
+            <div class="af-field"><label for="{{ form.password2.id_for_label }}">Confirm password</label>
+              <div class="af-control">{% icon "key" 18 %}{{ form.password2 }}<span class="af-match" id="af-match" aria-hidden="true"></span></div>
+              <div class="af-meter-text" id="af-match-text" aria-live="polite"></div>
+              {% for e in form.password2.errors %}<div class="af-err">{{ e }}</div>{% endfor %}</div>
+          </div>
+        </fieldset>
+
+        <!-- 4. Review -->
+        <fieldset class="af-step" data-step="4">
+          <legend>Check and create</legend>
+          <dl class="af-review" id="af-review">
+            <div><dt>Plan</dt><dd id="rv-plan">—</dd><button type="button" class="af-link" data-go="1">Change</button></div>
+            <div><dt>Organisation</dt><dd id="rv-org">—</dd><button type="button" class="af-link" data-go="2">Change</button></div>
+            <div><dt>Your sign-in ID</dt><dd id="rv-id" class="mono">—</dd><button type="button" class="af-link" data-go="2">Change</button></div>
+            <div><dt>Administrator</dt><dd id="rv-admin">—</dd><button type="button" class="af-link" data-go="3">Change</button></div>
+          </dl>
+          <p class="af-hint" id="rv-next"></p>
+        </fieldset>
+
+        <div class="af-nav">
+          <button type="button" class="af-back" id="af-back">{% icon "chevron-left" 16 %} Back</button>
+          <button type="button" class="af-submit af-next" id="af-next">Continue {% icon "chevron-right" 16 %}</button>
+          <button type="submit" class="af-submit af-create" id="af-create"><span class="af-submit-text">Create organisation</span><span class="af-spin" aria-hidden="true"></span></button>
         </div>
-        <button class="btn btn-accent btn-lg btn-block" type="submit">Create organisation</button>
       </form>
-      <hr>
-      <p class="muted" style="font-size:.9rem">Already registered? <a href="{% url 'login' %}">Sign in</a></p>
     </div>
-  </section>
+  </main>
 </div>
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/auth.js' %}"></script>{% endblock %}

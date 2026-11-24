@@ -1,25 +1,68 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% load ui static %}
 {% block title %}Sign in{% endblock %}
+{% block head %}<script>document.documentElement.classList.add("js")</script><link rel="stylesheet" href="{% static 'css/auth.css' %}">{% endblock %}
+{% block body_class %}au{% endblock %}
 {% block body %}
-<div class="auth">
-  {% include "auth/_art.html" %}
-  <section class="auth-form">
-    <div class="inner">
-      <h2>Sign in</h2>
-      <p class="muted" style="margin-top:0">Use the ID and password given to you by your administrator.</p>
+<div class="au-shell">
+  {% include "auth/_panel.html" with panel_title="Good to see you <span>again.</span>" panel_sub="One tap to clock in, and everything about attendance in one place." %}
+
+  <main class="af">
+    <div class="af-inner">
+      <h1>Sign in</h1>
+      <p class="af-lead">Use the ID and password your administrator gave you.</p>
+
       {% include "partials/messages.html" %}
-      {% if scan_pending %}<div class="alert alert-info" style="margin-bottom:16px">Your scan is waiting — sign in and it will be recorded.</div>{% endif %}
-      <form method="post" novalidate>
+      {% if scan_pending %}<div class="af-note af-note-info">{% icon "qr" 18 %}<span>Your scan is waiting. Sign in and it will be recorded.</span></div>{% endif %}
+
+      <div class="af-recent" id="af-recent" hidden>
+        <button type="button" class="af-recent-btn" id="af-recent-use">
+          <span class="af-recent-av" id="af-recent-av"></span>
+          <span class="af-recent-text"><small>Continue as</small><b id="af-recent-id"></b></span>
+          {% icon "chevron-right" 18 %}
+        </button>
+        <button type="button" class="af-link" id="af-recent-forget">Not you?</button>
+      </div>
+
+      <form method="post" novalidate id="af-login" class="af-form">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ next }}">
-        {% for e in form.non_field_errors %}<div class="alert alert-error" style="margin-bottom:14px">{{ e }}</div>{% endfor %}
-        {% include "partials/field.html" with f=form.username %}
-        {% include "partials/field.html" with f=form.password %}
-        <button class="btn btn-accent btn-lg btn-block" type="submit">Sign in</button>
+        {% for e in form.non_field_errors %}<div class="af-note af-note-error af-shake" role="alert">{% icon "alert" 18 %}<span>{{ e }}</span></div>{% endfor %}
+
+        <div class="af-field">
+          <label for="{{ form.username.id_for_label }}">Your ID</label>
+          <div class="af-control">{% icon "users" 18 %}{{ form.username }}</div>
+          {% for e in form.username.errors %}<div class="af-err">{{ e }}</div>{% endfor %}
+        </div>
+
+        <div class="af-field">
+          <div class="af-label-row"><label for="{{ form.password.id_for_label }}">Password</label>
+            <button type="button" class="af-link" data-open="af-forgot">Forgot password?</button></div>
+          <div class="af-control">{% icon "key" 18 %}{{ form.password }}
+            <button type="button" class="af-eye" data-eye="{{ form.password.id_for_label }}" aria-label="Show password" aria-pressed="false">
+              <svg class="eye-on" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="eye-off" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.4 5.2A9.8 9.8 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4M6.1 6.1C3.6 7.8 2 12 2 12s3.5 7 10 7a9.6 9.6 0 0 0 4.4-1"/></svg>
+            </button></div>
+          <div class="af-caps" id="af-caps" hidden>{% icon "alert" 14 %} Caps Lock is on</div>
+          {% for e in form.password.errors %}<div class="af-err">{{ e }}</div>{% endfor %}
+        </div>
+
+        <label class="af-switch">{{ form.remember }}<span class="af-switch-ui"></span><span>{{ form.remember.label }}</span></label>
+
+        <button class="af-submit" type="submit"><span class="af-submit-text">Sign in</span><span class="af-spin" aria-hidden="true"></span></button>
       </form>
-      <hr>
-      <p class="muted" style="font-size:.9rem">Setting up for your organisation or school? <a href="{% url 'register' %}">Create an organisation account</a> · <a href="{% url 'pricing' %}">Plans &amp; pricing</a></p>
+
+      <details class="af-help" id="af-forgot">
+        <summary>{% icon "key" 16 %} Forgot your password?</summary>
+        <p>For security, passwords are reset by your organisation's administrator. Ask them to open <b>Members</b>, choose your name and tap <b>Reset password</b>. You'll get a new printed slip.</p>
+      </details>
+
+      <div class="af-alt">
+        <span>Setting up for your organisation or school?</span>
+        <a href="{% url 'register' %}" class="af-alt-btn">Create an organisation {% icon "chevron-right" 16 %}</a>
+        <a href="{% url 'pricing' %}" class="af-link-plain">See plans &amp; pricing</a>
+      </div>
     </div>
-  </section>
+  </main>
 </div>
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/auth.js' %}"></script>{% endblock %}

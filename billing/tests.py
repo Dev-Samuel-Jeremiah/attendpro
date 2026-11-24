@@ -294,7 +294,7 @@ class RegisterPlanTests(TestCase):
         self.assertFalse(Organisation.objects.filter(code="NEWCO").exists())
 
     def test_nothing_preselected_without_query(self):
-        self.assertNotContains(self.client.get(reverse("register")), "checked")
+        self.assertNotContains(self.client.get(reverse("register")), "required checked")
 
     def test_pricing_link_preselects_plan(self):
         pro = Plan.objects.get(slug="professional")
@@ -340,3 +340,48 @@ class LandingPageTests(TestCase):
         admin = User.objects.create_user(username="LP-0001", password="x", organisation=org, role=User.ROLE_ADMIN)
         self.client.force_login(admin)
         self.assertRedirects(self.client.get("/"), reverse("dashboard"))
+
+
+class AuthPagesTests(TestCase):
+    def setUp(self):
+        self.org = Organisation.objects.create(code="TTC", name="Techmiary Technology Concepts")
+        self.user = User.objects.create_user(username="TTC-0001", password="pw-123456", organisation=self.org,
+                                             role=User.ROLE_ADMIN)
+
+    def test_keep_me_signed_in(self):
+        self.client.post(reverse("login"), {"username": "ttc-0001", "password": "pw-123456", "remember": "on"})
+        self.assertFalse(self.client.session.get_expire_at_browser_close())
+        self.client.logout()
+        self.client.post(reverse("login"), {"username": "TTC-0001", "password": "pw-123456"})
+        self.assertTrue(self.client.session.get_expire_at_browser_close())
+
+    def test_code_suggestions(self):
+        from core.forms import suggest_code
+        self.assertEqual(suggest_code("Techmiary Technology Concepts"), "TTC2")   # TTC is taken
+        self.assertEqual(suggest_code("St. Mary's College of Jos"), "SMSCJ")
+        self.assertEqual(suggest_code("Bethel"), "BETH")
+        self.assertEqual(suggest_code("!!"), "")
+
+    def test_live_code_check(self):
+        url = reverse("register_check_code")
+        taken = self.client.get(url, {"code": "ttc"}).json()
+        self.assertEqual((taken["ok"], taken["suggestion"]), (False, "TTC2"))
+        free = self.client.get(url, {"code": "abc", "name": "Alpha Beta Co"}).json()
+        self.assertEqual((free["ok"], free["code"]), (True, "ABC"))
+        self.assertEqual(self.client.get(url, {"name": "Grace Academy"}).json()["suggestion"], "GA")
+
+    def test_register_reopens_the_step_with_the_problem(self):
+        pro = Plan.objects.get(slug="professional")
+        resp = self.client.post(reverse("register"), {"plan": pro.pk, "org_name": "X", "org_type": "company",
+                                                      "code": "TTC", "first_name": "A", "last_name": "B",
+                                                      "email": "a@b.test", "password1": "pw-123456", "password2": "pw-123456"})
+        self.assertContains(resp, 'data-error-step="2"')
+        self.assertContains(resp, "TTC is already taken. Try TTC2.")
+        resp = self.client.post(reverse("register"), {"plan": pro.pk, "org_name": "X", "org_type": "company",
+                                                      "code": "XYZ", "first_name": "A", "last_name": "B",
+                                                      "email": "a@b.test", "password1": "pw-123456", "password2": "nope"})
+        self.assertContains(resp, 'data-error-step="3"')
+
+    def test_pages_render(self):
+        self.assertContains(self.client.get(reverse("login")), "Keep me signed in")
+        self.assertContains(self.client.get(reverse("register")), "af-steps")
