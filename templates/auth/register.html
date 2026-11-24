@@ -31,7 +31,7 @@
           <input type="hidden" name="cycle" value="{{ cycle }}" id="af-cycle">
           <div class="cycle-switch af-cycle" role="radiogroup" aria-label="Billing period" id="af-cycle-switch">
             <button type="button" role="radio" data-cycle="monthly" aria-checked="{% if cycle != 'yearly' %}true{% else %}false{% endif %}">Monthly</button>
-            <button type="button" role="radio" data-cycle="yearly" aria-checked="{% if cycle == 'yearly' %}true{% else %}false{% endif %}">Yearly <span>2 months free</span></button>
+            <button type="button" role="radio" data-cycle="yearly" aria-checked="{% if cycle == 'yearly' %}true{% else %}false{% endif %}">Yearly</button>
           </div>
           <div class="af-plans" id="af-plans" data-cycle="{{ cycle }}">
             {% for p in plans %}

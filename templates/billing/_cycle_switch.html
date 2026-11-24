@@ -1,5 +1,5 @@
 {# Monthly / yearly switch. Controls the .plans grid right after it (and checkout forms / links inside). #}
 <div class="cycle-switch" role="radiogroup" aria-label="Billing period" data-cycle-switch>
   <button type="button" role="radio" data-cycle="monthly" aria-checked="{% if cycle != 'yearly' %}true{% else %}false{% endif %}">Monthly</button>
-  <button type="button" role="radio" data-cycle="yearly" aria-checked="{% if cycle == 'yearly' %}true{% else %}false{% endif %}">Yearly <span>2 months free</span></button>
+  <button type="button" role="radio" data-cycle="yearly" aria-checked="{% if cycle == 'yearly' %}true{% else %}false{% endif %}">Yearly</button>
 </div>
