@@ -1,0 +1,39 @@
+{% load ui humanize %}
+<article class="pr-card{% if c.plan.highlight %} pr-hot{% endif %}{% if not c.plan.has_yearly %} no-yearly{% endif %}" data-plan="{{ c.plan.slug }}">
+  {% if c.plan.highlight %}<span class="pr-flag">{% icon "star" 13 %} Most popular</span>{% endif %}
+  <header class="pr-head">
+    <span class="pr-ico">{% icon c.icon 20 %}</span>
+    <div><h3>{{ c.plan.name }}</h3><p>{{ c.plan.tagline }}</p></div>
+  </header>
+
+  <div class="pr-price">
+    {% if c.plan.is_free %}
+      <span class="pr-amount">₦0</span><span class="pr-per">free forever</span>
+    {% else %}
+      <span class="price-m"><span class="pr-amount">₦{{ c.plan.price|intcomma }}</span><span class="pr-per">/ month</span></span>
+      {% if c.plan.has_yearly %}<span class="price-y"><span class="pr-amount">₦{{ c.plan.yearly_price|intcomma }}</span><span class="pr-per">/ year</span></span>{% endif %}
+    {% endif %}
+  </div>
+  <div class="pr-sub">
+    {% if c.plan.is_free %}No card needed
+    {% else %}
+      <span class="price-m">{% if c.plan.has_yearly %}or ₦{{ c.plan.yearly_price|intcomma }} a year{% if c.saving_pct %} · save {{ c.saving_pct }}%{% endif %}{% else %}Billed monthly{% endif %}</span>
+      {% if c.plan.has_yearly %}<span class="price-y">₦{{ c.plan.yearly_per_month|intcomma }} a month · <b>you save ₦{{ c.plan.yearly_saving|intcomma }}</b></span>{% endif %}
+    {% endif %}
+  </div>
+
+  <div class="pr-limit">{% icon "users" 16 %}<span>{% if c.plan.staff_limit %}Up to <b>{{ c.plan.staff_limit }}</b> staff{% else %}<b>Unlimited</b> staff{% endif %}</span></div>
+
+  {% if request.user.is_authenticated and request.user.is_org_admin %}
+    <a class="pr-cta" href="{% url 'billing' %}">Manage my plan</a>
+  {% else %}
+    <a class="pr-cta" href="{% url 'register' %}?plan={{ c.plan.slug }}{% if c.plan.has_yearly %}&amp;cycle={{ cycle|default:'monthly' }}{% endif %}" {% if c.plan.has_yearly %}data-cycle-link{% endif %}>
+      {% if c.plan.is_free %}Start free{% else %}Choose {{ c.plan.name }}{% endif %} {% icon "chevron-right" 16 %}</a>
+  {% endif %}
+
+  <ul class="pr-feats">
+    {% if c.base %}<li class="pr-base">Everything in {{ c.base.name }}, plus:</li>{% endif %}
+    {% for f in c.top %}<li><span class="pr-tick">{% icon "check" 13 %}</span>{{ f.name }}{% if f.coming_soon %} <span class="soon">Soon</span>{% endif %}</li>{% endfor %}
+  </ul>
+  {% if c.more %}<a class="pr-more" href="{% url 'pricing' %}#compare">+ {{ c.more }} more feature{{ c.more|pluralize }}</a>{% endif %}
+</article>

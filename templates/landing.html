@@ -6,6 +6,7 @@
 <meta property="og:description" content="Clock in by QR or GPS, see who's in live, and export reports. Free for up to 10 staff.">
 <meta property="og:type" content="website">
 <link rel="stylesheet" href="{% static 'css/landing.css' %}">
+<link rel="stylesheet" href="{% static 'css/pricing.css' %}">
 {% endblock %}
 {% block body_class %}lp{% endblock %}
 {% block body %}
@@ -328,8 +329,8 @@
         <p>Prices in naira. Pay securely by card, transfer or USSD through Paystack.</p>
       </div>
       {% include "billing/_cycle_switch.html" %}
-      <div class="plans lp-plans reveal" data-cycle="{{ cycle }}">
-        {% for c in cards %}{% include "billing/_plan_card.html" with mode="pricing" %}{% endfor %}
+      <div class="plans pr-cards lp-pr-cards reveal" data-cycle="{{ cycle }}">
+        {% for c in cards %}{% include "billing/_price_card.html" %}{% endfor %}
       </div>
       <p class="lp-center"><a href="{% url 'pricing' %}">Compare every feature {% icon "chevron-right" 14 %}</a></p>
     </div>

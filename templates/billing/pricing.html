@@ -1,37 +1,135 @@
-{% extends "public/_base.html" %}{% load static ui %}
+{% extends "public/_base.html" %}{% load static ui humanize %}
 {% block title %}Plans & pricing · AttendPro{% endblock %}
-{% block public_head %}
-<meta name="description" content="AttendPro plans in naira: free for up to 10 staff, Professional and Enterprise for growing schools and organisations.">
-<meta property="og:title" content="Plans & pricing · AttendPro">{% endblock %}
+{% block public_head %}<meta name="description" content="AttendPro plans in naira: free for up to 10 staff, Professional and Enterprise for growing schools and organisations. Monthly or yearly, no auto-renewal, 7-day refund.">
+<meta property="og:title" content="Plans & pricing · AttendPro">
+<link rel="stylesheet" href="{% static 'css/pricing.css' %}">{% endblock %}
 {% block main %}
-<section class="lp-section lp-page">
-  <div class="lp-wrap">
-    <div class="lp-head">
-      <span class="lp-kicker">Pricing</span>
-      <h1 style="margin:10px 0 0">Simple plans for every team</h1>
-      <p>Start free with up to 10 staff. Upgrade when you need QR attendance, reports and more. Prices in naira, paid securely through Paystack by card, transfer or USSD.</p>
+<section class="pr-hero">
+  <div class="pr-aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+  <div class="pr-grid-bg" aria-hidden="true"></div>
+  <div class="lp-wrap pr-hero-in">
+    <span class="pr-kicker">{% icon "card" 14 %} Pricing</span>
+    <h1>Pricing that grows <span>with your team</span></h1>
+    <p>Start free with up to {{ plans.0.staff_limit|default:10 }} staff. Upgrade when you need QR attendance, reports, payroll and more, and only ever pay in naira.</p>
+
+    <div class="cycle-switch pr-switch" role="radiogroup" aria-label="Billing period" data-cycle-switch data-target=".pr-cards">
+      <span class="pr-switch-pill" aria-hidden="true"></span>
+      <button type="button" role="radio" data-cycle="monthly" aria-checked="{% if cycle != 'yearly' %}true{% else %}false{% endif %}">Monthly</button>
+      <button type="button" role="radio" data-cycle="yearly" aria-checked="{% if cycle == 'yearly' %}true{% else %}false{% endif %}">Yearly{% if max_saving_pct %} <em>Save up to {{ max_saving_pct }}%</em>{% endif %}</button>
     </div>
-    {% include "billing/_cycle_switch.html" %}
-    <div class="plans" data-cycle="{{ cycle }}">
-      {% for c in cards %}{% include "billing/_plan_card.html" with mode="pricing" %}{% endfor %}
+    <ul class="pr-trust">
+      <li>{% icon "check" 14 %} Free plan, no card</li>
+      <li>{% icon "check" 14 %} Never renews automatically</li>
+      <li>{% icon "check" 14 %} 7-day full refund</li>
+      <li>{% icon "check" 14 %} Card, transfer or USSD via Paystack</li>
+    </ul>
+  </div>
+</section>
+
+<section class="pr-plans-wrap">
+  <div class="lp-wrap">
+    <div class="plans pr-cards" data-cycle="{{ cycle }}">
+      {% for c in cards %}{% include "billing/_price_card.html" %}{% endfor %}
     </div>
   </div>
 </section>
 
-<section class="lp-section lp-tint" id="billing-faq">
-  <div class="lp-wrap lp-faq-wrap">
-    <div class="lp-head"><span class="lp-kicker">Billing questions</span><h2>Before you pay</h2></div>
-    <div class="lp-faq">
-      <details open><summary>Is Basic really free?</summary><p>Yes, for up to 10 active accounts (administrators included), with no time limit and no card needed. It's also the best way to try AttendPro: start on Basic and upgrade whenever you're ready.</p></details>
-      <details><summary>How do we pay?</summary><p>Online through Paystack, by card, bank transfer or USSD, from <b>Plan &amp; billing</b> in your account. Pay monthly, or yearly for less. Paystack emails a receipt, and every payment is listed in Plan &amp; billing.</p></details>
-      <details><summary>Does it renew automatically?</summary><p>No. Nothing is charged without you. We remind your administrators 7, 3 and 1 day before a paid month ends. If you don't renew, you move to the free plan: nothing is deleted, and paid features come back when you pay again.</p></details>
-      <details><summary>Can we get a refund?</summary><p>Yes. If you're not satisfied, ask for a full refund within 7 days of paying for a new plan{% if site.sales_email %} at <a href="mailto:{{ site.sales_email }}">{{ site.sales_email }}</a>{% endif %}. After 7 days, the current month isn't refundable. See our <a href="{% url 'terms' %}">terms</a>.</p></details>
-      <details><summary>Can we change plans?</summary><p>Any time. Paying early for the same plan adds another period (a month, or a year) on top. Switching to a different plan starts it straight away.</p></details>
-      <details><summary>What counts towards the staff limit?</summary><p>Active accounts, including administrators. Deactivated people don't count, so you can stay within your limit by deactivating people who have left.</p></details>
-      <details><summary>Do you offer a free trial of paid plans?</summary><p>The free Basic plan is the trial: it has the Clock in button, the live dashboard and attendance history for up to 10 people. If you'd like to see Professional or Enterprise features first, <a href="{% url 'contact' %}">talk to us</a>.</p></details>
+<!-- Which plan fits? -->
+<section class="pr-section">
+  <div class="lp-wrap">
+    <div class="pr-fit">
+      <div class="pr-fit-copy">
+        <span class="lp-kicker">Which plan fits?</span>
+        <h2>How many people will clock in?</h2>
+        <p>Count everyone who will use AttendPro, administrators included.</p>
+      </div>
+      <div class="pr-fit-tool">
+        <div class="pr-fit-count"><output id="pr-n">10</output><span>people</span></div>
+        <input type="range" id="pr-range" min="1" max="200" value="10" aria-label="Number of people">
+        <div class="pr-fit-scale"><span>1</span><span>50</span><span>100</span><span>150</span><span>200+</span></div>
+        <div class="pr-fit-result" aria-live="polite">
+          <span>We recommend</span><b id="pr-pick">Basic</b><small id="pr-pick-price">Free</small>
+          <a class="pr-cta pr-cta-sm" id="pr-pick-link" href="{% url 'register' %}?plan={{ plans.0.slug }}">Get started {% icon "chevron-right" 16 %}</a>
+        </div>
+      </div>
     </div>
-    <p class="lp-center">More questions? <a href="{% url 'contact' %}">Contact us {% icon "chevron-right" 14 %}</a></p>
   </div>
 </section>
+
+<!-- Compare -->
+<section class="pr-section pr-tint" id="compare">
+  <div class="lp-wrap">
+    <div class="lp-head"><span class="lp-kicker">Compare plans</span><h2>Every feature, side by side</h2></div>
+    <div class="pr-compare-wrap" data-cycle-follow data-cycle="{{ cycle }}">
+      <table class="pr-compare no-stack">
+        <thead><tr>
+          <th scope="col"><span class="sr">Feature</span></th>
+          {% for p in plans %}<th scope="col" class="{% if p.highlight %}hot{% endif %}"><b>{{ p.name }}</b>
+            <small>{% if p.is_free %}Free{% else %}<span class="cmp-m">₦{{ p.price|intcomma }}/mo</span>{% if p.has_yearly %}<span class="cmp-y">₦{{ p.yearly_price|intcomma }}/yr</span>{% endif %}{% endif %}</small></th>{% endfor %}
+        </tr></thead>
+        <tbody>
+          <tr class="pr-row-key"><th scope="row">Staff accounts</th>{% for p in plans %}<td class="{% if p.highlight %}hot{% endif %}"><b>{% if p.staff_limit %}{{ p.staff_limit }}{% else %}Unlimited{% endif %}</b></td>{% endfor %}</tr>
+        </tbody>
+        {% for title, rows in groups %}
+        <tbody>
+          <tr class="pr-group"><th scope="rowgroup" colspan="{{ plans|length|add:1 }}">{{ title }}</th></tr>
+          {% for r in rows %}
+          <tr><th scope="row">{{ r.feature.name }}{% if r.feature.description %}<small>{{ r.feature.description }}</small>{% endif %}</th>
+            {% for has in r.has %}<td class="{% if forloop.counter0 == hot_index %}hot{% endif %}">{% if has %}<span class="pr-yes" title="Included">{% icon "check" 14 %}</span>{% else %}<span class="pr-no" aria-label="Not included">—</span>{% endif %}</td>{% endfor %}</tr>
+          {% endfor %}
+        </tbody>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Assurance -->
+<section class="pr-section">
+  <div class="lp-wrap pr-assure">
+    <div><span>{% icon "card" 22 %}</span><b>Secure payments</b><p>Paid through Paystack by card, bank transfer or USSD. We never see your card details.</p></div>
+    <div><span>{% icon "clock" 22 %}</span><b>No surprise charges</b><p>Nothing renews by itself. We remind you before your plan ends.</p></div>
+    <div><span>{% icon "activity" 22 %}</span><b>7-day refund</b><p>Not happy with a new plan? Ask within 7 days for a full refund.</p></div>
+    <div><span>{% icon "save" 22 %}</span><b>Your data stays yours</b><p>If a plan ends you move to Basic. Nothing is deleted, and you can export anytime.</p></div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="pr-section pr-tint" id="billing-faq">
+  <div class="lp-wrap pr-faq">
+    <div class="pr-faq-side">
+      <span class="lp-kicker">Billing questions</span>
+      <h2>Before you pay</h2>
+      <p>Straight answers about plans, payments and refunds.</p>
+      <div class="pr-help-card">
+        <b>Still unsure which plan?</b>
+        <p>Tell us about your school or organisation and we'll recommend one.</p>
+        {% if site.whatsapp %}<a class="pr-cta pr-cta-sm" href="https://wa.me/{{ site.whatsapp_digits }}" target="_blank" rel="noopener">{% icon "chat" 16 %} WhatsApp us</a>
+        {% else %}<a class="pr-cta pr-cta-sm" href="{% url 'contact' %}">{% icon "chat" 16 %} Talk to us</a>{% endif %}
+      </div>
+    </div>
+    <div class="lp-faq">
+      <details open><summary>Is Basic really free?</summary><p>Yes, for up to {{ plans.0.staff_limit|default:10 }} active accounts (administrators included), with no time limit and no card needed. It's also the best way to try AttendPro: start on Basic and upgrade whenever you're ready.</p></details>
+      <details><summary>How do we pay?</summary><p>Online through Paystack, by card, bank transfer or USSD, from <b>Plan &amp; billing</b> in your account. Pay monthly, or yearly for less. Paystack emails a receipt, and every payment is listed in Plan &amp; billing.</p></details>
+      <details><summary>Does it renew automatically?</summary><p>No. Nothing is charged without you. We remind your administrators 7, 3 and 1 day before a paid period ends. If you don't renew, you move to the free plan: nothing is deleted, and paid features come back when you pay again.</p></details>
+      <details><summary>Can we get a refund?</summary><p>Yes. If you're not satisfied, ask for a full refund within 7 days of paying for a new plan, monthly or yearly{% if site.sales_email %}, at <a href="mailto:{{ site.sales_email }}">{{ site.sales_email }}</a>{% endif %}. After 7 days, the current period isn't refundable. See our <a href="{% url 'terms' %}">terms</a>.</p></details>
+      <details><summary>Can we change plans?</summary><p>Any time. Paying early for the same plan adds another period (a month, or a year) on top. Switching to a different plan starts it straight away.</p></details>
+      <details><summary>What counts towards the staff limit?</summary><p>Active accounts, including administrators. Deactivated people don't count, so you can stay within your limit by deactivating people who have left.</p></details>
+      <details><summary>Do you offer a free trial of paid plans?</summary><p>The free Basic plan is the trial. If you'd like to see Professional or Enterprise features first, <a href="{% url 'contact' %}">talk to us</a>.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="lp-final">
+  <div class="lp-wrap">
+    <h2>Start free today. Upgrade when you're ready.</h2>
+    <p>Set up your organisation in minutes. No card, no contract.</p>
+    <div class="lp-cta-row lp-center-row">
+      <a href="{% url 'register' %}?plan={{ plans.0.slug }}" class="lp-btn lp-btn-primary lp-btn-lg">Create your free account {% icon "chevron-right" 18 %}</a>
+      <a href="{% url 'contact' %}" class="lp-btn lp-btn-onDark lp-btn-lg">Talk to us</a>
+    </div>
+  </div>
+</section>
+{{ plans_json|json_script:"pr-plans" }}
 {% endblock %}
-{% block scripts %}<script src="{% static 'js/cycle.js' %}"></script>{% endblock %}
+{% block scripts %}<script src="{% static 'js/cycle.js' %}"></script><script src="{% static 'js/pricing.js' %}"></script>{% endblock %}

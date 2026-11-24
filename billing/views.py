@@ -42,8 +42,48 @@ def _cycle(request):
     return "yearly" if request.GET.get("cycle") == "yearly" else "monthly"
 
 
+# How the comparison table groups the built-in features; features the super admin adds go under "More".
+COMPARE_GROUPS = [
+    ("Clocking in", ["manual_clock", "clock_in_out", "qr_attendance", "geofencing", "face_verification"]),
+    ("Day to day", ["daily_dashboard", "attendance_history", "leave_management", "self_service", "notifications"]),
+    ("Reports & data", ["advanced_reports", "exports", "advanced_analytics", "audit_trail", "payroll", "advanced_backup"]),
+    ("Your organisation", ["single_branch", "multi_branch", "custom_branding", "priority_support"]),
+]
+PLAN_ICONS = ["pin", "qr", "layers", "star"]
+
+
+def pricing_context(cycle):
+    """Everything the pricing page (and the home page's pricing section) needs, from the live plans."""
+    plans = list(_public_plans())
+    cards = plan_cards(plans)
+    for i, c in enumerate(cards):
+        p = c["plan"]
+        c["icon"] = PLAN_ICONS[min(i, len(PLAN_ICONS) - 1)]
+        c["saving_pct"] = round(p.yearly_saving * 100 / (p.price * 12)) if p.has_yearly else 0
+        c["top"], c["more"] = c["features"][:6], max(len(c["features"]) - 6, 0)
+    features = Feature.objects.order_by("sort_order", "name")
+    by_code = {f.code: f for f in features}
+    plan_codes = [set(p.features.values_list("code", flat=True)) for p in plans]
+    seen, groups = set(), []
+    for title, codes in COMPARE_GROUPS:
+        rows = [by_code[c] for c in codes if c in by_code]
+        seen.update(f.code for f in rows)
+        groups.append((title, rows))
+    extra = [f for f in features if f.code not in seen and any(f.code in pc for pc in plan_codes)]
+    if extra:
+        groups.append(("More", extra))
+    groups = [(t, [{"feature": f, "has": [f.code in pc for pc in plan_codes]} for f in rows]) for t, rows in groups if rows]
+    return {
+        "cards": cards, "plans": plans, "groups": groups, "cycle": cycle,
+        "hot_index": next((i for i, p in enumerate(plans) if p.highlight), -1),
+        "max_saving_pct": max([c["saving_pct"] for c in cards] or [0]),
+        "plans_json": [{"name": p.name, "slug": p.slug, "limit": p.staff_limit, "price": p.price,
+                        "yearly": p.yearly_price if p.has_yearly else None, "free": p.is_free} for p in plans],
+    }
+
+
 def pricing(request):
-    return render(request, "billing/pricing.html", {"cards": plan_cards(_public_plans()), "cycle": _cycle(request)})
+    return render(request, "billing/pricing.html", pricing_context(_cycle(request)))
 
 
 @org_admin_required
