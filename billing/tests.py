@@ -452,3 +452,30 @@ class AdminEmailTests(TestCase):
             "password1": "a-Strong-pass-123", "password2": "a-Strong-pass-123"})
         self.assertEqual(r.status_code, 302)
         self.assertTrue(any(m.to == ["bola@example.com"] and "Welcome" in m.subject for m in mail.outbox))
+
+
+@override_settings(EMAIL_HOST="smtp.example.com", EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+class SignUpEmailTests(TestCase):
+    def _post(self, email):
+        plan = Plan.objects.filter(is_public=True, price=0).first()
+        return self.client.post(reverse("register"), {
+            "plan": plan.pk, "org_name": "Mail School", "org_type": "school", "code": "MLS",
+            "first_name": "Bola", "last_name": "Ade", "email": email,
+            "password1": "a-Strong-pass-123", "password2": "a-Strong-pass-123"},
+            HTTP_USER_AGENT="Mozilla/5.0 (Linux; Android 14) AttendProApp/android")
+
+    def test_welcome_explains_changing_plan_or_paying_on_the_website(self):
+        from django.core import mail
+        r = self._post("bola@example.com")
+        self.assertEqual(r.status_code, 302)
+        body = mail.outbox[-1].body
+        self.assertIn("TO CHANGE YOUR PLAN OR MAKE A PAYMENT", body)
+        self.assertIn("https://attendpro.cloud/manage/billing/", body)
+        self.assertIn("MLS-0001", body)
+
+    def test_common_email_typos_are_caught(self):
+        r = self._post("bola@gmial.com")
+        self.assertContains(r, "Did you mean bola@gmail.com?")
+
+    def test_form_asks_for_a_working_email(self):
+        self.assertContains(self.client.get(reverse("register")), "Use a working email address")

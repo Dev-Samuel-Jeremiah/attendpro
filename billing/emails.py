@@ -68,12 +68,21 @@ def welcome(org, admin):
     ]
     if plan and plan.is_free:
         limit = plan.staff_limit or 10
-        lines += [f"You're on the free {plan.name} plan, for up to {limit} people.",
+        lines += [f"Your plan: {plan.name} (free), for up to {limit} people.",
                   "For bigger teams, QR attendance, reports, leave, payroll and more, see the plans"
-                  + (f" (from ₦{paid:,} a month)" if paid else "") + ":",
-                  _site_url("/pricing/"),
-                  "You can upgrade any time from Plan & billing at " + _site_url("/manage/billing/") + ".",
+                  + (f" (from ₦{paid:,} a month)" if paid else "") + ": " + _site_url("/pricing/"),
                   ""]
+    elif plan:
+        lines += [f"Your plan: {plan.name}.", ""]
+    lines += [
+        "TO CHANGE YOUR PLAN OR MAKE A PAYMENT",
+        "Visit our website in a web browser (on a computer, or Chrome / Safari on your phone):",
+        _site_url("/manage/billing/"),
+        f"Sign in with your administrator ID ({admin.username}) and open Plan & billing. You can pay by card, "
+        "bank transfer or USSD. Plan changes and payments can't be made inside the AttendPro mobile app, "
+        "but your new plan works in the app straight away.",
+        "",
+    ]
     lines += [_contact_line(), "", "The AttendPro team"]
     return _send(admin.email, f"Welcome to AttendPro, {admin.first_name or org.name}", "\n".join(lines))
 

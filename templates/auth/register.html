@@ -91,9 +91,11 @@
             <div class="af-field"><label for="{{ form.last_name.id_for_label }}">Last name</label>
               <div class="af-control">{% icon "users" 18 %}{{ form.last_name }}</div>{% for e in form.last_name.errors %}<div class="af-err">{{ e }}</div>{% endfor %}</div>
           </div>
-          <div class="af-field"><label for="{{ form.email.id_for_label }}">Email</label>
-            <div class="af-control">{% icon "bell" 18 %}{{ form.email }}</div>{% for e in form.email.errors %}<div class="af-err">{{ e }}</div>{% endfor %}
-            <div class="af-hint-sm">For receipts and important notices. You'll sign in with your ID.</div></div>
+          <div class="af-note af-note-info af-email-note">{% icon "mail" 18 %}<span><b>Use a working email address you can open now.</b>
+            As soon as you register we email you your administrator ID and important information about your account.</span></div>
+          <div class="af-field"><label for="{{ form.email.id_for_label }}">Working email address</label>
+            <div class="af-control">{% icon "mail" 18 %}{{ form.email }}</div>{% for e in form.email.errors %}<div class="af-err">{{ e }}</div>{% endfor %}
+            <div class="af-hint-sm">Check it carefully. You'll sign in with your ID, and we'll send your account details here.</div></div>
           <div class="af-row">
             <div class="af-field"><label for="{{ form.password1.id_for_label }}">Password</label>
               <div class="af-control">{% icon "key" 18 %}{{ form.password1 }}

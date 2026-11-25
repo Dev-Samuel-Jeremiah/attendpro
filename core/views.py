@@ -104,8 +104,9 @@ def register_org(request):
                 designation="Administrator")
         login(request, admin)
         from billing.emails import welcome
-        welcome(org, admin)
-        messages.success(request, f"Welcome! Your admin ID is {admin.username} — use it to sign in next time.")
+        sent = welcome(org, admin)
+        messages.success(request, f"Welcome! Your admin ID is {admin.username} — use it to sign in next time."
+                         + (f" We've emailed it and your account details to {admin.email}." if sent else ""))
         if plan.is_free:
             return redirect("dashboard")
         if not paystack_enabled():

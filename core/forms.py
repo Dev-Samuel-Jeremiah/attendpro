@@ -90,6 +90,21 @@ class OrgRegisterForm(StyledMixin, forms.Form):
         self.fields["code"].widget.attrs.update({"maxlength": 6, "autocapitalize": "characters", "spellcheck": "false"})
         self._style()
 
+    # Frequent slips in email domains: catch them before the welcome email goes nowhere.
+    EMAIL_TYPOS = {"gmial.com": "gmail.com", "gmai.com": "gmail.com", "gamil.com": "gmail.com", "gmail.co": "gmail.com",
+                   "gmail.con": "gmail.com", "gmail.cm": "gmail.com", "gnail.com": "gmail.com", "gmaill.com": "gmail.com",
+                   "yaho.com": "yahoo.com", "yahoo.con": "yahoo.com", "yahooo.com": "yahoo.com", "hotmial.com": "hotmail.com",
+                   "hotmail.con": "hotmail.com", "outlook.con": "outlook.com", "outlok.com": "outlook.com",
+                   "iclod.com": "icloud.com", "icloud.con": "icloud.com"}
+
+    def clean_email(self):
+        email = self.cleaned_data["email"].strip()
+        local, _, domain = email.rpartition("@")
+        fix = self.EMAIL_TYPOS.get(domain.lower())
+        if fix:
+            raise forms.ValidationError(f"Did you mean {local}@{fix}? Please check your email address.")
+        return email
+
     def clean_code(self):
         code = self.cleaned_data["code"].strip().upper()
         if not code.isalnum():
