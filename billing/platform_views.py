@@ -235,3 +235,40 @@ def testimonial_edit(request, pk=None):
         messages.success(request, "Quote saved.")
         return redirect("platform_testimonials")
     return render(request, "platform/testimonial_form.html", {"form": form, "obj": obj})
+
+
+@superuser_required
+def app_users(request):
+    """Everyone who has used the Android / iPhone app, with first / last use and days used."""
+    from datetime import timedelta
+
+    from django.db.models import Max, Min
+    from django.utils import timezone
+
+    from core.models import AppActivity
+    today = timezone.localdate()
+    rows = list(AppActivity.objects.values("user").annotate(
+        first=Min("first_at"), last=Max("last_at"), days=Count("id"), last_day=Max("date")).order_by("-last"))
+    from core.models import User
+    people = {u.pk: u for u in User.objects.filter(pk__in=[r["user"] for r in rows]).select_related("organisation")}
+    platforms = dict(AppActivity.objects.filter(date=today).values_list("user", "platform"))
+    q = request.GET.get("q", "").strip().lower()
+    out = []
+    for r in rows:
+        u = people.get(r["user"])
+        if not u:
+            continue
+        hay = f"{u.get_full_name()} {u.username} {u.email} {u.organisation.name if u.organisation_id else ''}".lower()
+        if q and q not in hay:
+            continue
+        ago = (today - r["last_day"]).days
+        out.append({"user": u, "first": r["first"], "last": r["last"], "days": r["days"], "ago": ago,
+                    "platform": platforms.get(u.pk) or AppActivity.objects.filter(user=u).values_list("platform", flat=True).first()})
+    week = today - timedelta(days=6)
+    return render(request, "platform/app_users.html", {
+        "rows": out, "q": q, "total": len(rows),
+        "today_count": AppActivity.objects.filter(date=today).values("user").distinct().count(),
+        "week_count": AppActivity.objects.filter(date__gte=week).values("user").distinct().count(),
+        "android": AppActivity.objects.filter(platform="android").values("user").distinct().count(),
+        "ios": AppActivity.objects.filter(platform="ios").values("user").distinct().count(),
+    })

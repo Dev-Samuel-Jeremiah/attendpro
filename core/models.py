@@ -357,3 +357,20 @@ class SavedReport(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class AppActivity(models.Model):
+    """One row per person per day they used the AttendPro Android / iPhone app (core.middleware).
+    Lets the platform admin see who is actually using the app, e.g. during Play Store testing."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="app_activity")
+    date = models.DateField(db_index=True)
+    platform = models.CharField(max_length=10)          # "android" | "ios"
+    first_at = models.DateTimeField()
+    last_at = models.DateTimeField()
+
+    class Meta:
+        unique_together = ("user", "date")
+        ordering = ["-date"]
+
+    def __str__(self):
+        return f"{self.user.username} {self.date} ({self.platform})"

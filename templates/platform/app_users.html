@@ -1,0 +1,44 @@
+{% extends "platform/_shell.html" %}{% load ui static %}
+{% block title %}App users{% endblock %}
+{% block head %}<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">{% endblock %}
+{% block content %}
+<div class="dash">
+<div class="topbar" style="margin-bottom:0"><div><h1>App users</h1>
+  <p>Everyone who has signed in and used the AttendPro Android or iPhone app. Use it to see which Play Store testers are active.</p></div></div>
+
+<section class="dkpis">
+  <div class="dkpi t-green"><div class="dkpi-top"><span class="dkpi-ico">{% icon "phone" 18 %}</span><span class="dkpi-label">People using the app</span></div>
+    <div class="dkpi-value">{{ total }}</div><div class="dkpi-foot">since tracking began</div></div>
+  <div class="dkpi t-blue"><div class="dkpi-top"><span class="dkpi-ico">{% icon "activity" 18 %}</span><span class="dkpi-label">Opened today</span></div>
+    <div class="dkpi-value">{{ today_count }}</div><div class="dkpi-foot">signed-in people</div></div>
+  <div class="dkpi t-amber"><div class="dkpi-top"><span class="dkpi-ico">{% icon "calendar" 18 %}</span><span class="dkpi-label">Last 7 days</span></div>
+    <div class="dkpi-value">{{ week_count }}</div><div class="dkpi-foot">active people</div></div>
+  <div class="dkpi t-red"><div class="dkpi-top"><span class="dkpi-ico">{% icon "layers" 18 %}</span><span class="dkpi-label">Android / iPhone</span></div>
+    <div class="dkpi-value">{{ android }}<small>/ {{ ios }}</small></div><div class="dkpi-foot">people per platform</div></div>
+</section>
+
+<div class="card">
+  <form class="filters" method="get" style="margin-bottom:16px">
+    <input class="input" name="q" value="{{ q }}" placeholder="Search name, email, ID, organisation…" style="min-width:260px">
+    <button class="btn btn-sm">Search</button>{% if q %} <a class="btn btn-ghost btn-sm" href="{% url 'platform_app_users' %}">Clear</a>{% endif %}
+  </form>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Person</th><th>Organisation</th><th>Last opened</th><th>Days used</th><th class="hide-sm">First opened</th><th class="hide-sm">Phone</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td><div class="person">{% avatar r.user %}<div><b>{{ r.user.display_name }}</b><small class="muted">{{ r.user.email|default:r.user.username }}</small></div></div></td>
+        <td>{{ r.user.organisation.name|default:"—" }}<br><small class="muted mono">{{ r.user.username }}</small></td>
+        <td>{% if r.ago == 0 %}<span class="badge b-present">Today</span>{% elif r.ago == 1 %}<span class="badge b-present">Yesterday</span>{% elif r.ago <= 6 %}<span class="badge b-late">{{ r.ago }} days ago</span>{% else %}<span class="badge b-absent">{{ r.ago }} days ago</span>{% endif %}
+          <br><small class="muted">{{ r.last|date:"j M, g:i A" }}</small></td>
+        <td><b>{{ r.days }}</b> day{{ r.days|pluralize }}</td>
+        <td class="hide-sm">{{ r.first|date:"j M Y" }}</td>
+        <td class="hide-sm">{% if r.platform == "ios" %}iPhone{% else %}Android{% endif %}</td>
+      </tr>
+    {% empty %}<tr><td colspan="6" class="empty">{% if q %}No one matches that search.{% else %}No one has used the app since tracking started. People appear here after they sign in to the app.{% endif %}</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+  <p class="muted" style="font-size:.85rem;margin:14px 0 0">Shows people once they sign in inside the app. Tracking started when this page was added, so earlier app use isn't listed.</p>
+</div>
+</div>
+{% endblock %}

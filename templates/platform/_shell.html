@@ -11,6 +11,7 @@
       <div class="nav-label">Customers</div>
       <a href="{% url 'platform' %}" class="{% active 'platform' 'platform_org' %}">{% icon "users" %} Organisations</a>
       <a href="{% url 'platform_payments' %}" class="{% active 'platform_payments' %}">{% icon "card" %} Payments</a>
+      <a href="{% url 'platform_app_users' %}" class="{% active 'platform_app_users' %}">{% icon "phone" %} App users</a>
       <div class="nav-label">Catalogue</div>
       <a href="{% url 'platform_plans' %}" class="{% active 'platform_plans' 'platform_plan_edit' 'platform_plan_add' %}">{% icon "star" %} Plans &amp; prices</a>
       <a href="{% url 'platform_features' %}" class="{% active 'platform_features' 'platform_feature_edit' 'platform_feature_add' %}">{% icon "list" %} Features</a>

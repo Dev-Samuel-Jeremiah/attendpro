@@ -24,6 +24,7 @@ urlpatterns = [
     path("platform/features/<int:pk>/", pv.feature_edit, name="platform_feature_edit"),
     path("platform/features/<int:pk>/delete/", pv.feature_delete, name="platform_feature_delete"),
     path("platform/payments/", pv.payments, name="platform_payments"),
+    path("platform/app-users/", pv.app_users, name="platform_app_users"),
     path("platform/site/", pv.site_settings, name="platform_site"),
     path("platform/messages/", pv.contact_messages, name="platform_messages"),
     path("platform/testimonials/", pv.testimonials, name="platform_testimonials"),

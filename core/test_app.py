@@ -140,3 +140,30 @@ class NoPaymentsInStoreAppTests(TestCase):
         from billing.services import upgrade_message
         app = RequestFactory(HTTP_USER_AGENT=ANDROID).get("/")
         self.assertNotIn("Upgrade", upgrade_message("anything", app))
+
+
+class AppActivityTests(TestCase):
+    def setUp(self):
+        self.org = Organisation.objects.create(code="AA", name="Activity Org")
+        self.staff = User.objects.create_user(username="AA-0002", password="pw-123456", organisation=self.org,
+                                              first_name="Tess", email="tess@example.com")
+
+    def test_app_use_is_recorded_once_a_day_and_web_use_is_not(self):
+        from core.models import AppActivity
+        self.client.force_login(self.staff)
+        self.client.get(reverse("portal"))                                   # website
+        self.assertFalse(AppActivity.objects.exists())
+        self.client.get(reverse("portal"), HTTP_USER_AGENT=ANDROID)          # app
+        self.client.get(reverse("my_history"), HTTP_USER_AGENT=ANDROID)
+        row = AppActivity.objects.get()
+        self.assertEqual((row.user, row.platform), (self.staff, "android"))
+
+    def test_platform_page_lists_app_users(self):
+        self.client.force_login(self.staff)
+        self.client.get(reverse("portal"), HTTP_USER_AGENT=IOS)
+        User.objects.create_superuser(username="root", password="pw-123456", email="r@x.test")
+        self.client.force_login(User.objects.get(username="root"))
+        page = self.client.get(reverse("platform_app_users"))
+        self.assertContains(page, "tess@example.com")
+        self.assertContains(page, "iPhone")
+        self.assertContains(page, "Today")
