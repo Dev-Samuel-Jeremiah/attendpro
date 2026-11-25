@@ -405,3 +405,50 @@ class DeleteAccountPageTests(TestCase):
         from django.urls import reverse
         r = self.client.post(reverse("delete_account"), {"scope": "org", "name": "A", "organisation": "Org"})
         self.assertContains(r, "Leave an email address or a phone number")
+
+
+@override_settings(EMAIL_HOST="smtp.example.com", EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+class AdminEmailTests(TestCase):
+    def setUp(self):
+        from core.models import Organisation, User
+        self.org = Organisation.objects.create(code="EM", name="Email Org")
+        self.admin = User.objects.create_user(username="EM-0001", password="x", organisation=self.org,
+                                              role=User.ROLE_ADMIN, first_name="Ada", email="ada@example.com")
+
+    def test_welcome_mentions_id_and_plans(self):
+        from django.core import mail
+        from billing.emails import welcome
+        self.assertTrue(welcome(self.org, self.admin))
+        body = mail.outbox[0].body
+        self.assertIn("EM-0001", body)
+        self.assertIn("/pricing/", body)
+
+    def test_nudge_at_most_every_14_days(self):
+        from django.core import mail
+        from billing.emails import upgrade_nudge
+        self.assertTrue(upgrade_nudge(self.org, self.admin, "staff_limit"))
+        self.assertFalse(upgrade_nudge(self.org, self.admin, "feature", Feature.objects.first().code))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("/manage/billing/", mail.outbox[0].body)
+
+    def test_only_administrators_get_nudged(self):
+        from core.models import User
+        from billing.emails import upgrade_nudge
+        staff = User.objects.create_user(username="EM-0002", password="x", organisation=self.org, email="s@example.com")
+        self.assertFalse(upgrade_nudge(self.org, staff, "staff_limit"))
+
+    @override_settings(EMAIL_HOST="")
+    def test_nothing_without_an_email_account(self):
+        from billing.emails import upgrade_nudge, welcome
+        self.assertFalse(welcome(self.org, self.admin))
+        self.assertFalse(upgrade_nudge(self.org, self.admin, "staff_limit"))
+
+    def test_sign_up_sends_the_welcome(self):
+        from django.core import mail
+        plan = Plan.objects.filter(is_public=True, price=0).first()
+        r = self.client.post(reverse("register"), {
+            "plan": plan.pk, "org_name": "Signup School", "org_type": "school", "code": "SGS",
+            "first_name": "Bola", "last_name": "Ade", "email": "bola@example.com",
+            "password1": "a-Strong-pass-123", "password2": "a-Strong-pass-123"})
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(any(m.to == ["bola@example.com"] and "Welcome" in m.subject for m in mail.outbox))

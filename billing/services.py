@@ -32,7 +32,18 @@ def in_store_app(request):
     return request is not None and "AttendProApp/" in request.META.get("HTTP_USER_AGENT", "")
 
 
+def _nudge(request, reason, code=None):
+    """An administrator just hit a plan limit: maybe email them about bigger plans (billing.emails)."""
+    user = getattr(request, "user", None)
+    if user is not None and getattr(user, "is_authenticated", False) and getattr(user, "organisation_id", None):
+        from .emails import upgrade_nudge
+        upgrade_nudge(user.organisation, user, reason, code)
+
+
 def upgrade_message(code, request=None):
+    """Shown when someone opens a feature their plan doesn't include (also emails admins, rarely)."""
+    if request is not None:
+        _nudge(request, "feature", code)
     feature = Feature.objects.filter(code=code).first()
     plan = cheapest_plan_with(code)
     name = feature.name if feature else "This feature"
@@ -58,6 +69,9 @@ def feature_required(code):
 
 
 def staff_limit_message(org, request=None):
+    """Shown when the plan's people limit is reached (also emails admins, rarely)."""
+    if request is not None:
+        _nudge(request, "staff_limit")
     plan = org.current_plan
     fix = "Deactivate someone to add more." if in_store_app(request) else \
         "Deactivate someone or upgrade your plan to add more."

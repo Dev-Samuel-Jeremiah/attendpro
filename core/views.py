@@ -103,6 +103,8 @@ def register_org(request):
                 last_name=cd["last_name"], email=cd["email"], organisation=org, role=User.ROLE_ADMIN,
                 designation="Administrator")
         login(request, admin)
+        from billing.emails import welcome
+        welcome(org, admin)
         messages.success(request, f"Welcome! Your admin ID is {admin.username} — use it to sign in next time.")
         if plan.is_free:
             return redirect("dashboard")
