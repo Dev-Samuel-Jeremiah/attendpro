@@ -83,6 +83,8 @@ def pricing_context(cycle):
 
 
 def pricing(request):
+    if services.in_store_app(request):          # no prices inside the store apps
+        return redirect("home")
     return render(request, "billing/pricing.html", pricing_context(_cycle(request)))
 
 
@@ -100,6 +102,9 @@ def billing(request):
 @org_admin_required
 @require_POST
 def checkout(request, slug):
+    if services.in_store_app(request):
+        messages.info(request, "Plan changes aren't available in the app.")
+        return redirect("billing")
     org = request.user.organisation
     plan = get_object_or_404(Plan, slug=slug, is_public=True)
     if plan.is_free:

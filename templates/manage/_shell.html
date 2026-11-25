@@ -11,21 +11,21 @@
       <div class="nav-label">Overview</div>
       <a href="{% url 'dashboard' %}" class="{% active 'dashboard' %}">{% icon "grid" %} Dashboard</a>
       <a href="{% url 'attendance' %}" class="{% active 'attendance' 'record_add' 'record_edit' %}">{% icon "calendar" %} Daily attendance</a>
-      <a href="{% url 'reports' %}" class="{% active 'reports' %}">{% icon "chart" %} Reports{% if 'advanced_reports' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% endif %}</a>
-      <a href="{% url 'analytics' %}" class="{% active 'analytics' %}">{% icon "trend" %} Analytics{% if 'advanced_analytics' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% endif %}</a>
-      <a href="{% url 'saved_reports' %}" class="{% active 'saved_reports' %}">{% icon "folder" %} Saved reports{% if 'advanced_reports' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% endif %}</a>
+      <a href="{% url 'reports' %}" class="{% active 'reports' %}">{% icon "chart" %} Reports{% if 'advanced_reports' not in features %}<span class="nav-lock" title="Not included in your plan">{% icon "lock" 14 %}</span>{% endif %}</a>
+      <a href="{% url 'analytics' %}" class="{% active 'analytics' %}">{% icon "trend" %} Analytics{% if 'advanced_analytics' not in features %}<span class="nav-lock" title="Not included in your plan">{% icon "lock" 14 %}</span>{% endif %}</a>
+      <a href="{% url 'saved_reports' %}" class="{% active 'saved_reports' %}">{% icon "folder" %} Saved reports{% if 'advanced_reports' not in features %}<span class="nav-lock" title="Not included in your plan">{% icon "lock" 14 %}</span>{% endif %}</a>
       <div class="nav-label">People</div>
       <a href="{% url 'members' %}" class="{% active 'members' 'member_add' 'member_edit' 'member_import' 'credentials' %}">{% icon "users" %} Members</a>
-      <a href="{% url 'leave_admin' %}" class="{% active 'leave_admin' 'leave_type_add' 'leave_type_edit' %}">{% icon "leave" %} Leave{% if 'leave_management' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% elif leave_pending %}<span class="nav-count">{{ leave_pending }}</span>{% endif %}</a>
-      <a href="{% url 'payroll' %}" class="{% active 'payroll' 'pay_rates' 'pay_rules' 'payroll_run' %}">{% icon "card" %} Payroll{% if 'payroll' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% endif %}</a>
-      <a href="{% url 'faces' %}" class="{% active 'faces' %}">{% icon "users" %} Face checks{% if 'face_verification' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% endif %}</a>
-      <a href="{% url 'scan_logs' %}" class="{% active 'scan_logs' %}">{% icon "activity" %} Audit trail{% if 'audit_trail' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% endif %}</a>
+      <a href="{% url 'leave_admin' %}" class="{% active 'leave_admin' 'leave_type_add' 'leave_type_edit' %}">{% icon "leave" %} Leave{% if 'leave_management' not in features %}<span class="nav-lock" title="Not included in your plan">{% icon "lock" 14 %}</span>{% elif leave_pending %}<span class="nav-count">{{ leave_pending }}</span>{% endif %}</a>
+      <a href="{% url 'payroll' %}" class="{% active 'payroll' 'pay_rates' 'pay_rules' 'payroll_run' %}">{% icon "card" %} Payroll{% if 'payroll' not in features %}<span class="nav-lock" title="Not included in your plan">{% icon "lock" 14 %}</span>{% endif %}</a>
+      <a href="{% url 'faces' %}" class="{% active 'faces' %}">{% icon "users" %} Face checks{% if 'face_verification' not in features %}<span class="nav-lock" title="Not included in your plan">{% icon "lock" 14 %}</span>{% endif %}</a>
+      <a href="{% url 'scan_logs' %}" class="{% active 'scan_logs' %}">{% icon "activity" %} Audit trail{% if 'audit_trail' not in features %}<span class="nav-lock" title="Not included in your plan">{% icon "lock" 14 %}</span>{% endif %}</a>
       <div class="nav-label">Setup</div>
       {% if uses_qr %}<a href="{% url 'kiosk' org.kiosk_key %}" target="_blank">{% icon "monitor" %} Reception QR screen</a>
-      {% elif 'qr_attendance' not in features %}<a href="{% url 'billing' %}">{% icon "monitor" %} Reception QR screen<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span></a>{% endif %}
-      <a href="{% url 'branches' %}" class="{% active 'branches' 'branch_add' 'branch_edit' %}">{% icon "pin" %} Branches{% if 'multi_branch' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% endif %}</a>
+      {% elif 'qr_attendance' not in features %}<a href="{% url 'billing' %}">{% icon "monitor" %} Reception QR screen<span class="nav-lock" title="Not included in your plan">{% icon "lock" 14 %}</span></a>{% endif %}
+      <a href="{% url 'branches' %}" class="{% active 'branches' 'branch_add' 'branch_edit' %}">{% icon "pin" %} Branches{% if 'multi_branch' not in features %}<span class="nav-lock" title="Not included in your plan">{% icon "lock" 14 %}</span>{% endif %}</a>
       <a href="{% url 'org_settings' %}" class="{% active 'org_settings' %}">{% icon "settings" %} Settings</a>
-      <a href="{% url 'backups' %}" class="{% active 'backups' %}">{% icon "save" %} Backup &amp; recovery{% if 'advanced_backup' not in features %}<span class="nav-lock" title="Upgrade to unlock">{% icon "lock" 14 %}</span>{% endif %}</a>
+      <a href="{% url 'backups' %}" class="{% active 'backups' %}">{% icon "save" %} Backup &amp; recovery{% if 'advanced_backup' not in features %}<span class="nav-lock" title="Not included in your plan">{% icon "lock" 14 %}</span>{% endif %}</a>
       <a href="{% url 'billing' %}" class="{% active 'billing' %}">{% icon "card" %} Plan &amp; billing{% if plan %}<span class="nav-plan">{{ plan.name }}</span>{% endif %}</a>
       <div class="nav-label">Me</div>
       {% if uses_qr %}<a href="{% url 'scanner' %}" class="{% active 'scanner' 'scan' %}">{% icon "scan" %} Scan my attendance</a>{% endif %}
@@ -41,7 +41,7 @@
     </div>
   </aside>
   <main class="main">
-    {% if plan_notice %}<div class="alert {% if plan_notice.0 == 'expired' %}alert-error{% else %}alert-warning{% endif %} plan-notice">{% icon "alert" 18 %}<span>{{ plan_notice.1 }}</span><a href="{% url 'billing' %}" class="btn btn-sm btn-accent">Renew</a></div>{% endif %}
+    {% if plan_notice %}<div class="alert {% if plan_notice.0 == 'expired' %}alert-error{% else %}alert-warning{% endif %} plan-notice">{% icon "alert" 18 %}<span>{{ plan_notice.1 }}</span>{% if not store_app %}<a href="{% url 'billing' %}" class="btn btn-sm btn-accent">Renew</a>{% endif %}</div>{% endif %}
     {% include "partials/messages.html" %}
     {% block content %}{% endblock %}
   </main>

@@ -2,7 +2,7 @@
 {% block title %}Plan &amp; billing{% endblock %}
 {% block content %}
 <div class="topbar"><div><h1>Plan &amp; billing</h1><p>Your current plan, usage and payments.</p></div>
-  <a class="btn btn-ghost" href="{% url 'pricing' %}" target="_blank">Compare plans</a></div>
+  {% if not store_app %}<a class="btn btn-ghost" href="{% url 'pricing' %}" target="_blank">Compare plans</a>{% endif %}</div>
 
 <div class="grid grid-3" style="margin-bottom:22px">
   <div class="card stat t-green"><div class="label">Current plan</div><div class="value">{{ plan.name|default:"—" }}</div>
@@ -11,11 +11,23 @@
     <div class="value">{{ members_used }}{% if org.staff_limit %}<small style="font-size:1rem;color:var(--muted)"> / {{ org.staff_limit }}</small>{% endif %}</div>
     {% if org.staff_limit %}<div class="usage"><span style="width:{% widthratio members_used org.staff_limit 100 %}%"></span></div>
     <div class="sub">{{ org.seats_left }} left · admins included</div>{% else %}<div class="sub">Unlimited</div>{% endif %}</div>
+  {% if store_app %}
+  <div class="card stat t-amber"><div class="label">Features</div>
+    <div class="value">{{ features|length }}</div><div class="sub">included in {{ plan.name|default:"your plan" }}</div></div>
+  {% else %}
   <div class="card stat t-amber"><div class="label">Price</div>
     <div class="value">{% if not plan or plan.is_free %}₦0{% else %}₦{{ plan.price|intcomma }}{% endif %}</div>
     <div class="sub">{% if plan and not plan.is_free %}per {{ plan.period_label }}{% else %}no payment needed{% endif %}</div></div>
+  {% endif %}
 </div>
 
+{% if store_app %}
+<div class="card" style="margin-bottom:22px">
+  <div class="card-head"><h2>Plan changes</h2></div>
+  <p class="muted" style="margin:0">Plan changes aren't available in the app.{% if plan and not plan.is_free and org.plan_expires_at %} Your {{ plan.name }} plan runs until {{ org.plan_expires_at|date:"j M Y" }}.{% endif %}
+    If a paid plan ends, your organisation moves to the free plan: nothing is deleted.</p>
+</div>
+{% else %}
 {% if not paystack %}<div class="alert alert-info" style="margin-bottom:18px">Online payment is being set up. To upgrade now, contact support.</div>{% endif %}
 
 {% include "billing/_cycle_switch.html" %}
@@ -24,6 +36,7 @@
 </div>
 <p class="muted" style="font-size:.85rem;margin:14px 0 26px">Paying for your current plan before it ends adds a full period on top. Switching plans starts the new plan straight away.
   When a paid plan ends, your organisation moves to the free plan: nothing is deleted, but paid features lock until you renew.</p>
+{% endif %}
 
 <div class="card">
   <div class="card-head"><h2>Payments</h2></div>

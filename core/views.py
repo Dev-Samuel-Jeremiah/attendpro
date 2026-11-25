@@ -84,8 +84,14 @@ def logout_view(request):
 def register_org(request):
     """Sign-up. A plan must be chosen; paid plans go straight on to Paystack and the
     organisation stays on the free plan until the payment is confirmed."""
+    from billing.services import in_store_app
+    app = in_store_app(request)
     chosen = Plan.objects.filter(slug=request.GET.get("plan", ""), is_public=True).first()
     form = OrgRegisterForm(request.POST or None, initial={"plan": chosen.pk if chosen else None})
+    if app:  # the store apps only sign up to the free plan (no payments in the app)
+        form.fields["plan"].queryset = form.fields["plan"].queryset.filter(price=0)
+        free = form.fields["plan"].queryset.first()
+        form.initial["plan"] = free.pk if free else None
     if request.method == "POST" and form.is_valid():
         cd = form.cleaned_data
         plan = cd["plan"]
@@ -115,7 +121,7 @@ def register_org(request):
     error_step = next((i + 1 for i, names in enumerate(steps) if any(n in form.errors for n in names)),
                       4 if form.non_field_errors() else 1)
     cycle = request.POST.get("cycle") or request.GET.get("cycle") or "monthly"
-    return render(request, "auth/register.html", {"form": form, "plans": form.fields["plan"].queryset,
+    return render(request, "auth/register.html", {"form": form, "plans": form.fields["plan"].queryset, "store_app": app,
                                                   "cycle": "yearly" if cycle == "yearly" else "monthly",
                                                   "error_step": error_step if form.errors else 1})
 
@@ -243,7 +249,7 @@ def scanner(request):
     org = request.user.organisation
     if not org.uses_qr:
         if not org.has_feature(catalog.QR_ATTENDANCE):
-            messages.info(request, upgrade_message(catalog.QR_ATTENDANCE) if request.user.is_org_admin
+            messages.info(request, upgrade_message(catalog.QR_ATTENDANCE, request) if request.user.is_org_admin
                           else "Use the Clock in button to record your attendance.")
             return redirect("billing" if request.user.is_org_admin else "portal")
         messages.info(request, "Your organisation uses the Clock in button, not the QR code.")
@@ -450,12 +456,12 @@ def members(request):
 def member_add(request):
     org = request.user.organisation
     if org.seats_left() == 0:
-        messages.warning(request, staff_limit_message(org))
+        messages.warning(request, staff_limit_message(org, request))
         return redirect("billing")
     form = MemberForm(org, request.POST or None, request.FILES or None, initial={"is_active": True})
     if request.method == "POST" and form.is_valid():
         if form.cleaned_data.get("is_active") and org.seats_left() == 0:
-            messages.warning(request, staff_limit_message(org))
+            messages.warning(request, staff_limit_message(org, request))
             return redirect("billing")
         m = form.save(commit=False)
         m.organisation = org
@@ -478,7 +484,7 @@ def member_edit(request, pk):
         if m == request.user and (form.cleaned_data["role"] != User.ROLE_ADMIN or not form.cleaned_data["is_active"]):
             messages.error(request, "You cannot remove your own admin access or deactivate yourself.")
         elif reactivating and org.seats_left() == 0:
-            messages.error(request, staff_limit_message(org))
+            messages.error(request, staff_limit_message(org, request))
         else:
             m = form.save(commit=False)
             if form.cleaned_data.get("password"):
@@ -526,7 +532,7 @@ def member_import(request):
         left = org.seats_left()
         if left is not None and len(rows) > left:
             messages.error(request, f"This file has {len(rows)} members but your plan has room for {left} more. "
-                                    + staff_limit_message(org))
+                                    + staff_limit_message(org, request))
             return render(request, "manage/import.html", {"form": form})
         creds = []
         with transaction.atomic():
@@ -699,7 +705,7 @@ def reports(request):
 
     fmt = request.GET.get("export")
     if fmt in ("xlsx", "csv", "pdf") and not org.has_feature(catalog.EXPORTS):
-        messages.warning(request, upgrade_message(catalog.EXPORTS))
+        messages.warning(request, upgrade_message(catalog.EXPORTS, request))
         return redirect("billing")
     if fmt in ("xlsx", "csv", "pdf"):
         data = {"xlsx": services.export_xlsx, "csv": services.export_csv, "pdf": services.export_pdf}[fmt](org, report)

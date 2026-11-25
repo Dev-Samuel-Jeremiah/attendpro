@@ -123,7 +123,8 @@ def run_scheduled_alerts(now=None):
             if days_left in PLAN_REMINDER_DAYS and once(org, today, f"plan_{days_left}"):
                 when = "tomorrow" if days_left == 1 else f"in {days_left} days"
                 notify(org, admins_of(org), f"Your {org.plan.name} plan ends {when}",
-                       f"Renew before {timezone.localtime(org.plan_expires_at):%d %b %Y} to keep "
-                       f"{org.plan.name} features.", url="/manage/billing/", kind="plan")
+                       f"It ends on {timezone.localtime(org.plan_expires_at):%d %b %Y}. After that its "
+                       f"features pause until the plan is renewed; nothing is deleted.",
+                       url="/manage/billing/", kind="plan")
                 sent.append((org.code, f"plan_{days_left}", 1))
     return sent

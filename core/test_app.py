@@ -96,3 +96,47 @@ class ReviewAccountCommandTests(TestCase):
         self.assertIn("already exists", again.getvalue())
         call_command("create_review_account", "--reset", stdout=StringIO())
         self.assertFalse(self.client.login(username="REVIEW-0002", password=pw))
+
+
+class NoPaymentsInStoreAppTests(TestCase):
+    """Store rules: the app never shows prices, checkout or upgrade prompts. The website does."""
+    def setUp(self):
+        from billing.models import Plan
+        self.pro = Plan.objects.filter(is_public=True, price__gt=0).order_by("price").first()
+        self.org = Organisation.objects.create(code="PAY", name="Pay Org")
+        self.admin = User.objects.create_user(username="PAY-0001", password="pw-123456", organisation=self.org,
+                                              role=User.ROLE_ADMIN)
+
+    def test_pricing_page_is_not_shown_in_the_app(self):
+        self.client.cookies["ap_welcomed"] = "1"
+        self.assertRedirects(self.client.get(reverse("pricing"), HTTP_USER_AGENT=ANDROID), reverse("home"),
+                             target_status_code=302)
+        self.assertEqual(self.client.get(reverse("pricing")).status_code, 200)
+
+    def test_billing_page_has_no_checkout_in_the_app(self):
+        self.client.force_login(self.admin)
+        app = self.client.get(reverse("billing"), HTTP_USER_AGENT=IOS).content.decode()
+        self.assertIn("Plan changes aren't available in the app", app)
+        self.assertNotIn("/manage/billing/checkout/", app)
+        self.assertNotIn("₦", app)
+        web = self.client.get(reverse("billing")).content.decode()
+        self.assertIn("/manage/billing/checkout/", web)
+
+    def test_checkout_refused_in_the_app(self):
+        self.client.force_login(self.admin)
+        r = self.client.post(reverse("checkout", args=[self.pro.slug]), HTTP_USER_AGENT=ANDROID)
+        self.assertRedirects(r, reverse("billing"), fetch_redirect_response=False)
+        self.org.refresh_from_db()
+        self.assertFalse(self.org.payments.exists())
+
+    def test_sign_up_in_the_app_offers_only_the_free_plan(self):
+        page = self.client.get(reverse("register") + f"?plan={self.pro.slug}", HTTP_USER_AGENT=ANDROID).content.decode()
+        self.assertIn("starts on the free plan", page)
+        self.assertNotIn(f'data-name="{self.pro.name}"', page)
+        self.assertIn(f'data-name="{self.pro.name}"', self.client.get(reverse("register")).content.decode())
+
+    def test_upgrade_wording(self):
+        from django.test import RequestFactory
+        from billing.services import upgrade_message
+        app = RequestFactory(HTTP_USER_AGENT=ANDROID).get("/")
+        self.assertNotIn("Upgrade", upgrade_message("anything", app))

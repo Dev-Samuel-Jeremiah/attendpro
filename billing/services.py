@@ -25,11 +25,20 @@ def cheapest_plan_with(code):
     return Plan.objects.filter(is_public=True, features__code=code).order_by("price").first()
 
 
-def upgrade_message(code):
+def in_store_app(request):
+    """True inside the Android / iPhone app. App store rules don't allow selling plans there
+    (outside the stores' own billing), so the app shows plans but never prices, checkout or
+    upgrade prompts. The website is unchanged."""
+    return request is not None and "AttendProApp/" in request.META.get("HTTP_USER_AGENT", "")
+
+
+def upgrade_message(code, request=None):
     feature = Feature.objects.filter(code=code).first()
     plan = cheapest_plan_with(code)
     name = feature.name if feature else "This feature"
     if plan:
+        if in_store_app(request):
+            return f"{name} is part of the {plan.name} plan."
         return f"{name} is available on the {plan.name} plan. Upgrade to use it."
     return f"{name} isn't included in your plan."
 
@@ -41,17 +50,18 @@ def feature_required(code):
         def wrapper(request, *a, **kw):
             org = getattr(request.user, "organisation", None)
             if org is None or not org.has_feature(code):
-                messages.warning(request, upgrade_message(code))
+                messages.warning(request, upgrade_message(code, request))
                 return redirect("billing" if getattr(request.user, "is_org_admin", False) else "home")
             return view(request, *a, **kw)
         return wrapper
     return deco
 
 
-def staff_limit_message(org):
+def staff_limit_message(org, request=None):
     plan = org.current_plan
-    return (f"Your {plan.name} plan allows {org.staff_limit} active accounts (admins included). "
-            f"Deactivate someone or upgrade your plan to add more.")
+    fix = "Deactivate someone to add more." if in_store_app(request) else \
+        "Deactivate someone or upgrade your plan to add more."
+    return f"Your {plan.name} plan allows {org.staff_limit} active accounts (admins included). {fix}"
 
 
 # --------------------------------------------------------------------------- #

@@ -31,5 +31,5 @@
   </div>
 
   <div class="ap-toast" aria-hidden="true"><span class="ap-toast-av">AY</span><div><b>Amina Yusuf checked in</b><small>7:52 AM · on time</small></div><span class="ap-toast-ok">{% icon "check" 14 %}</span></div>
-  <footer class="ap-foot"><span>© {% now "Y" %} Techmiary Technology Concepts</span><span><a href="/">Home</a> · <a href="{% url 'pricing' %}">Pricing</a> · <a href="{% url 'contact' %}">Contact</a> · <a href="{% url 'privacy' %}">Privacy</a> · <a href="{% url 'terms' %}">Terms</a></span></footer>
+  <footer class="ap-foot"><span>© {% now "Y" %} Techmiary Technology Concepts</span><span><a href="/">Home</a> · {% if not in_app %}<a href="{% url 'pricing' %}">Pricing</a> · {% endif %}<a href="{% url 'contact' %}">Contact</a> · <a href="{% url 'privacy' %}">Privacy</a> · <a href="{% url 'terms' %}">Terms</a></span></footer>
 </aside>

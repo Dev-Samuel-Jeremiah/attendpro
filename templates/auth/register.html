@@ -27,9 +27,9 @@
 
         <!-- 1. Plan -->
         <fieldset class="af-step" data-step="1">
-          <legend>Choose your plan</legend>
+          <legend>{% if store_app %}Your plan{% else %}Choose your plan{% endif %}</legend>
           <input type="hidden" name="cycle" value="{{ cycle }}" id="af-cycle">
-          <div class="cycle-switch af-cycle" role="radiogroup" aria-label="Billing period" id="af-cycle-switch">
+          <div class="cycle-switch af-cycle" role="radiogroup" aria-label="Billing period" id="af-cycle-switch"{% if store_app %} hidden{% endif %}>
             <button type="button" role="radio" data-cycle="monthly" aria-checked="{% if cycle != 'yearly' %}true{% else %}false{% endif %}">Monthly</button>
             <button type="button" role="radio" data-cycle="yearly" aria-checked="{% if cycle == 'yearly' %}true{% else %}false{% endif %}">Yearly</button>
           </div>
@@ -52,7 +52,8 @@
             {% endfor %}
           </div>
           {% for e in form.plan.errors %}<div class="af-err">{{ e }}</div>{% endfor %}
-          <p class="af-hint">{% icon "card" 14 %} Paid plans: you'll pay securely with Paystack straight after creating your account. <a href="{% url 'pricing' %}" target="_blank">Compare features</a></p>
+          {% if store_app %}<p class="af-hint">{% icon "users" 14 %} Your organisation starts on the free plan, for up to {{ plans.0.staff_limit|default:10 }} people.</p>
+          {% else %}<p class="af-hint">{% icon "card" 14 %} Paid plans: you'll pay securely with Paystack straight after creating your account. <a href="{% url 'pricing' %}" target="_blank">Compare features</a></p>{% endif %}
         </fieldset>
 
         <!-- 2. Organisation -->
