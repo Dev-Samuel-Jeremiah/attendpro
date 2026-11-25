@@ -1,0 +1,7 @@
+{% extends "emails/base.html" %}
+{% block preheader %}{{ body|truncatechars:110 }}{% endblock %}
+{% block content %}
+{% if body %}<p class="ap-text" style="margin:0 0 8px;font-size:16px;line-height:1.7;color:#3b4257;">{{ body|linebreaksbr }}</p>{% endif %}
+{% if link %}{% include "emails/_button.html" with url=link label=button|default:"Open AttendPro" margin="22px 0 4px" %}{% endif %}
+{% endblock %}
+{% block why %}Sent by {{ org.name }} through AttendPro. Administrators can turn email alerts off in Settings.{% endblock %}

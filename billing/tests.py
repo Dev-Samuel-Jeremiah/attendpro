@@ -470,6 +470,9 @@ class SignUpEmailTests(TestCase):
         self.assertEqual(r.status_code, 302)
         body = mail.outbox[-1].body
         self.assertIn("TO CHANGE YOUR PLAN OR MAKE A PAYMENT", body)
+        html = mail.outbox[-1].alternatives[0][0]
+        self.assertIn("To change your plan or make a payment", html)
+        self.assertIn("/static/brand/email-mark.png", html)
         self.assertIn("https://attendpro.cloud/manage/billing/", body)
         self.assertIn("MLS-0001", body)
 

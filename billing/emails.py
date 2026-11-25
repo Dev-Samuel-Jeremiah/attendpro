@@ -9,8 +9,9 @@ import logging
 from datetime import timedelta
 
 from django.conf import settings
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMultiAlternatives
 from django.db.models import Min
+from django.template.loader import render_to_string
 from django.utils import timezone
 
 log = logging.getLogger(__name__)
@@ -22,14 +23,29 @@ def _site_url(path=""):
     return (settings.ATTENDPRO_PUBLIC_URL or "https://attendpro.cloud").rstrip("/") + path
 
 
-def _send(to, subject, body):
+def email_context(subject, **extra):
+    """What every HTML email (templates/emails/) needs."""
+    from .models import SiteSettings
+    return {"subject": subject, "site": SiteSettings.load(), "site_url": _site_url(),
+            "logo_url": _site_url("/static/brand/email-mark.png"), "year": timezone.localdate().year, **extra}
+
+
+def render_html(template, subject, **extra):
+    return render_to_string(template, email_context(subject, **extra))
+
+
+def _send(to, subject, body, html=None):
+    """Plain text for every mail app, plus the designed HTML version where it can be shown."""
     if not settings.EMAIL_HOST or not to:
         return False
     from .models import SiteSettings
     site = SiteSettings.load()
     reply = [e for e in (site.sales_email, site.contact_email) if e][:1]
     try:
-        EmailMessage(subject, body, to=[to], reply_to=reply or None).send()
+        msg = EmailMultiAlternatives(subject, body, to=[to], reply_to=reply or None)
+        if html:
+            msg.attach_alternative(html, "text/html")
+        msg.send()
         return True
     except Exception:  # email trouble must never break sign-up or the page
         log.exception("Couldn't send %r to an administrator", subject)
@@ -84,7 +100,18 @@ def welcome(org, admin):
         "",
     ]
     lines += [_contact_line(), "", "The AttendPro team"]
-    return _send(admin.email, f"Welcome to AttendPro, {admin.first_name or org.name}", "\n".join(lines))
+    subject = f"Welcome to AttendPro, {admin.first_name or org.name}"
+    html = render_html("emails/welcome.html", subject, kicker="Welcome to AttendPro",
+                       heading=f"{org.name} is ready", org=org, admin=admin, plan=plan, cheapest_paid=paid,
+                       login_url=_site_url("/login/"), billing_url=_site_url("/manage/billing/"),
+                       pricing_url=_site_url("/pricing/"), contact_line=_contact_line(),
+                       steps=[("Set your attendance location",
+                               "In Settings, so the Clock in button knows where work is. Or switch on the reception QR screen."),
+                              ("Add your people",
+                               "In Members, one by one or by importing a spreadsheet. Each person gets their own ID."),
+                              ("Clock in yourself",
+                               "Try it once in the AttendPro app to see exactly what your team will see.")])
+    return _send(admin.email, subject, "\n".join(lines), html)
 
 
 def upgrade_nudge(org, user, reason, feature_code=None):
@@ -102,16 +129,20 @@ def upgrade_nudge(org, user, reason, feature_code=None):
         return False
     AlertLog.objects.get_or_create(organisation=org, date=today, kind="upsell")
 
+    from .models import Plan
     plan = org.current_plan
     if reason == "staff_limit":
         what = (f"{org.name} has reached the {org.staff_limit} people allowed on the {plan.name} plan. "
                 f"A bigger plan lets you add everyone.")
-        target = None
+        target = next((p for p in Plan.objects.filter(is_public=True, price__gt=0).order_by("price")
+                       if p.staff_limit is None or (org.staff_limit and p.staff_limit > org.staff_limit)), None)
+        heading = "Your team is growing"
     else:
         feature = Feature.objects.filter(code=feature_code).first()
         target = cheapest_plan_with(feature_code) if feature_code else None
         what = (f"You opened {feature.name if feature else 'a feature'}, which is part of the "
                 f"{target.name if target else 'paid'} plan.")
+        heading = f"Unlock {feature.name}" if feature else "Unlock more of AttendPro"
     lines = [f"Hi {user.first_name or 'there'},", "", what, ""]
     if target and not target.is_free:
         lines.append(f"{target.name} is ₦{target.price:,} a month"
@@ -122,4 +153,14 @@ def upgrade_nudge(org, user, reason, feature_code=None):
               "Plans never renew automatically, and you can ask for a full refund within 7 days.",
               "", _contact_line(), "", "The AttendPro team"]
     subject = f"Grow {org.name} with AttendPro" + (f" {target.name}" if target and not target.is_free else "")
-    return _send(user.email, subject, "\n".join(lines))
+    highlights = []
+    if target is not None:  # what the bigger plan adds, starting with the feature they tried to open
+        have = set(plan.features.values_list("pk", flat=True)) if plan else set()
+        extra = [f for f in target.features.all() if f.pk not in have]
+        extra.sort(key=lambda f: f.code != feature_code)
+        highlights = [f.name for f in extra[:5]]
+    html = render_html("emails/upgrade.html", subject, kicker=f"{org.name} · {plan.name} plan", heading=heading,
+                       org=org, user=user, intro=what, target=target, highlights=highlights,
+                       billing_url=_site_url("/manage/billing/"), pricing_url=_site_url("/pricing/"),
+                       contact_line=_contact_line())
+    return _send(user.email, subject, "\n".join(lines), html)

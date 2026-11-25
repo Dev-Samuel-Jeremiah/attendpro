@@ -96,6 +96,7 @@ class LeaveNotificationTests(Base):
         self.assertTrue(Notification.objects.filter(user=self.member, title="Your leave was approved").exists())
         self.assertEqual(sorted(m.to[0] for m in mail.outbox), ["ada@lv.test", "boss@lv.test"])
 
+    @override_settings(EMAIL_HOST="")
     def test_email_off_by_default_when_no_smtp(self):
         services.submit(self.member, self.annual, next_monday(), next_monday())
         self.assertEqual(len(mail.outbox), 0)

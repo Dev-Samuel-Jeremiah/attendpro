@@ -5,7 +5,7 @@ import logging
 from datetime import datetime, timedelta
 
 from django.conf import settings
-from django.core.mail import EmailMessage, get_connection
+from django.core.mail import get_connection
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
@@ -49,9 +49,19 @@ def notify(org, users, title, body="", url="", kind="info", email=True):
 def _send_emails(org, users, title, body, url):
     if not users:
         return
+    from django.core.mail import EmailMultiAlternatives
+
+    from billing.emails import render_html
     link = _absolute(url)
+    subject = f"{title} · {org.name}"
     text = f"{body}\n\n{('Open AttendPro: ' + link) if link else ''}\n\n— {org.name} on AttendPro".strip()
-    messages = [EmailMessage(subject=f"{title} · {org.name}", body=text, to=[u.email]) for u in users]
+    html = render_html("emails/notification.html", subject, kicker=org.name, heading=title, body=body,
+                       link=link, org=org)
+    messages = []
+    for u in users:
+        m = EmailMultiAlternatives(subject=subject, body=text, to=[u.email])
+        m.attach_alternative(html, "text/html")
+        messages.append(m)
     try:
         get_connection(fail_silently=False).send_messages(messages)
     except Exception:  # a mail problem must never break attendance

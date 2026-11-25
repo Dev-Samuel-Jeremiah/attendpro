@@ -1,0 +1,55 @@
+{% extends "emails/base.html" %}{% load humanize %}
+{% block preheader %}Your administrator ID is {{ admin.username }}. Here's how to get started, and how to manage your plan.{% endblock %}
+{% block header_right %}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+  <td style="padding-left:6px;"><div style="width:14px;height:14px;border-radius:50%;background:#12b886;"></div></td>
+  <td style="padding-left:6px;"><div style="width:10px;height:10px;border-radius:50%;border:2px solid #c9d1e3;"></div></td>
+  <td style="padding-left:6px;"><div style="width:10px;height:10px;border-radius:50%;border:2px solid #c9d1e3;"></div></td>
+  <td style="padding-left:6px;"><div style="width:10px;height:10px;border-radius:50%;border:2px solid #c9d1e3;"></div></td>
+</tr></table>
+{% endblock %}
+{% block content %}
+<p class="ap-text" style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#3b4257;">Hi {{ admin.first_name|default:"there" }}, welcome to AttendPro! <b class="ap-strong" style="color:#0d1530;">{{ org.name }}</b> is set up and ready. Here's everything you need to get going.</p>
+
+<!-- Administrator ID -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 8px;"><tr>
+  <td class="ap-soft" style="background:#f2f6fb;border:1px solid #e3e9f3;border-left:5px solid #12b886;border-radius:14px;padding:18px 20px;">
+    <div class="ap-muted" style="font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#6b7489;margin-bottom:6px;">Your administrator ID</div>
+    <div class="ap-strong" style="font-family:'SFMono-Regular',Consolas,'Courier New',monospace;font-size:28px;font-weight:800;letter-spacing:1px;color:#0d1530;">{{ admin.username }}</div>
+    <div class="ap-muted" style="font-size:13px;line-height:1.6;color:#6b7489;margin-top:6px;">Sign in with this ID and your password, in the AttendPro app or on the website. Keep this email safe.</div>
+  </td>
+</tr></table>
+{% include "emails/_button.html" with url=login_url label="Sign in to AttendPro" margin="20px 0 6px" %}
+
+<!-- Steps -->
+<h2 class="ap-strong" style="margin:34px 0 14px;font-size:19px;line-height:1.3;color:#0d1530;">Get going in three steps</h2>
+{% for title, text in steps %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px;"><tr>
+  <td valign="top" width="44" style="width:44px;">
+    <div style="width:32px;height:32px;line-height:32px;border-radius:50%;background:#e3f8f0;color:#0b8a64;font-weight:800;font-size:15px;text-align:center;">{{ forloop.counter }}</div>
+  </td>
+  <td valign="top">
+    <div class="ap-strong" style="font-size:16px;font-weight:700;color:#0d1530;line-height:1.4;">{{ title }}</div>
+    <div class="ap-text" style="font-size:15px;line-height:1.6;color:#5a6277;">{{ text }}</div>
+  </td>
+</tr></table>
+{% endfor %}
+
+<!-- Plan & payments -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:30px 0 4px;"><tr>
+  <td style="background:#0d1530;background-image:linear-gradient(135deg,#0d1530,#18305e);border-radius:16px;padding:26px 24px;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#6ee7c0;margin-bottom:8px;">Your plan</div>
+    <div style="font-size:21px;font-weight:800;color:#ffffff;line-height:1.3;">{{ plan.name|default:"Basic" }}{% if plan.is_free %} · Free{% endif %}{% if plan.staff_limit %} <span style="font-weight:500;color:#aeb8d6;font-size:16px;">· up to {{ plan.staff_limit }} people</span>{% endif %}</div>
+    {% if plan.is_free and cheapest_paid %}<div style="font-size:15px;line-height:1.6;color:#c8d0e6;margin-top:10px;">Need more people, QR attendance, reports, leave or payroll? Paid plans start from <b style="color:#ffffff;">₦{{ cheapest_paid|intcomma }} a month</b>.</div>{% endif %}
+    <div style="height:1px;background:#2b3a66;margin:18px 0;"></div>
+    <div style="font-size:16px;font-weight:700;color:#ffffff;margin-bottom:6px;">To change your plan or make a payment</div>
+    <div style="font-size:15px;line-height:1.65;color:#c8d0e6;">Visit our website in a web browser (on a computer, or Chrome or Safari on your phone), sign in with <b style="color:#ffffff;">{{ admin.username }}</b> and open <b style="color:#ffffff;">Plan &amp; billing</b>. Pay by card, bank transfer or USSD.</div>
+    {% include "emails/_button.html" with url=billing_url label="Open Plan & billing" margin="18px 0 10px" %}
+    <div style="font-size:13px;line-height:1.6;color:#94a0c2;">Plan changes and payments can't be made inside the mobile app, but a new plan works in the app straight away. <a href="{{ pricing_url }}" style="color:#6ee7c0;">Compare plans</a></div>
+  </td>
+</tr></table>
+
+<p class="ap-text" style="margin:28px 0 0;font-size:15px;line-height:1.7;color:#5a6277;">{{ contact_line }}</p>
+<p class="ap-text" style="margin:14px 0 0;font-size:15px;line-height:1.7;color:#5a6277;">The AttendPro team</p>
+{% endblock %}
+{% block why %}You're receiving this because you created an AttendPro account for {{ org.name }}.{% endblock %}

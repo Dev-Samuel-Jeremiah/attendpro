@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>{{ subject }}</title>
+<style>
+  body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+  table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+  img { border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
+  a { color: #0b8a64; }
+  @media (max-width: 620px) {
+    .ap-wrap { padding: 14px 10px !important; }
+    .ap-card { padding: 28px 22px !important; border-radius: 18px !important; }
+    .ap-h1 { font-size: 26px !important; }
+    .ap-btn a { display: block !important; }
+    .ap-hide-sm { display: none !important; }
+  }
+  @media (prefers-color-scheme: dark) {
+    .ap-bg { background: #0b1020 !important; }
+    .ap-card { background: #151c33 !important; border-color: #26304f !important; }
+    .ap-h1, .ap-strong { color: #f2f5fb !important; }
+    .ap-text { color: #c3cbe0 !important; }
+    .ap-muted { color: #8f9ab8 !important; }
+    .ap-soft { background: #1c2542 !important; border-color: #2c3760 !important; }
+    .ap-word { color: #f2f5fb !important; }
+  }
+</style>
+</head>
+<body class="ap-bg" style="margin:0;padding:0;background:#eef1f7;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">{% block preheader %}{% endblock %}&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="ap-bg" style="background:#eef1f7;">
+  <tr><td align="center" class="ap-wrap" style="padding:28px 16px;">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
+
+      <!-- Header -->
+      <tr><td style="padding:6px 6px 18px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+          <td valign="middle">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+              <td valign="middle" style="padding-right:10px;"><img src="{{ logo_url }}" width="67" height="40" alt="AttendPro" style="display:block;width:67px;height:40px;"></td>
+              <td valign="middle" style="font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+                <div class="ap-word" style="font-size:22px;line-height:1.1;font-weight:800;color:#0d1530;letter-spacing:-0.3px;">Attend<span style="color:#12b886;">Pro</span></div>
+                <div class="ap-muted" style="font-size:12px;line-height:1.4;color:#6b7489;font-style:italic;">Attendance, made effortless.</div>
+              </td>
+            </tr></table>
+          </td>
+          <td valign="middle" align="right" class="ap-hide-sm">{% block header_right %}{% endblock %}</td>
+        </tr></table>
+      </td></tr>
+
+      <!-- Card -->
+      <tr><td class="ap-card" style="background:#ffffff;border:1px solid #e5e9f2;border-radius:22px;padding:38px 36px;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+        {% if kicker %}<div style="font-size:12px;line-height:1.4;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#12b886;margin:0 0 12px;">{{ kicker }}</div>{% endif %}
+        {% if heading %}<h1 class="ap-h1" style="margin:0 0 18px;font-size:30px;line-height:1.22;font-weight:800;color:#0d1530;letter-spacing:-0.4px;">{{ heading }}</h1>{% endif %}
+        {% block content %}{% endblock %}
+      </td></tr>
+
+      <!-- Footer -->
+      <tr><td style="padding:22px 18px 8px;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;text-align:center;">
+        <p class="ap-muted" style="margin:0 0 8px;font-size:12px;line-height:1.6;color:#8790a6;">{% block why %}You're receiving this because you have an AttendPro account.{% endblock %}</p>
+        <p class="ap-muted" style="margin:0 0 8px;font-size:12px;line-height:1.6;color:#8790a6;">
+          <a href="{{ site_url }}" style="color:#6b7489;text-decoration:underline;">attendpro.cloud</a> &nbsp;·&nbsp;
+          <a href="{{ site_url }}/privacy/" style="color:#6b7489;text-decoration:underline;">Privacy</a> &nbsp;·&nbsp;
+          <a href="{{ site_url }}/contact/" style="color:#6b7489;text-decoration:underline;">Help</a>
+        </p>
+        <p class="ap-muted" style="margin:0;font-size:12px;line-height:1.6;color:#8790a6;">© {{ year }} {{ site.company_name }}{% if site.address %} · {{ site.address }}{% endif %}</p>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</body>
+</html>
