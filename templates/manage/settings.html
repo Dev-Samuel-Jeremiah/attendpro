@@ -71,14 +71,17 @@
         {% include "partials/field.html" with f=form.location_radius_m %}
         <div class="field"><label>&nbsp;</label>
           <div class="btn-row">
-            <button type="button" class="btn btn-ghost" id="use-location">{% icon "pin" %} Use my current location</button>
+            <button type="button" class="btn btn-accent" id="use-location">{% icon "pin" %} Use my current location</button>
             <a class="btn btn-ghost" id="view-map" target="_blank" rel="noopener" {% if not org.has_location %}hidden{% endif %}
-               href="https://www.google.com/maps?q={{ org.latitude }},{{ org.longitude }}">View on map</a>
+               href="https://www.google.com/maps?q={{ org.latitude }},{{ org.longitude }}">{% icon "monitor" %} View on map</a>
           </div>
           <div class="help" id="loc-status">Turn on your phone's Location (GPS) first, then stand at your premises.</div>
         </div>
       </div>
-      <button class="btn btn-accent">{% icon "save" %} Save settings</button>
+      <div class="save-bar">
+        <button class="btn btn-accent">{% icon "save" %} Save settings</button>
+        <a class="btn btn-ghost" href="{% url 'dashboard' %}">{% icon "grid" %} Back to dashboard</a>
+      </div>
     </form>
   </div>
   <div class="stack">

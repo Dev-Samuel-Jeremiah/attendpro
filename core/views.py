@@ -779,6 +779,9 @@ def org_settings(request):
             return redirect("org_settings")
         if form.is_valid():
             form.save()
+            if request.GET.get("from") == "setup":   # came from the dashboard's "Get AttendPro ready" list
+                messages.success(request, "Settings saved." + (" Your attendance location is set." if org.has_location else ""))
+                return redirect("dashboard")
             messages.success(request, "Settings saved.")
             return redirect("org_settings")
     kiosk_url = request.build_absolute_uri(reverse("kiosk", args=[org.kiosk_key]))

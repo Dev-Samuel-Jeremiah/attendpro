@@ -3,6 +3,7 @@
 <div class="mobile-head">
   <button onclick="document.body.classList.toggle('nav-open')" aria-label="Menu">{% icon "menu" 24 %}</button>
   <b>{{ org.name }}</b>
+  {% if request.resolver_match.url_name != "dashboard" %}<a class="mh-home" href="{% url 'dashboard' %}">{% icon "grid" 16 %} Dashboard</a>{% endif %}
 </div>
 <div class="shell">
   <aside class="sidebar" onclick="if(event.target.closest('a'))document.body.classList.remove('nav-open')">

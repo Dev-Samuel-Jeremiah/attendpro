@@ -80,7 +80,8 @@
   const marks = [...document.querySelectorAll("#af-steps li")];
   const back = $("af-back"), next = $("af-next"), create = $("af-create");
   const f = name => reg.querySelector(`[name="${name}"]`);
-  let current = 1, codeState = {code: "", ok: false};
+  const firstStep = +reg.dataset.firstStep || 1;   // 2 in the app: the plan is always the free one
+  let current = firstStep, codeState = {code: "", ok: false};
   let codeTouched = !!f("code").value;
 
   function setError(input, msg) {
@@ -101,8 +102,8 @@
       m.classList.toggle("on", i === n); m.classList.toggle("done", i < n);
       m.setAttribute("aria-current", i === n ? "step" : "false");
     });
-    $("af-progress").style.width = (n / 4 * 100) + "%";
-    back.classList.toggle("hide", n === 1);
+    $("af-progress").style.width = ((n - firstStep + 1) / (5 - firstStep) * 100) + "%";
+    back.classList.toggle("hide", n === firstStep);
     next.style.display = n === 4 ? "none" : "";
     create.classList.toggle("show", n === 4);
     if (n === 4) review();
@@ -144,7 +145,7 @@
     if (await valid(current)) show(current + 1);
     else { const bad = steps[current - 1].querySelector('[aria-invalid="true"], .bad input'); if (bad) bad.focus(); }
   });
-  back.addEventListener("click", () => show(Math.max(1, current - 1)));
+  back.addEventListener("click", () => show(Math.max(firstStep, current - 1)));
   marks.forEach(m => m.addEventListener("click", () => { if (m.classList.contains("done")) show(+m.dataset.go); }));
   reg.querySelectorAll("[data-go]").forEach(b => { if (b.tagName === "BUTTON") b.addEventListener("click", () => show(+b.dataset.go)); });
   reg.addEventListener("keydown", e => {
@@ -275,6 +276,6 @@
   }
 
   // Start: on the step the server flagged, or the first one
-  const start = +reg.dataset.errorStep || 1;
-  show(start, start !== 1);
+  const start = Math.max(+reg.dataset.errorStep || firstStep, firstStep);
+  show(start, start !== firstStep);
 })();

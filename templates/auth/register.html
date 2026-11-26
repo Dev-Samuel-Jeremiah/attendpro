@@ -12,15 +12,15 @@
       <p class="af-lead">You'll be the administrator. Already registered? <a href="{% url 'login' %}">Sign in</a></p>
       {% include "partials/messages.html" %}
 
-      <ol class="af-steps" id="af-steps" aria-label="Progress">
-        <li data-go="1"><span>1</span><em>Plan</em></li>
-        <li data-go="2"><span>2</span><em>Organisation</em></li>
-        <li data-go="3"><span>3</span><em>Your account</em></li>
-        <li data-go="4"><span>4</span><em>Review</em></li>
+      <ol class="af-steps{% if store_app %} three{% endif %}" id="af-steps" aria-label="Progress">
+        {% if not store_app %}<li data-go="1"><span>1</span><em>Plan</em></li>{% endif %}
+        <li data-go="2"><span>{% if store_app %}1{% else %}2{% endif %}</span><em>Organisation</em></li>
+        <li data-go="3"><span>{% if store_app %}2{% else %}3{% endif %}</span><em>Your account</em></li>
+        <li data-go="4"><span>{% if store_app %}3{% else %}4{% endif %}</span><em>Review</em></li>
       </ol>
       <div class="af-progress" aria-hidden="true"><i id="af-progress"></i></div>
 
-      <form method="post" novalidate id="af-reg" class="af-form" data-error-step="{{ error_step }}"
+      <form method="post" novalidate id="af-reg" class="af-form" data-error-step="{{ error_step }}" data-first-step="{% if store_app %}2{% else %}1{% endif %}"
             data-check-url="{% url 'register_check_code' %}">
         {% csrf_token %}
         {% for e in form.non_field_errors %}<div class="af-note af-note-error af-shake" role="alert">{% icon "alert" 18 %}<span>{{ e }}</span></div>{% endfor %}

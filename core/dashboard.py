@@ -190,7 +190,7 @@ def _setup(org, total):
     """First steps for a new organisation; hidden once everything is done."""
     steps = [
         {"done": org.has_location, "title": "Set your attendance location",
-         "text": "So the Clock in button knows where work is.", "url": reverse("org_settings") + "#location"},
+         "text": "So the Clock in button knows where work is.", "url": reverse("org_settings") + "?from=setup#location"},
         {"done": total > 1, "title": "Add your people",
          "text": "One by one, or import a spreadsheet.", "url": reverse("members")},
         {"done": AttendanceRecord.objects.filter(organisation=org).exists(), "title": "Record the first attendance",

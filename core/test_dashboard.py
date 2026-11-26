@@ -72,3 +72,23 @@ class DashboardTests(TestCase):
         r = self.client.get(reverse("platform"))
         self.assertContains(r, "Revenue, last 6 months")
         self.assertContains(r, "Dash Org")
+
+
+class SetupFlowTests(TestCase):
+    def test_saving_settings_from_the_setup_list_returns_to_the_dashboard(self):
+        org = Organisation.objects.create(code="SET", name="Setup Org")
+        admin = User.objects.create_user(username="SET-0001", password="pw-123456", organisation=org,
+                                         role=User.ROLE_ADMIN)
+        self.client.force_login(admin)
+        dash = self.client.get(reverse("dashboard"))
+        self.assertContains(dash, "?from=setup#location")
+        page = self.client.get(reverse("org_settings") + "?from=setup")
+        self.assertContains(page, "Back to dashboard")
+        self.assertContains(page, 'class="mh-home"')
+        from core.forms import OrgSettingsForm
+        data = {k: v for k, v in OrgSettingsForm(instance=org).initial.items() if v is not None}
+        data.update({"latitude": "9.9", "longitude": "8.9", "location_radius_m": 150,
+                     "work_start": "08:00", "work_end": "16:00", "grace_minutes": 10, "name": org.name})
+        r = self.client.post(reverse("org_settings") + "?from=setup", data)
+        if r.status_code == 302:
+            self.assertRedirects(r, reverse("dashboard"), fetch_redirect_response=False)

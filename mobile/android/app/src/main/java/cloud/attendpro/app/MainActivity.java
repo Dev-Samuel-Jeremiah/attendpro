@@ -2,6 +2,8 @@ package cloud.attendpro.app;
 
 import android.app.DownloadManager;
 import android.content.Context;
+import android.graphics.Color;
+import android.os.Build;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -9,6 +11,9 @@ import android.webkit.CookieManager;
 import android.webkit.URLUtil;
 import android.webkit.WebView;
 import android.widget.Toast;
+
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.getcapacitor.BridgeActivity;
 
@@ -23,6 +28,20 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AppPrintPlugin.class);       // window.print() for Print buttons (static/js/app-bridge.js)
         super.onCreate(savedInstanceState);
         enableDownloads(getBridge().getWebView());
+        brandSystemBars();
+    }
+
+    /**
+     * Android 15+ draws apps edge to edge and no longer lets apps colour the status bar. The app keeps
+     * the page clear of the bars, so what shows behind them is the window background: make it navy,
+     * like AttendPro's headers, with light icons so the clock and battery stay readable.
+     */
+    private void brandSystemBars() {
+        if (Build.VERSION.SDK_INT < 35) return;
+        getWindow().getDecorView().setBackgroundColor(Color.parseColor("#0d1530"));
+        WindowInsetsControllerCompat bars = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        bars.setAppearanceLightStatusBars(false);
+        bars.setAppearanceLightNavigationBars(false);
     }
 
     /** Reports, payslips and backups go to the phone's Downloads folder, still signed in. */

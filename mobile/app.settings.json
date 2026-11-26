@@ -1,9 +1,9 @@
 {
   "appId": "cloud.attendpro.app",
   "appName": "AttendPro",
-  "version": "1.1.0",
-  "build": 2,
-  "releaseNotes": "More reliable clock-in: uses your phone's GPS directly for a precise location, and tells you if Precise location is switched off.",
+  "version": "1.1.1",
+  "build": 3,
+  "releaseNotes": "Clearer status bar on newer Android phones, plus improvements suggested by testers.",
   "siteUrl": "https://attendpro.cloud/app/",
   "devUrl": "",
   "appHosts": [

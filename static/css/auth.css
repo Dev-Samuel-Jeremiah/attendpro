@@ -134,6 +134,8 @@ body.au { background: #fff; }
 .af-recent-text b { font-family: var(--mono); letter-spacing: .03em; }
 
 /* Help + alternative */
+#af-forgot:not([open]) { display: none; }      /* opened by the "Forgot password?" link */
+#af-forgot > summary { pointer-events: none; }
 .af-help { margin-top: 16px; border: 1px solid var(--line); border-radius: 13px; padding: 0 14px; background: #fbfcfe; }
 .af-help summary { cursor: pointer; list-style: none; padding: 12px 0; font-weight: 600; font-size: .9rem; display: flex; align-items: center; gap: 8px; color: var(--ink-2); }
 .af-help summary::-webkit-details-marker { display: none; }
@@ -142,9 +144,13 @@ body.au { background: #fff; }
 .af-alt-btn { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: var(--ink); padding: 10px 16px; border-radius: 12px;
   border: 1.5px solid #dde3ee; background: #fff; text-decoration: none; }
 .af-alt-btn:hover { border-color: var(--ink); text-decoration: none; }
+.af-alt-btn { border: 1.5px solid #9fe3c9 !important; background: #effbf6 !important; color: #0b6b4f !important; width: 100%; justify-content: center; }
+.af-alt-btn svg { flex-shrink: 0; }
+.af-alt-btn svg:last-child { margin-left: auto; }
 
 /* ---- Wizard ---- */
 .af-steps { list-style: none; padding: 0; margin: 0 0 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.af-steps.three { grid-template-columns: repeat(3, 1fr); }
 .af-steps li { display: flex; align-items: center; gap: 8px; font-size: .84rem; color: var(--muted); cursor: default; }
 .af-steps li span { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: .8rem;
   border: 1.5px solid #d5dbe8; background: #fff; flex-shrink: 0; transition: all .25s; }
@@ -245,6 +251,7 @@ html.js .af-next.hide, html.js .af-back.hide { visibility: hidden; }
   .af-plan-card .af-plan-staff, .af-plan-card .af-plan-tag { grid-column: 1 / -1; }
   .af-steps li em { display: none; }
   .af-steps { grid-template-columns: repeat(4, auto); justify-content: space-between; }
+  .af-steps.three { grid-template-columns: repeat(3, auto); }
   .af-review div { grid-template-columns: 1fr auto; }
   .af-review dt { grid-column: 1 / -1; }
   .af-nav .af-submit { min-width: 0; flex: 1; }
