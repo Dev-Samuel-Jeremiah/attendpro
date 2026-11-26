@@ -72,10 +72,11 @@
         <div class="field"><label>&nbsp;</label>
           <div class="btn-row">
             <button type="button" class="btn btn-accent" id="use-location">{% icon "pin" %} Use my current location</button>
+            <button type="button" class="btn btn-ghost" id="pick-location">{% icon "monitor" %} Pick on map</button>
             <a class="btn btn-ghost" id="view-map" target="_blank" rel="noopener" {% if not org.has_location %}hidden{% endif %}
-               href="https://www.google.com/maps?q={{ org.latitude }},{{ org.longitude }}">{% icon "monitor" %} View on map</a>
+               href="https://www.google.com/maps?q={{ org.latitude }},{{ org.longitude }}">View on Google Maps</a>
           </div>
-          <div class="help" id="loc-status">Turn on your phone's Location (GPS) first, then stand at your premises.</div>
+          <div class="help" id="loc-status">Stand at your premises with Location (GPS) on and tap Use my current location, or pick the spot on the map.</div>
         </div>
       </div>
       <div class="save-bar">
@@ -114,30 +115,10 @@
 {% endblock %}
 {% block scripts %}
 <script src="{% static 'js/locate.js' %}"></script>
+<script src="{% static 'js/mappick.js' %}"></script>
+<script src="{% static 'js/sitelocation.js' %}"></script>
 <script>
-(function () {
-  const btn = document.getElementById("use-location"), status = document.getElementById("loc-status");
-  const lat = document.getElementById("id_latitude"), lng = document.getElementById("id_longitude");
-  const map = document.getElementById("view-map");
-  function updateMap() {
-    if (lat.value && lng.value) { map.href = "https://www.google.com/maps?q=" + lat.value + "," + lng.value; map.hidden = false; }
-  }
-  lat.addEventListener("change", updateMap); lng.addEventListener("change", updateMap);
-  btn.addEventListener("click", function () {
-    status.textContent = "Getting your location…";
-    AttendPro.locate({target: 15, goodEnough: 30, patience: 12000, maxWait: 30000, onProgress: function (acc) {
-      status.textContent = "Getting a precise location… (±" + acc + " m)";
-    }}).then(function (p) {
-      lat.value = p.lat.toFixed(6);
-      lng.value = p.lng.toFixed(6);
-      updateMap();
-      status.textContent = "Location filled in (accurate to about " + Math.round(p.accuracy) + " m). Click Save settings to keep it." +
-        (p.accuracy > 50 ? " That's not very precise: for a better reading, stand outside or near a window and try again." : "");
-    }, function (e) {
-      status.textContent = e.message;
-      AttendPro.locationHelp(e, function () { document.getElementById("use-location").click(); });
-    });
-  });
-})();
+AttendPro.siteLocation({lat: "id_latitude", lng: "id_longitude", radius: "id_location_radius_m", mapLink: "view-map",
+                        status: "loc-status", use: "use-location", pick: "pick-location", saveLabel: "Save settings"});
 </script>
 {% endblock %}

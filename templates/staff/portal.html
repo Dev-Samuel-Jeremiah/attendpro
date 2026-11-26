@@ -155,15 +155,16 @@
   }
   function reset() { btn.disabled = false; label.textContent = original; }
 
+  AttendPro.warmUp(240);     // start finding GPS as soon as the page opens
   btn.addEventListener("click", async function () {
     btn.disabled = true;
     label.textContent = "Finding your location…";
     let loc;
     try {
-      loc = await AttendPro.locate({goodEnough: +btn.dataset.goodEnough || 60, onProgress: function (acc, secs) {
+      loc = await AttendPro.locate({goodEnough: +btn.dataset.goodEnough || 60, maxWait: 45000, onProgress: function (acc, secs) {
         label.textContent = acc <= 60 ? "Location found (±" + acc + " m)"
-          : secs >= 10 && acc > 300 ? "Still rough (±" + acc + " m). Step outside or near a window…"
-          : "Getting a precise location… (±" + acc + " m)";
+          : secs >= 10 && acc > 300 ? "Weak GPS (±" + acc + " m). Try near a window…"
+          : "Finding your location… ±" + acc + " m";
       }});
     } catch (e) {
       reset();
@@ -177,6 +178,11 @@
         () => { label.textContent = "Taking a selfie…"; });
       show(d);
       window.dispatchEvent(new CustomEvent("attendpro:result", {detail: d}));
+      if (!d.ok && /not precise/i.test(d.title || "")) {     // the phone only had a rough reading
+        AttendPro.locationHelp({kind: "imprecise", title: "Your location is too rough (±" + Math.round(loc.accuracy) + " m)",
+          message: "Your phone couldn't find you precisely enough to confirm you're at work. These steps usually fix it:"},
+          () => btn.click());
+      }
       if (d.ok && d.action !== "duplicate") { setTimeout(() => location.reload(), 2500); return; }
     } catch (e) {
       show({ok: false, title: "No connection", message: "Couldn't reach the server. Check your Wi-Fi or data and try again."});

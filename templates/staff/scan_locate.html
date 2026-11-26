@@ -30,6 +30,10 @@
   const token = "{{ token|escapejs }}";
   function show(d) {
     window.dispatchEvent(new CustomEvent("attendpro:result", {detail: d}));
+    if (!d.ok && /not precise/i.test(d.title || "") && window.AttendPro && AttendPro.locationHelp) {
+      AttendPro.locationHelp({kind: "imprecise", title: "Your location is too rough",
+        message: "Your phone couldn't find you precisely enough to confirm you're at work. These steps usually fix it:"}, go);
+    }
     const kind = !d.ok ? "bad" : d.action === "check_out" ? "out" : d.action === "duplicate" ? "warn" : "ok";
     $("result").className = "result " + kind;
     $("r-icon").innerHTML = icons[kind];

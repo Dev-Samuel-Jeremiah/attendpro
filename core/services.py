@@ -289,8 +289,9 @@ def check_location(sites: list[Site], loc: dict, user_agent: str = "") -> Locati
     if accuracy > max_accuracy_for(site):
         return LocationCheck(False, "Location not precise enough",
                              f"Your phone could only place you within {int(accuracy)} m, which is too rough "
-                             f"to confirm you're at work. Step outside or near a window, wait a few seconds "
-                             f"and try again. {precise_location_help(user_agent)}",
+                             f"to confirm you're at work. Turn on Wi-Fi (it helps even without connecting), "
+                             f"step outside or near a window for a minute, and try again. "
+                             f"{precise_location_help(user_agent)}",
                              f"Location too imprecise (±{int(accuracy)} m)", site, log)
     if dist - min(accuracy, ACCURACY_ALLOWANCE_CAP_M) > site.radius:
         return LocationCheck(False, "You're not at the workplace",

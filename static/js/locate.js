@@ -65,6 +65,41 @@ window.AttendPro = window.AttendPro || {};
     return /GLOC-0003|permission.*denied|denied.*permission/i.test(s);
   }
 
+  // ── Warm-up ────────────────────────────────────────────────────────────────
+  // Cheap phones can take 30-60 s to find GPS. Pages that will need the location call
+  // AttendPro.warmUp() when they open (only if permission is already granted, so nobody is
+  // prompted), and locate() starts from the best reading found so far.
+  var listeners = [], warm = null;
+  function share(coords, timestamp) {
+    if (!coords) return;
+    var r = { lat: coords.latitude, lng: coords.longitude, accuracy: Math.abs(Number(coords.accuracy) || 99999), t: Date.now() };
+    if (!warm || r.accuracy <= warm.accuracy || Date.now() - warm.t > 20000) warm = r;
+    listeners.slice().forEach(function (fn) { fn(coords, timestamp); });
+  }
+  AttendPro.warmUp = function (seconds) {
+    if (AttendPro._warming) return;
+    var G = nativeGeo(), stopAt = Date.now() + (seconds || 120) * 1000, stop = function () {};
+    function start() {
+      AttendPro._warming = true;
+      if (G) {
+        G.watchPosition({ enableHighAccuracy: true, maximumAge: 0 }, function (pos) { if (pos) share(pos.coords, pos.timestamp); })
+          .then(function (id) { stop = function () { G.clearWatch({ id: id }); }; }).catch(function () {});
+      } else if (navigator.geolocation) {
+        var id = navigator.geolocation.watchPosition(function (pos) { share(pos.coords, pos.timestamp); }, function () {},
+                                                     { enableHighAccuracy: true, maximumAge: 0 });
+        stop = function () { navigator.geolocation.clearWatch(id); };
+      }
+      var iv = setInterval(function () {
+        if (Date.now() > stopAt || document.visibilityState === "hidden") { clearInterval(iv); stop(); AttendPro._warming = false; }
+      }, 2000);
+    }
+    if (G) {
+      G.checkPermissions().then(function (p) { if (p.location === "granted") start(); }).catch(function () {});
+    } else if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: "geolocation" }).then(function (p) { if (p.state === "granted") start(); }).catch(function () {});
+    }
+  };
+
   AttendPro.locate = function (opts) {
     if (typeof opts === "number") opts = { maxWait: opts };
     opts = opts || {};
@@ -78,20 +113,20 @@ window.AttendPro = window.AttendPro || {};
     return new Promise(function (resolve, reject) {
       var best = null, done = false, stop = function () {}, timer, unavailable = false;
 
-      function fail(err) {
+      var fail = function (err) {
         if (done) return;
         done = true; clearTimeout(timer);
         try { stop(); } catch (e) { /* already stopped */ }
         reject(err);
-      }
-      function finish() {
+      };
+      var finish = function () {
         if (done) return;
         if (best) {
           done = true; clearTimeout(timer);
           try { stop(); } catch (e) { /* already stopped */ }
           resolve(best);
         } else fail(unavailable ? offError() : weakError());
-      }
+      };
 
       function reading(coords, timestamp) {
         if (done || !coords) return;
@@ -104,7 +139,15 @@ window.AttendPro = window.AttendPro || {};
         if (best.accuracy <= target || (Date.now() - started >= patience && best.accuracy <= goodEnough)) finish();
       }
 
-      timer = setTimeout(finish, maxWait);
+      listeners.push(reading);
+      var cleanup = function () { var i = listeners.indexOf(reading); if (i > -1) listeners.splice(i, 1); };
+      var _fail = fail, _finish = finish;
+      fail = function (e) { cleanup(); _fail(e); };
+      finish = function () { if (!done) cleanup(); _finish(); };
+      timer = setTimeout(function () { finish(); }, maxWait);
+      if (warm && Date.now() - warm.t < 60000) {   // start from what the warm-up already found
+        setTimeout(function () { reading({ latitude: warm.lat, longitude: warm.lng, accuracy: warm.accuracy }, Date.now()); }, 0);
+      }
       setTimeout(function () { if (!done && best && best.accuracy <= goodEnough) finish(); }, patience);
 
       var G = nativeGeo();
@@ -132,7 +175,7 @@ window.AttendPro = window.AttendPro || {};
             else if (isOff(err) && !best) fail(offError());
             return;
           }
-          if (pos) reading(pos.coords, pos.timestamp);
+          if (pos) share(pos.coords, pos.timestamp);
         }).then(function (id) {
           stop = function () { G.clearWatch({ id: id }); };
           if (done) stop();
@@ -149,7 +192,7 @@ window.AttendPro = window.AttendPro || {};
           return;
         }
         var id = navigator.geolocation.watchPosition(
-          function (pos) { reading(pos.coords, pos.timestamp); },
+          function (pos) { share(pos.coords, pos.timestamp); },
           function (err) {
             if (err && err.code === 1) { fail(permissionError()); return; }
             if (err && err.code === 2) {          // usually: the phone's Location is switched off
@@ -200,13 +243,21 @@ window.AttendPro = window.AttendPro || {};
               "Tap <b>Try again</b>"];
     }
     if (kind === "precise") return [preciseHelp(), "Come back here and tap <b>Try again</b>"];
+    if (kind === "imprecise") {
+      if (ios) return ["Turn on <b>Wi-Fi</b> (it helps even if you don't connect)",
+                       "Open <b>Settings → AttendPro → Location</b> and turn on <b>Precise Location</b>",
+                       "Go <b>outside or near a window</b> for a minute", "Tap <b>Try again</b>"];
+      return ["Turn on <b>Wi-Fi</b>. It helps your phone find its location, even if you don't connect to a network",
+              "Open <b>Settings → Location → Location services</b> and turn on <b>Google Location Accuracy</b>",
+              "Go <b>outside or near a window</b> and wait about a minute", "Tap <b>Try again</b>"];
+    }
     if (kind === "weak") return ["Check your phone's <b>Location</b> 📍 is on", "Step <b>outside or near a window</b> and wait a few seconds",
                                  "Tap <b>Try again</b>"];
     return [];
   }
 
-  AttendPro.locationHelp = function (err, retry) {
-    if (!err || ["off", "denied", "precise", "weak"].indexOf(err.kind) === -1) return false;
+  AttendPro.locationHelp = function (err, retry, extra) {
+    if (!err || ["off", "denied", "precise", "weak", "imprecise"].indexOf(err.kind) === -1) return false;
     if (!document.getElementById("aplh-css")) {
       var st = document.createElement("style"); st.id = "aplh-css"; st.textContent = CSS; document.head.appendChild(st);
     }
@@ -225,7 +276,12 @@ window.AttendPro = window.AttendPro || {};
     var btns = document.createElement("div"); btns.className = "aplh-btns";
     var go = document.createElement("button"); go.type = "button"; go.className = "aplh-go"; go.textContent = "Try again";
     var x = document.createElement("button"); x.type = "button"; x.className = "aplh-x"; x.textContent = "Close";
-    btns.appendChild(go); btns.appendChild(x); box.appendChild(btns); wrap.appendChild(box);
+    btns.appendChild(go);
+    if (extra) {   // e.g. "Pick on map" when setting a location
+      var ex = document.createElement("button"); ex.type = "button"; ex.className = "aplh-x"; ex.textContent = extra.label;
+      ex.onclick = function () { close(); extra.run(); }; btns.appendChild(ex);
+    }
+    btns.appendChild(x); box.appendChild(btns); wrap.appendChild(box);
     function close() { wrap.remove(); document.removeEventListener("visibilitychange", back); }
     function back() {  // returning from the phone's settings: try again straight away
       if (document.visibilityState === "visible" && retry) { close(); retry(); }
