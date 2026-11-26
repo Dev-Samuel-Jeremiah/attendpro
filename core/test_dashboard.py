@@ -85,10 +85,16 @@ class SetupFlowTests(TestCase):
         page = self.client.get(reverse("org_settings") + "?from=setup")
         self.assertContains(page, "Back to dashboard")
         self.assertContains(page, 'class="mh-home"')
-        from core.forms import OrgSettingsForm
-        data = {k: v for k, v in OrgSettingsForm(instance=org).initial.items() if v is not None}
-        data.update({"latitude": "9.9", "longitude": "8.9", "location_radius_m": 150,
-                     "work_start": "08:00", "work_end": "16:00", "grace_minutes": 10, "name": org.name})
+        from django.db.models.fields.files import FieldFile
+        form = page.context["form"]
+        data = {}
+        for name, field in form.fields.items():
+            v = form.initial.get(name, field.initial)
+            if v is None or isinstance(v, FieldFile) or v is False:
+                continue
+            data[name] = v
+        data.update({"latitude": "9.9", "longitude": "8.9", "location_radius_m": 150})
         r = self.client.post(reverse("org_settings") + "?from=setup", data)
-        if r.status_code == 302:
-            self.assertRedirects(r, reverse("dashboard"), fetch_redirect_response=False)
+        self.assertRedirects(r, reverse("dashboard"), fetch_redirect_response=False)
+        org.refresh_from_db()
+        self.assertTrue(org.has_location)
