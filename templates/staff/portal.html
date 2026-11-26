@@ -26,6 +26,7 @@
         {% if org.has_location %}
         <button type="button" id="clock" class="btn btn-accent btn-lg btn-block" data-url="{% url 'api_clock' %}" data-good-enough="{{ locate_good }}">{% icon "pin" %}
           <span>{% if not rec or not rec.check_in %}Clock in{% else %}Clock out{% endif %}</span></button>
+        <p class="gps-hint">{% icon "pin" 14 %} Turn on your phone's <b>Location (GPS)</b> before you clock in.</p>
         {% else %}
         <div class="clock-note" id="clock">{% icon "pin" 16 %} The attendance location hasn't been set yet.
           {% if request.user.is_org_admin %}<a href="{% url 'org_settings' %}#location">Set it in Settings</a>{% else %}Please tell your administrator.{% endif %}</div>
@@ -165,8 +166,9 @@
           : "Getting a precise location… (±" + acc + " m)";
       }});
     } catch (e) {
-      show({ok: false, title: e.title, message: e.message});
       reset();
+      // Location off / not allowed: a panel with the steps and "Try again"
+      if (!AttendPro.locationHelp(e, () => btn.click())) show({ok: false, title: e.title, message: e.message});
       return;
     }
     label.textContent = "Checking your location…";

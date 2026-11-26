@@ -16,7 +16,7 @@
         <div class="field full"><div class="btn-row">
           <button type="button" class="btn btn-ghost" id="use-location">{% icon "pin" %} Use my current location</button>
           <a class="btn btn-ghost" id="view-map" target="_blank" rel="noopener" {% if not obj.has_location %}hidden{% endif %} href="https://www.google.com/maps?q={{ obj.latitude }},{{ obj.longitude }}">View on map</a>
-        </div><div class="help" id="loc-status"></div></div>
+        </div><div class="help" id="loc-status">Turn on your phone's Location (GPS) first, then stand at the branch.</div></div>
         {% include "partials/field.html" with f=form.is_active %}
       </div>
       <button class="btn btn-accent">{% icon "save" %} Save branch</button>
@@ -53,7 +53,10 @@
       lat.value = p.lat.toFixed(6); lng.value = p.lng.toFixed(6); updateMap();
       status.textContent = "Filled in (accurate to about " + Math.round(p.accuracy) + " m). Click Save branch to keep it." +
         (p.accuracy > 50 ? " For a more precise reading, stand outside or near a window and try again." : "");
-    }, function (e) { status.textContent = e.message; });
+    }, function (e) {
+      status.textContent = e.message;
+      AttendPro.locationHelp(e, function () { document.getElementById("use-location").click(); });
+    });
   });
 })();
 </script>

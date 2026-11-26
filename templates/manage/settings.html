@@ -75,7 +75,7 @@
             <a class="btn btn-ghost" id="view-map" target="_blank" rel="noopener" {% if not org.has_location %}hidden{% endif %}
                href="https://www.google.com/maps?q={{ org.latitude }},{{ org.longitude }}">View on map</a>
           </div>
-          <div class="help" id="loc-status"></div>
+          <div class="help" id="loc-status">Turn on your phone's Location (GPS) first, then stand at your premises.</div>
         </div>
       </div>
       <button class="btn btn-accent">{% icon "save" %} Save settings</button>
@@ -130,7 +130,10 @@
       updateMap();
       status.textContent = "Location filled in (accurate to about " + Math.round(p.accuracy) + " m). Click Save settings to keep it." +
         (p.accuracy > 50 ? " That's not very precise: for a better reading, stand outside or near a window and try again." : "");
-    }, function (e) { status.textContent = e.message; });
+    }, function (e) {
+      status.textContent = e.message;
+      AttendPro.locationHelp(e, function () { document.getElementById("use-location").click(); });
+    });
   });
 })();
 </script>

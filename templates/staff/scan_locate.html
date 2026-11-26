@@ -5,7 +5,7 @@
   <div class="result warn" id="result">
     <div class="result-icon" id="r-icon">{% icon "pin" %}</div>
     <h1 id="r-title">{% if need_location %}Confirming your location…{% else %}Recording your attendance…{% endif %}</h1>
-    <p class="muted" id="r-msg">{% if need_location %}Allow location access if your phone asks. It's only used to confirm you're at work.{% endif %}{% if need_face %} You may be asked for a quick selfie.{% endif %}</p>
+    <p class="muted" id="r-msg">{% if need_location %}Make sure your phone's Location (GPS) is on, and allow location access if asked. It's only used to confirm you're at work.{% endif %}{% if need_face %} You may be asked for a quick selfie.{% endif %}</p>
     <div class="times" id="r-times" style="display:none">
       <div><small class="muted">Check in</small><b id="r-in">—</b></div>
       <div><small class="muted">Check out</small><b id="r-out">—</b></div>
@@ -48,7 +48,11 @@
       try {
         loc = await AttendPro.locate({goodEnough: {{ locate_good|default:60 }}, onProgress: acc => { $("r-msg").textContent = "Getting a precise location… (±" + acc + " m). Stay still for a moment."; }});
       }
-      catch (e) { show({ok: false, title: e.title, message: e.message}); $("retry").style.display = ""; return; }
+      catch (e) {
+        show({ok: false, title: e.title, message: e.message}); $("retry").style.display = "";
+        AttendPro.locationHelp(e, go);
+        return;
+      }
     }
     try {
       const body = Object.assign(token ? {token: token} : {pending: true}, loc);

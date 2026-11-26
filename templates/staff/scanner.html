@@ -4,7 +4,7 @@
 <div style="max-width:480px;margin:0 auto">
   <div id="scan-view">
     <h1 style="text-align:center">Scan the reception QR</h1>
-    <p class="muted" style="text-align:center;margin-top:0">Point your camera at the code on the screen at the entrance.{% if need_location %} Your location is checked too, so allow location access when asked.{% endif %}{% if need_face %} You'll take a quick selfie when you check in.{% endif %}</p>
+    <p class="muted" style="text-align:center;margin-top:0">Point your camera at the code on the screen at the entrance.{% if need_location %} Your location is checked too, so turn on your phone's Location (GPS) and allow access when asked.{% endif %}{% if need_face %} You'll take a quick selfie when you check in.{% endif %}</p>
     <div class="scanner-box">
       <div id="reader"></div>
       <div class="scanner-frame"></div><div class="scan-line"></div>
@@ -79,7 +79,11 @@
       camMsg("Code scanned. Getting a precise location…");
       try {
         Object.assign(body, await AttendPro.locate({goodEnough: {{ locate_good|default:60 }}, onProgress: acc => camMsg("Code scanned. Getting a precise location… (±" + acc + " m)")}));
-      } catch (e) { $("cam-msg").style.display = "none"; show({ok: false, action: "rejected", title: e.title, message: e.message}); return; }
+      } catch (e) {
+        $("cam-msg").style.display = "none"; show({ok: false, action: "rejected", title: e.title, message: e.message});
+        AttendPro.locationHelp(e, () => $("again").click());
+        return;
+      }
       $("cam-msg").style.display = "none";
     }
     try {
